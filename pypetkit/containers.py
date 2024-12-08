@@ -6,33 +6,33 @@ from pydantic import BaseModel, Field
 class RegionInfo(BaseModel):
     """Dataclass for region data."""
 
-    account_type: str | None = Field(None, alias="accountType")
-    gateway: str | None = None
-    id: str | None = None
-    name: str | None = None
+    account_type: str = Field(alias="accountType")
+    gateway: str
+    id: str
+    name: str
 
 
 class SessionInfo(BaseModel):
     """Dataclass for session data."""
 
     id: str
-    user_id: str | None = Field(None, alias="userId")
-    expires_in: int | None = Field(None, alias="expiresIn")
+    user_id: str = Field(alias="userId")
+    expires_in: int = Field(alias="expiresIn")
     region: str
-    created_at: str | None = Field(None, alias="createdAt")
+    created_at: str = Field(alias="createdAt")
 
 
 class Device(BaseModel):
     """Dataclass for device data."""
 
-    created_at: int | None = Field(None, alias="createdAt")
-    device_id: int | None = Field(None, alias="deviceId")
-    device_name: str | None = Field(None, alias="deviceName")
-    device_type: str | None = Field(None, alias="deviceType")
-    group_id: int | None = Field(None, alias="groupId")
-    type: int | None = None
-    type_code: int | None = Field(None, alias="typeCode")
-    unique_id: str | None = Field(None, alias="uniqueId")
+    created_at: int = Field(alias="createdAt")
+    device_id: int = Field(alias="deviceId")
+    device_name: str = Field(alias="deviceName")
+    device_type: str = Field(alias="deviceType")
+    group_id: int = Field(alias="groupId")
+    type: int
+    type_code: int = Field(alias="typeCode")
+    unique_id: str = Field(alias="uniqueId")
 
 
 class Pet(BaseModel):
