@@ -4,26 +4,31 @@ from enum import StrEnum
 
 MIN_FEED_AMOUNT = 0
 MAX_FEED_AMOUNT = 10
-TOKEN_EXPIRATION_TIME = 3600
-BLE_POLL_INTERVAL = 420
-BLE_CONNECT_ATTEMPT = 4
 
-RESULT_KEY = "result"
-ERROR_KEY = "error"
+RES_KEY = "result"
+ERR_KEY = "error"
+SUCCESS_KEY = "success"
 
 # PetKit Models
+FEEDER = "feeder"
+FEEDER_MINI = "feedermini"
+D3 = "d3"
+D4 = "d4"
+D4S = "d4s"
 D4H = "d4h"
 D4SH = "d4sh"
+T3 = "t3"
 T4 = "t4"
 T5 = "t5"
 T6 = "t6"
 W5 = "w5"
 CTW3 = "ctw3"
+K2 = "k2"
 
-
-LITTER_BOX = [T4, T5, T6]
-FEEDER = [D4H, D4SH]
-WATER_FOUNTAIN = [W5, CTW3]
+DEVICES_LITTER_BOX = [T4, T5, T6]
+DEVICES_FEEDER = [FEEDER, FEEDER_MINI, D4, D4S, D4H, D4SH]
+DEVICES_WATER_FOUNTAIN = [W5, CTW3]
+ALL_DEVICES = [*DEVICES_LITTER_BOX, *DEVICES_FEEDER, *DEVICES_WATER_FOUNTAIN]
 
 
 class PetkitURL(StrEnum):
@@ -69,11 +74,18 @@ CLIENT_NFO = {
     "version": Header.API_VERSION.value,
 }
 
+LOGIN_DATA = {
+    "client": str(CLIENT_NFO),
+    "oldVersion": Header.API_VERSION,
+}
+
 
 class PetkitEndpoint(StrEnum):
     """Petkit Endpoint constants"""
 
     LOGIN = "user/login"
+    GET_LOGIN_CODE = "user/sendcodeforquicklogin"
+    REFRESH_SESSION = "user/refreshsession"
     FAMILY_LIST = "group/family/list"
     REFRESH_HOME_V2 = "refreshHomeV2"
     DEVICE_DETAIL = "device_detail"
@@ -81,3 +93,8 @@ class PetkitEndpoint(StrEnum):
     GET_DEVICE_RECORD = "getDeviceRecord"
     GET_DEVICE_RECORD_RELEASE = "getDeviceRecordRelease"
     UPDATE_SETTING = "updateSettings"
+    REPLENISHED_FOOD = "added"
+    FRESH_ELEMENT_CALIBRATION = "food_reset"
+    CANCEL_FEED = "cancelRealtimeFeed"
+    DEODORANT_RESET = "deodorantReset"
+    CONTROL_DEVICE = "controlDevice"
