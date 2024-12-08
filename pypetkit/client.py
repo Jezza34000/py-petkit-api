@@ -244,7 +244,7 @@ class PetKitClient:
         _LOGGER.info("Adding device type: %s", device.device_type)
         self.device_list.append(device_data)
 
-    async def control_api(
+    async def control_device(
         self,
         device: Feeder | Litter | WaterFountain,
         action: StrEnum,
