@@ -1,3 +1,7 @@
 /debug_api.py
 /test.py
 /dist/
+/data_example/
+/.venv/
+/.tox/
+/.vscode/
