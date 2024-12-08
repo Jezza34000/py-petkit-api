@@ -4,31 +4,28 @@ from datetime import datetime, timedelta
 import hashlib
 from http import HTTPMethod
 import logging
+from typing import Optional
 
 import aiohttp
 from aiohttp import ContentTypeError
 
+from pypetkit.command import ACTIONS_MAP
 from pypetkit.const import (
-    CLIENT_NFO,
-    ERROR_KEY,
-    FEEDER,
-    LITTER_BOX,
-    RESULT_KEY,
-    WATER_FOUNTAIN,
+    DEVICES_FEEDER,
+    DEVICES_LITTER_BOX,
+    DEVICES_WATER_FOUNTAIN,
+    ERR_KEY,
+    LOGIN_DATA,
+    RES_KEY,
     Header,
     PetkitEndpoint,
     PetkitURL,
 )
-from pypetkit.containers import (
-    AccountData,
-    Device,
-    FeederData,
-    LitterData,
-    RegionInfo,
-    SessionInfo,
-    WaterFountainData,
-)
+from pypetkit.containers import AccountData, Device, RegionInfo, SessionInfo
 from pypetkit.exceptions import PypetkitError
+from pypetkit.feeder_container import Feeder
+from pypetkit.litter_container import Litter
+from pypetkit.water_fountain_container import WaterFountain
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,13 +33,10 @@ _LOGGER = logging.getLogger(__name__)
 class PetKitClient:
     """Petkit Client"""
 
+    _base_url: str
     _session: SessionInfo | None = None
-    _account_data: AccountData | None = None
-    _base_url: str | None = None
-
-    Feeder: FeederData | None = None
-    LitterBox: LitterData | None = None
-    WaterFountain: WaterFountainData | None = None
+    account_data: list[AccountData] = []
+    device_list: list[Feeder | Litter | WaterFountain] = []
 
     def __init__(
         self,
@@ -59,16 +53,17 @@ class PetKitClient:
 
     async def _generate_header(self) -> dict[str, str]:
         """Create header for interaction with devices."""
+        session_id = self._session.id if self._session is not None else ""
         return {
-            "Accept": Header.ACCEPT,
+            "Accept": Header.ACCEPT.value,
             "Accept-Language": Header.ACCEPT_LANG,
             "Accept-Encoding": Header.ENCODING,
             "Content-Type": Header.CONTENT_TYPE,
             "User-Agent": Header.AGENT,
             "X-Img-Version": Header.IMG_VERSION,
             "X-Locale": Header.LOCALE,
-            "F-Session": self._session.id if self._session is not None else "",
-            "X-Session": self._session.id if self._session is not None else "",
+            "F-Session": session_id,
+            "X-Session": session_id,
             "X-Client": Header.CLIENT,
             "X-Hour": Header.HOUR,
             "X-TimezoneId": Header.TIMEZONE_ID,
@@ -86,11 +81,8 @@ class PetKitClient:
             headers=await self._generate_header(),
         )
         _LOGGER.debug("API server list: %s", response)
-        region_data = response.get(RESULT_KEY)
-        if isinstance(region_data, dict):
-            servers = [
-                RegionInfo.from_dict(region) for region in region_data.get("list", [])
-            ]
+        if isinstance(response, dict):
+            servers = [RegionInfo(**region) for region in response.get("list", [])]
             self.servers_dict = {server.name: server for server in servers}
             if self.region in self.servers_dict:
                 _LOGGER.debug(
@@ -103,20 +95,39 @@ class PetKitClient:
             raise PypetkitError(f"Region {self.region} not found in server list")
         raise PypetkitError("Failed to get API server list")
 
-    async def login(self) -> None:
+    async def request_login_code(self) -> bool:
+        """Request a login code to be sent to the user's email."""
+        _LOGGER.debug("Requesting login code for username: %s", self.username)
+        prep_req = PrepReq(base_url=self._base_url)
+        response = await prep_req.request(
+            method=HTTPMethod.GET,
+            url=PetkitEndpoint.GET_LOGIN_CODE,
+            params={"username": self.username},
+            headers=await self._generate_header(),
+        )
+        if response:
+            _LOGGER.info("Login code sent to user's email")
+            return True
+        return False
+
+    async def login(self, valid_code: Optional[str] = None) -> None:
         """Login to the PetKit service and retrieve the appropriate server."""
         # Retrieve the list of servers
         await self._get_api_server_list()
 
         # Prepare the data to send
-        data = {
-            "client": str(CLIENT_NFO),
-            "encrypt": "1",
-            "oldVersion": Header.API_VERSION,
-            "password": hashlib.md5(self.password.encode()).hexdigest(),  # noqa: S324
-            "region": self.servers_dict[self.region].id,
-            "username": self.username,
-        }
+        data = LOGIN_DATA.copy()
+        data["encrypt"] = "1"
+        data["region"] = self.servers_dict[self.region].id
+        data["username"] = self.username
+
+        if valid_code:
+            _LOGGER.debug("Login method: using valid code")
+            data["validCode"] = valid_code
+        else:
+            _LOGGER.debug("Login method: using password")
+            pwd = hashlib.md5(self.password.encode()).hexdigest()  # noqa: S324
+            data["password"] = pwd  # noqa: S324
 
         # Send the login request
         prep_req = PrepReq(base_url=self._base_url)
@@ -126,33 +137,47 @@ class PetKitClient:
             data=data,
             headers=await self._generate_header(),
         )
+        session_data = response["session"]
+        self._session = SessionInfo(**session_data)
 
-        if ERROR_KEY in response:
-            error_msg = response[ERROR_KEY].get("msg", "Unknown error")
-            raise PypetkitError(f"Login failed: {error_msg}")
-        if RESULT_KEY in response:
-            _LOGGER.debug("Login response OK : %s", response)
-            session_data = response[RESULT_KEY]["session"]
+    async def refresh_session(self) -> None:
+        """Refresh the session."""
+        _LOGGER.debug("Refreshing session")
+        prep_req = PrepReq(base_url=self._base_url)
+        response = await prep_req.request(
+            method=HTTPMethod.POST,
+            url=PetkitEndpoint.REFRESH_SESSION,
+            headers=await self._generate_header(),
+        )
+        session_data = response["session"]
+        self._session = SessionInfo.from_dict(session_data)
 
-            self._session = SessionInfo.from_dict(session_data)
-            return
-        raise PypetkitError("Unexpected login error")
-
-    async def is_session_valid(self) -> bool:
-        """Check if the session is still valid."""
+    async def validate_session(self) -> None:
+        """Check if the session is still valid and refresh or re-login if necessary."""
         if self._session is None:
-            return False
+            await self.login()
+            return
+
         created_at = datetime.strptime(
             self._session.created_at,
             "%Y-%m-%dT%H:%M:%S.%f%z",
         )
-        expires_in = timedelta(seconds=self._session.expires_in)
-        expiration_time = created_at + expires_in
         current_time = datetime.now(tz=created_at.tzinfo)
-        return current_time < expiration_time
+        token_age = current_time - created_at
+        max_age = timedelta(seconds=self._session.expires_in)
+        half_max_age = max_age / 2
+
+        if token_age > max_age:
+            _LOGGER.debug("Token expired, re-logging in")
+            await self.login()
+        elif half_max_age < token_age <= max_age:
+            _LOGGER.debug("Token still OK, but refreshing session")
+            await self.refresh_session()
+        return
 
     async def _get_account_data(self) -> None:
         """Get the account data from the PetKit service."""
+        await self.validate_session()
         _LOGGER.debug("Fetching account data")
         prep_req = PrepReq(base_url=self._base_url)
         response = await prep_req.request(
@@ -160,38 +185,43 @@ class PetKitClient:
             url=PetkitEndpoint.FAMILY_LIST,
             headers=await self._generate_header(),
         )
-
-        if RESULT_KEY in response:
-            _LOGGER.debug("Account data response: %s", response)
-            result_data = response[RESULT_KEY][0]  # Assuming there's only one result
-            self._account_data = AccountData.from_dict(result_data)
-            return
-        raise PypetkitError("Failed to fetch account data")
+        self.account_data = [AccountData(**account) for account in response]
 
     async def get_devices_data(self) -> None:
         """Get the devices data from the PetKit servers."""
-        if not self._account_data:
+        if not self.account_data:
             await self._get_account_data()
 
-        devices = self._account_data.device_list
-        for device in devices:
+        device_list: list[Device] = []
+        for account in self.account_data:
+            _LOGGER.debug("Fetching devices data for account: %s", account)
+            if account.device_list:
+                device_list.extend(account.device_list)
+
+        _LOGGER.info("%s devices found for this account", len(device_list))
+        for device in device_list:
             _LOGGER.debug("Fetching devices data: %s", device)
             device_type = device.device_type.lower()
-            if device_type in FEEDER:
-                await self._fetch_device_data(device, FeederData)
-            elif device_type in LITTER_BOX:
-                await self._fetch_device_data(device, LitterData)
-            elif device_type in WATER_FOUNTAIN:
-                await self._fetch_device_data(device, WaterFountainData)
+            # TODO: Fetch device records
+            if device_type in DEVICES_FEEDER:
+                await self._fetch_device_data(device, Feeder)
+            elif device_type in DEVICES_LITTER_BOX:
+                await self._fetch_device_data(device, Litter)
+            elif device_type in DEVICES_WATER_FOUNTAIN:
+                await self._fetch_device_data(device, WaterFountain)
             else:
                 _LOGGER.warning("Unknown device type: %s", device_type)
 
-    async def _fetch_device_data(self, device: Device, data_class: type) -> None:
+    async def _fetch_device_data(
+        self,
+        device: Device,
+        data_class: type[Feeder | Litter | WaterFountain],
+    ) -> None:
         """Fetch the device data from the PetKit servers."""
-        endpoint = data_class.url_endpoint
+        await self.validate_session()
+        endpoint = data_class.get_endpoint(device.device_type)
         device_type = device.device_type.lower()
-        query_param = data_class.query_param.copy()
-        query_param["id"] = device.device_id
+        query_param = data_class.query_param(device.device_id)
 
         prep_req = PrepReq(base_url=self._base_url)
         response = await prep_req.request(
@@ -200,41 +230,58 @@ class PetKitClient:
             params=query_param,
             headers=await self._generate_header(),
         )
+        device_data = data_class(**response)
+        device_data.device_type = device.device_type  # Add the device_type attribute
+        _LOGGER.info("Adding device type: %s", device.device_type)
+        self.device_list.append(device_data)
 
-        if ERROR_KEY in response:
-            error_msg = response[ERROR_KEY].get("msg", "Unknown error")
-            raise PypetkitError(f"Fetching device data failed: {error_msg}")
-        if RESULT_KEY in response:
-            _LOGGER.debug("Device data response: %s", response)
-            if data_class == FeederData:
-                self.Feeder = data_class.from_dict(response[RESULT_KEY])
-            elif data_class == LitterData:
-                self.LitterBox = data_class.from_dict(response[RESULT_KEY])
-            return
-        raise PypetkitError("Unexpected response while fetching device data")
+    async def control_api(
+        self,
+        device: Feeder | Litter | WaterFountain,
+        action: str,
+        setting: dict,
+    ) -> None:
+        """Control the device using the PetKit API."""
 
-    async def update_settings(self, device_id: str, command: str, data: dict) -> None:
-        """Send a command to a PetKit device."""
         _LOGGER.debug(
-            "Sending command %s to device %s with data %s",
-            command,
-            device_id,
-            data,
+            "Control API: %s %s %s",
+            action,
+            setting,
+            device,
         )
+
+        if device.device_type:
+            device_type = device.device_type.lower()
+        else:
+            raise PypetkitError(
+                "Device type is not available, and is mandatory for sending commands."
+            )
+
+        if action not in ACTIONS_MAP:
+            raise PypetkitError(f"Action {action} not supported.")
+
+        action_info = ACTIONS_MAP[action]
+        if device_type not in action_info.supported_device:
+            raise PypetkitError(
+                f"Device type {device.device_type} not supported for action {action}."
+            )
+
+        url = f"{device_type}/{action_info.endpoint}"  # TODO: Support many endpoints
+        headers = await self._generate_header()
+
+        # Use the lambda to generate params
+        if callable(action_info.params):
+            params = action_info.params(device, setting)
+        else:
+            params = action_info.params
+
         prep_req = PrepReq(base_url=self._base_url)
-        response = await prep_req.request(
+        await prep_req.request(
             method=HTTPMethod.POST,
-            url=f"{self._base_url}/{device_id}/{command}",
-            data=data,
-            headers=await self._generate_header(),
+            url=url,
+            data=params,
+            headers=headers,
         )
-        if ERROR_KEY in response:
-            error_msg = response[ERROR_KEY].get("msg", "Unknown error")
-            raise PypetkitError(f"Command {command} failed: {error_msg}")
-        if RESULT_KEY in response:
-            _LOGGER.debug("Command %s response: %s", command, response)
-            return
-        raise PypetkitError(f"Unexpected response from command {command}")
 
 
 class PrepReq:
@@ -273,7 +320,14 @@ class PrepReq:
                     data=data,
                     headers=_headers,
                 ) as resp:
-                    return await resp.json()
+                    response = await resp.json()
+                    if ERR_KEY in response:
+                        error_msg = response[ERR_KEY].get("msg", "Unknown error")
+                        raise PypetkitError(f"Request failed: {error_msg}")
+                    if RES_KEY in response:
+                        _LOGGER.debug("Request response: %s", response)
+                        return response[RES_KEY]
+                    raise PypetkitError("Unexpected response format")
             except ContentTypeError:
                 """If we get an error, lets log everything for debugging."""
                 try:
