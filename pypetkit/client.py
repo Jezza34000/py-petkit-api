@@ -1,6 +1,7 @@
 """Pypetkit Client: A Python library for interfacing with PetKit"""
 
 from datetime import datetime, timedelta
+from enum import StrEnum
 import hashlib
 from http import HTTPMethod
 import logging
@@ -34,6 +35,7 @@ class PetKitClient:
 
     _base_url: str
     _session: SessionInfo | None = None
+    _servers_list: list[RegionInfo] = []
     account_data: list[AccountData] = []
     device_list: list[Feeder | Litter | WaterFountain] = []
 
@@ -80,19 +82,27 @@ class PetKitClient:
             headers=await self._generate_header(),
         )
         _LOGGER.debug("API server list: %s", response)
-        if isinstance(response, dict):
-            servers = [RegionInfo(**region) for region in response.get("list", [])]
-            self.servers_dict = {server.name: server for server in servers}
-            if self.region in self.servers_dict:
-                _LOGGER.debug(
-                    "Region %s found in server list using gateway %s",
-                    self.region,
-                    self.servers_dict[self.region].gateway,
-                )
-                self._base_url = self.servers_dict[self.region].gateway
-                return
-            raise PypetkitError(f"Region {self.region} not found in server list")
-        raise PypetkitError("Failed to get API server list")
+        self._servers_list = [
+            RegionInfo(**region) for region in response.get("list", [])
+        ]
+
+    async def _get_base_url(self) -> None:
+        """Find the region server for the specified region."""
+        await self._get_api_server_list()
+        _LOGGER.debug("Finding region server for region: %s", self.region)
+
+        regional_server = next(
+            (server for server in self._servers_list if server.name == self.region),
+            None,
+        )
+
+        if regional_server:
+            _LOGGER.debug(
+                "Found server %s for region : %s", regional_server, self.region
+            )
+            self._base_url = regional_server.gateway
+            return
+        _LOGGER.debug("Region %s not found in server list", self.region)
 
     async def request_login_code(self) -> bool:
         """Request a login code to be sent to the user's email."""
@@ -112,12 +122,12 @@ class PetKitClient:
     async def login(self, valid_code: str | None = None) -> None:
         """Login to the PetKit service and retrieve the appropriate server."""
         # Retrieve the list of servers
-        await self._get_api_server_list()
+        await self._get_base_url()
 
         # Prepare the data to send
         data = LOGIN_DATA.copy()
         data["encrypt"] = "1"
-        data["region"] = self.servers_dict[self.region].id
+        data["region"] = self.region
         data["username"] = self.username
 
         if valid_code:
@@ -237,7 +247,7 @@ class PetKitClient:
     async def control_api(
         self,
         device: Feeder | Litter | WaterFountain,
-        action: str,
+        action: StrEnum,
         setting: dict,
     ) -> None:
         """Control the device using the PetKit API."""
