@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 import hashlib
 from http import HTTPMethod
 import logging
-from typing import Optional
 
 import aiohttp
 from aiohttp import ContentTypeError
@@ -110,7 +109,7 @@ class PetKitClient:
             return True
         return False
 
-    async def login(self, valid_code: Optional[str] = None) -> None:
+    async def login(self, valid_code: str | None = None) -> None:
         """Login to the PetKit service and retrieve the appropriate server."""
         # Retrieve the list of servers
         await self._get_api_server_list()
