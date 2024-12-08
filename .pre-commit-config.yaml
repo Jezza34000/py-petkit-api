@@ -64,3 +64,8 @@ repos:
           - --py311-plus
           - --force
           - --keep-updates
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
