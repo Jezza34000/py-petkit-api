@@ -1,10 +1,10 @@
 """Command module for PyPetkit"""
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 import datetime
 from enum import StrEnum
 import json
-from typing import Callable
 
 from pypetkit.const import (
     ALL_DEVICES,

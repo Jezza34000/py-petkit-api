@@ -1,6 +1,7 @@
 """Dataclasses for Water Fountain."""
 
-from typing import Any, Callable, ClassVar
+from collections.abc import Callable
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
