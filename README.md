@@ -1,4 +1,10 @@
-# Petkit Api Client
+# Petkit API Client
+
+---
+
+# WIP - UNDER DEVELOPMENT
+
+---
 
 [![PyPI](https://img.shields.io/pypi/v/pypetkitapi.svg)][pypi_]
 [![Python Version](https://img.shields.io/pypi/pyversions/pypetkitapi)][python version]
@@ -37,16 +43,35 @@ Install the library using pip:
 pip install pypetkitapi
 ```
 
-## Usage:
+## Usage Example:
 
 ```python
-from petkit import PetKitClient
+import asyncio
+import logging
+from pypetkit.client import PetKitClient
 
-# Create a new PetKitClient instance
-client = PetKitClient()
+logging.basicConfig(level=logging.DEBUG)
 
-# Login to the PetKit API
-client.login('username', 'password', 'region', 'timezone')
+async def main():
+    client = PetKitClient(
+        username="username", # Your PetKit account username
+        password="password", # Your PetKit account password
+        region="France", # Your region
+        timezone="Europe/Paris", # Your timezone
+    )
+
+    # To get the account and devices data attached to the account
+    await client.get_devices_data()
+    # Read the account data
+    print(client.account_data)
+    # Read the devices data
+    print(client.device_list)
+
+    # To send command the devices
+    await client.control_device("device", "command", "params")
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ## Contributing
