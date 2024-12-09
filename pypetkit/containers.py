@@ -4,7 +4,10 @@ from pydantic import BaseModel, Field
 
 
 class RegionInfo(BaseModel):
-    """Dataclass for region data."""
+    """Dataclass for region data.
+    Fetched from the API endpoint :
+        - /v1/regionservers.
+    """
 
     account_type: str = Field(alias="accountType")
     gateway: str
@@ -13,7 +16,12 @@ class RegionInfo(BaseModel):
 
 
 class SessionInfo(BaseModel):
-    """Dataclass for session data."""
+    """Dataclass for session data.
+    Fetched from the API endpoint :
+        - user/login
+        - user/sendcodeforquicklogin
+        - user/refreshsession
+    """
 
     id: str
     user_id: str = Field(alias="userId")
@@ -23,7 +31,9 @@ class SessionInfo(BaseModel):
 
 
 class Device(BaseModel):
-    """Dataclass for device data."""
+    """Dataclass for device data.
+    Subclass of AccountData.
+    """
 
     created_at: int = Field(alias="createdAt")
     device_id: int = Field(alias="deviceId")
@@ -36,7 +46,9 @@ class Device(BaseModel):
 
 
 class Pet(BaseModel):
-    """Dataclass for pet data."""
+    """Dataclass for pet data.
+    Subclass of AccountData.
+    """
 
     avatar: str | None = None
     created_at: int | None = Field(None, alias="createdAt")
@@ -45,7 +57,9 @@ class Pet(BaseModel):
 
 
 class User(BaseModel):
-    """Dataclass for user data."""
+    """Dataclass for user data.
+    Subclass of AccountData.
+    """
 
     avatar: str | None = None
     created_at: int | None = Field(None, alias="createdAt")
@@ -55,7 +69,10 @@ class User(BaseModel):
 
 
 class AccountData(BaseModel):
-    """Dataclass for account data."""
+    """Dataclass for account data.
+    Fetch from the API endpoint
+        - /group/family/list.
+    """
 
     device_list: list[Device] | None = Field(None, alias="deviceList")
     expired: bool | None = None
@@ -69,6 +86,7 @@ class AccountData(BaseModel):
 class CloudProduct(BaseModel):
     """Dataclass for cloud product details.
     Care+ Service for Smart devices with Camera.
+    Subclass of many other device dataclasses.
     """
 
     charge_type: str | None = Field(None, alias="chargeType")
@@ -80,7 +98,9 @@ class CloudProduct(BaseModel):
 
 
 class Wifi(BaseModel):
-    """Dataclass for Wi-Fi."""
+    """Dataclass for Wi-Fi.
+    Subclass of many other device dataclasses.
+    """
 
     bssid: str | None = None
     rsq: int | None = None
@@ -88,7 +108,9 @@ class Wifi(BaseModel):
 
 
 class FirmwareDetail(BaseModel):
-    """Dataclass for firmware details."""
+    """Dataclass for firmware details.
+    Subclass of many other device dataclasses.
+    """
 
     module: str | None = None
     version: int | None = None
