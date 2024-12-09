@@ -425,7 +425,7 @@ def test_feeder():
         "signupAt": "2023-01-01T00:00:00Z",
         "sn": "sn1",
         "state": None,
-        "timezone": 1.0,
+        "timezone": "1.0",
         "p2pType": 1,
         "multiConfig": True,
         "deviceType": "type1",
@@ -451,7 +451,7 @@ def test_feeder():
     assert feeder.signup_at == "2023-01-01T00:00:00Z"
     assert feeder.sn == "sn1"
     assert feeder.state is None
-    assert feeder.timezone == 1.0
+    assert feeder.timezone == "1.0"
     assert feeder.p2p_type == 1
     assert feeder.multi_config is True
     assert feeder.device_type == "type1"
@@ -579,7 +579,7 @@ def test_settings_litter():
         "dumpSwitch": 1,
         "fixedTimeClear": 1,
         "kitten": 1,
-        "kittenPercent": 0.5,
+        "kittenPercent": "0.5",
         "kittenTipsTime": 1,
         "lackLiquidNotify": 1,
         "lackSandNotify": 1,
@@ -647,7 +647,7 @@ def test_settings_litter():
     assert settings_litter.dump_switch == 1
     assert settings_litter.fixed_time_clear == 1
     assert settings_litter.kitten == 1
-    assert settings_litter.kitten_percent == 0.5
+    assert settings_litter.kitten_percent == "0.5"
     assert settings_litter.kitten_tips_time == 1
     assert settings_litter.lack_liquid_notify == 1
     assert settings_litter.lack_sand_notify == 1
@@ -808,7 +808,7 @@ def test_litter():
         "signupAt": "2023-01-01T00:00:00Z",
         "sn": "sn1",
         "state": None,
-        "timezone": 1.0,
+        "timezone": "1.0",
         "cloudProduct": None,
         "inTimes": 1,
         "lastOutTime": 1,
@@ -843,7 +843,7 @@ def test_litter():
     assert litter.signup_at == "2023-01-01T00:00:00Z"
     assert litter.sn == "sn1"
     assert litter.state is None
-    assert litter.timezone == 1.0
+    assert litter.timezone == "1.0"
     assert litter.cloud_product is None
     assert litter.in_times == 1
     assert litter.last_out_time == 1
@@ -867,7 +867,7 @@ def test_water_fountain_initialization():
             "supplyVoltage": 220,
         },
         "expectedCleanWater": 100,
-        "expectedUseElectricity": 10.5,
+        "expectedUseElectricity": "10.5",
         "filterExpectedDays": 30,
         "filterPercent": 80,
         "filterWarning": 1,
@@ -929,10 +929,10 @@ def test_water_fountain_initialization():
             "suspendStatus": 1,
         },
         "syncTime": "2023-01-01T00:00:00Z",
-        "timezone": 1.0,
+        "timezone": "1.0",
         "todayCleanWater": 50,
         "todayPumpRunTime": 100,
-        "todayUseElectricity": 5.5,
+        "todayUseElectricity": "5.5",
         "updateAt": "2023-01-01T00:00:00Z",
         "userId": "user123",
         "waterPumpRunTime": 200,
@@ -945,7 +945,7 @@ def test_water_fountain_initialization():
     assert water_fountain.electricity.battery_voltage == 12
     assert water_fountain.electricity.supply_voltage == 220
     assert water_fountain.expected_clean_water == 100
-    assert water_fountain.expected_use_electricity == 10.5
+    assert water_fountain.expected_use_electricity == "10.5"
     assert water_fountain.filter_expected_days == 30
     assert water_fountain.filter_percent == 80
     assert water_fountain.filter_warning == 1
@@ -1003,10 +1003,10 @@ def test_water_fountain_initialization():
     assert water_fountain.status.run_status == 1
     assert water_fountain.status.suspend_status == 1
     assert water_fountain.sync_time == "2023-01-01T00:00:00Z"
-    assert water_fountain.timezone == 1.0
+    assert water_fountain.timezone == "1.0"
     assert water_fountain.today_clean_water == 50
     assert water_fountain.today_pump_run_time == 100
-    assert water_fountain.today_use_electricity == 5.5
+    assert water_fountain.today_use_electricity == "5.5"
     assert water_fountain.update_at == "2023-01-01T00:00:00Z"
     assert water_fountain.user_id == "user123"
     assert water_fountain.water_pump_run_time == 200
