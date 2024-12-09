@@ -6,7 +6,7 @@ import datetime
 from enum import StrEnum
 import json
 
-from pypetkit.const import (
+from pypetkitapi.const import (
     ALL_DEVICES,
     D3,
     D4H,

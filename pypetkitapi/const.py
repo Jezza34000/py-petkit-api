@@ -1,4 +1,4 @@
-"""Constants for the pypetkit library."""
+"""Constants for the pypetkitapi library."""
 
 from enum import StrEnum
 

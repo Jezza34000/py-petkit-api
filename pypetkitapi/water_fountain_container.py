@@ -5,7 +5,7 @@ from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
-from pypetkit.const import PetkitEndpoint
+from pypetkitapi.const import PetkitEndpoint
 
 
 class Electricity(BaseModel):

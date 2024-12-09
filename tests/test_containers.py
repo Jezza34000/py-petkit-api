@@ -1,6 +1,6 @@
-"""Tests for pypetkit.containers"""
+"""Tests for pypetkitapi.containers"""
 
-from pypetkit.containers import (
+from pypetkitapi.containers import (
     AccountData,
     CloudProduct,
     Device,
@@ -11,7 +11,7 @@ from pypetkit.containers import (
     User,
     Wifi,
 )
-from pypetkit.feeder_container import (
+from pypetkitapi.feeder_container import (
     CameraMultiNew,
     EventState,
     FeedDailyList,
@@ -23,8 +23,8 @@ from pypetkit.feeder_container import (
     SettingsFeeder,
     StateFeeder,
 )
-from pypetkit.litter_container import Litter, SettingsLitter, StateLitter
-from pypetkit.water_fountain_container import (
+from pypetkitapi.litter_container import Litter, SettingsLitter, StateLitter
+from pypetkitapi.water_fountain_container import (
     WaterFountain,
     Electricity,
     Type,

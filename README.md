@@ -48,16 +48,17 @@ pip install pypetkitapi
 ```python
 import asyncio
 import logging
-from pypetkit.client import PetKitClient
+from pypetkitapi.client import PetKitClient
 
 logging.basicConfig(level=logging.DEBUG)
 
+
 async def main():
     client = PetKitClient(
-        username="username", # Your PetKit account username
-        password="password", # Your PetKit account password
-        region="France", # Your region
-        timezone="Europe/Paris", # Your timezone
+        username="username",  # Your PetKit account username
+        password="password",  # Your PetKit account password
+        region="France",  # Your region
+        timezone="Europe/Paris",  # Your timezone
     )
 
     # To get the account and devices data attached to the account
@@ -77,6 +78,7 @@ async def main():
 
     ### Example 2 : Feed the pet
     await client.send_api_request(my_feeder, FeederCommand.MANUAL_FEED, {"amount": 1})
+
 
 if __name__ == "__main__":
     asyncio.run(main())

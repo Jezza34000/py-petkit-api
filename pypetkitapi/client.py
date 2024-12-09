@@ -9,8 +9,8 @@ import logging
 import aiohttp
 from aiohttp import ContentTypeError
 
-from pypetkit.command import ACTIONS_MAP
-from pypetkit.const import (
+from pypetkitapi.command import ACTIONS_MAP
+from pypetkitapi.const import (
     DEVICES_FEEDER,
     DEVICES_LITTER_BOX,
     DEVICES_WATER_FOUNTAIN,
@@ -21,11 +21,11 @@ from pypetkit.const import (
     PetkitEndpoint,
     PetkitURL,
 )
-from pypetkit.containers import AccountData, Device, RegionInfo, SessionInfo
-from pypetkit.exceptions import PypetkitError
-from pypetkit.feeder_container import Feeder
-from pypetkit.litter_container import Litter
-from pypetkit.water_fountain_container import WaterFountain
+from pypetkitapi.containers import AccountData, Device, RegionInfo, SessionInfo
+from pypetkitapi.exceptions import PypetkitError
+from pypetkitapi.feeder_container import Feeder
+from pypetkitapi.litter_container import Litter
+from pypetkitapi.water_fountain_container import WaterFountain
 
 _LOGGER = logging.getLogger(__name__)
 

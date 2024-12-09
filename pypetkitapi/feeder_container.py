@@ -5,8 +5,8 @@ from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
-from pypetkit.const import PetkitEndpoint
-from pypetkit.containers import CloudProduct, FirmwareDetail, Wifi
+from pypetkitapi.const import PetkitEndpoint
+from pypetkitapi.containers import CloudProduct, FirmwareDetail, Wifi
 
 
 class FeedItem(BaseModel):
