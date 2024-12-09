@@ -29,14 +29,14 @@ class SettingsLitter(BaseModel):
     downpos: int | None = None
     dump_switch: int | None = Field(None, alias="dumpSwitch")
     fixed_time_clear: int | None = Field(None, alias="fixedTimeClear")
-    kitten: int | None
+    kitten: int | None = None
     kitten_percent: float | None = Field(None, alias="kittenPercent")
     kitten_tips_time: int | None = Field(None, alias="kittenTipsTime")
     lack_liquid_notify: int | None = Field(None, alias="lackLiquidNotify")
     lack_sand_notify: int | None = Field(None, alias="lackSandNotify")
-    language: str | None
+    language: str | None = None
     language_follow: int | None = Field(None, alias="languageFollow")
-    languages: list[str] | None
+    languages: list[str] | None = None
     light_config: int | None = Field(None, alias="lightConfig")
     light_mode: int | None = Field(None, alias="lightMode")
     light_multi_range: list[Any] | None = Field(None, alias="lightMultiRange")
@@ -51,20 +51,20 @@ class SettingsLitter(BaseModel):
     still_time: int | None = Field(None, alias="stillTime")
     stop_time: int | None = Field(None, alias="stopTime")
     underweight: int | None = Field(None, alias="underweight")
-    unit: int | None
+    unit: int | None = None
     weight_popup: int | None = Field(None, alias="weightPopup")
     work_notify: int | None = Field(None, alias="workNotify")
     auto_product: int | None = Field(None, alias="autoProduct")
-    camera: int | None
+    camera: int | None = None
     camera_config: int | None = Field(None, alias="cameraConfig")
     cleanning_notify: int | None = Field(None, alias="cleanningNotify")
     garbage_notify: int | None = Field(None, alias="garbageNotify")
     highlight: int | None = Field(None, alias="highlight")
     light_assist: int | None = Field(None, alias="lightAssist")
     live_encrypt: int | None = Field(None, alias="liveEncrypt")
-    microphone: int | None
+    microphone: int | None = None
     move_notify: int | None = Field(None, alias="moveNotify")
-    night: int | None
+    night: int | None = None
     package_standard: list[int] | None = Field(None, alias="packageStandard")
     pet_detection: int | None = Field(None, alias="petDetection")
     pet_notify: int | None = Field(None, alias="petNotify")
@@ -76,9 +76,9 @@ class SettingsLitter(BaseModel):
     tone_config: int | None = Field(None, alias="toneConfig")
     tone_mode: int | None = Field(None, alias="toneMode")
     tone_multi_range: list[list[int]] | None = Field(None, alias="toneMultiRange")
-    tumbling: int | None
-    upload: int | None
-    volume: int | None
+    tumbling: int | None = None
+    upload: int | None = None
+    volume: int | None = None
     wander_detection: int | None = Field(None, alias="wanderDetection")
 
 
