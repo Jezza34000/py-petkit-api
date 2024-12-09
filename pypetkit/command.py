@@ -157,6 +157,24 @@ class CmdData:
     supported_device: list[str] = field(default_factory=list)
 
 
+def get_endpoint_manual_feed(device):
+    """Get the endpoint for the device"""
+    if device.device_type == FEEDER_MINI:
+        return PetkitEndpoint.MINI_MANUAL_FEED
+    if device.device_type == FEEDER:
+        return PetkitEndpoint.FRESH_ELEMENT_MANUAL_FEED
+    return PetkitEndpoint.MANUAL_FEED
+
+
+def get_endpoint_reset_desiccant(device):
+    """Get the endpoint for the device"""
+    if device.device_type == FEEDER_MINI:
+        return PetkitEndpoint.MINI_DESICCANT_RESET
+    if device.device_type == FEEDER:
+        return PetkitEndpoint.FRESH_ELEMENT_DESICCANT_RESET
+    return PetkitEndpoint.DESICCANT_RESET
+
+
 ACTIONS_MAP = {
     DeviceCommand.UPDATE_SETTING: CmdData(
         endpoint=PetkitEndpoint.UPDATE_SETTING,
@@ -167,15 +185,7 @@ ACTIONS_MAP = {
         supported_device=ALL_DEVICES,
     ),
     FeederCommand.MANUAL_FEED: CmdData(
-        endpoint=lambda device: (
-            PetkitEndpoint.MINI_MANUAL_FEED
-            if device.device_type == FEEDER_MINI
-            else (
-                PetkitEndpoint.FRESH_ELEMENT_MANUAL_FEED
-                if device.device_type == FEEDER
-                else PetkitEndpoint.MANUAL_FEED
-            )
-        ),
+        endpoint=lambda device: get_endpoint_manual_feed(device),
         params=lambda device, setting: {
             "day": datetime.datetime.now().strftime("%Y%m%d"),
             "deviceId": device.id,
@@ -229,15 +239,7 @@ ACTIONS_MAP = {
         supported_device=[FEEDER],
     ),
     FeederCommand.RESET_DESICCANT: CmdData(
-        endpoint=lambda device: (
-            PetkitEndpoint.MINI_DESICCANT_RESET
-            if device.device_type == FEEDER_MINI
-            else (
-                PetkitEndpoint.FRESH_ELEMENT_DESICCANT_RESET
-                if device.device_type == FEEDER
-                else PetkitEndpoint.DESICCANT_RESET
-            )
-        ),
+        endpoint=lambda device: get_endpoint_reset_desiccant(device),
         params=lambda device: {
             "deviceId": device.id,
         },
