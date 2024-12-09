@@ -93,8 +93,20 @@ class PetkitEndpoint(StrEnum):
     GET_DEVICE_RECORD = "getDeviceRecord"
     GET_DEVICE_RECORD_RELEASE = "getDeviceRecordRelease"
     UPDATE_SETTING = "updateSettings"
-    REPLENISHED_FOOD = "added"
-    FRESH_ELEMENT_CALIBRATION = "food_reset"
-    CANCEL_FEED = "cancelRealtimeFeed"
+
+    # Litter Box
     DEODORANT_RESET = "deodorantReset"
     CONTROL_DEVICE = "controlDevice"
+
+    # Feeders
+    REPLENISHED_FOOD = "added"
+    FRESH_ELEMENT_CALIBRATION = "food_reset"
+    FRESH_ELEMENT_CANCEL_FEED = "cancel_realtime_feed"
+    DESICCANT_RESET = "desiccantReset"
+    MINI_DESICCANT_RESET = "feedermini/desiccant_reset"
+    FRESH_ELEMENT_DESICCANT_RESET = "feeder/desiccant_reset"
+    CALL_PET = "callPet"
+    CANCEL_FEED = "cancelRealtimeFeed"
+    MINI_MANUAL_FEED = "feedermini/save_dailyfeed"
+    FRESH_ELEMENT_MANUAL_FEED = "feeder/save_dailyfeed"
+    MANUAL_FEED = "saveDailyFeed"
