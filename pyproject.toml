@@ -186,7 +186,7 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "pypetkit"
+name = "pypetkitapi"
 version = "0.1.0"
 description = "Python client for PetKit API"
 authors = ["Jezza34000 <info@mail.com>"]
