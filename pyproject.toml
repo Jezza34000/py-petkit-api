@@ -11,6 +11,11 @@ keep = []
 required-version = ">=0.6.8"
 
 [tool.ruff.lint]
+
+exclude = [
+    "tests/**"
+]
+
 select = [
     "A001", # Variable {name} is shadowing a Python builtin
     "ASYNC210", # Async functions should not call blocking HTTP methods
@@ -155,6 +160,7 @@ ignore = [
     "PLE0605"
 ]
 
+
 [tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
 mark-parentheses = false
@@ -168,8 +174,6 @@ force-sort-within-sections = true
 combine-as-imports = true
 split-on-trailing-comma = false
 
-[tool.ruff.lint.per-file-ignores]
-"tests/**" = ["PTH"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 25
