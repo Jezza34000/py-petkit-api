@@ -183,6 +183,7 @@ class Feeder(BaseModel):
     p2p_type: int | None = Field(None, alias="p2pType")
     multi_config: bool | None = Field(None, alias="multiConfig")
     device_type: str | None = Field(None, alias="deviceType")
+    manual_feed_id: int = 0
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
