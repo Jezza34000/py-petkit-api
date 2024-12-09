@@ -67,8 +67,16 @@ async def main():
     # Read the devices data
     print(client.device_list)
 
-    # To send command the devices
-    await client.control_device("device", "command", "params")
+    # client.device_list[0] is the first device in the list in this example it's a Feeder
+    # Get the Feeder from the device list
+    my_feeder = client.device_list[0]
+
+    # Send command to the devices
+    ### Example 1 : Turn on the indicator light
+    await client.send_api_request(my_feeder, DeviceCommand.UPDATE_SETTING, {"lightMode": 1})
+
+    ### Example 2 : Feed the pet
+    await client.send_api_request(my_feeder, FeederCommand.MANUAL_FEED, {"amount": 1})
 
 if __name__ == "__main__":
     asyncio.run(main())
