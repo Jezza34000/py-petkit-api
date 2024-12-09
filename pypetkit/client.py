@@ -159,7 +159,7 @@ class PetKitClient:
             headers=await self._generate_header(),
         )
         session_data = response["session"]
-        self._session = SessionInfo.from_dict(session_data)
+        self._session = SessionInfo(**session_data)
 
     async def validate_session(self) -> None:
         """Check if the session is still valid and refresh or re-login if necessary."""
@@ -244,11 +244,11 @@ class PetKitClient:
         _LOGGER.info("Adding device type: %s", device.device_type)
         self.device_list.append(device_data)
 
-    async def control_device(
+    async def send_api_request(
         self,
         device: Feeder | Litter | WaterFountain,
         action: StrEnum,
-        setting: dict,
+        setting: dict | None = None,
     ) -> None:
         """Control the device using the PetKit API."""
 
@@ -275,14 +275,19 @@ class PetKitClient:
                 f"Device type {device.device_type} not supported for action {action}."
             )
 
-        url = f"{device_type}/{action_info.endpoint}"  # TODO: Support many endpoints
+        if callable(action_info.endpoint):
+            endpoint = action_info.endpoint(device)
+        else:
+            endpoint = action_info.endpoint
+        url = f"{device.device_type.lower()}/{endpoint}"
+
         headers = await self._generate_header()
 
         # Use the lambda to generate params
-        if callable(action_info.params):
+        if setting is not None:
             params = action_info.params(device, setting)
         else:
-            params = action_info.params
+            params = action_info.params(device)
 
         prep_req = PrepReq(base_url=self._base_url)
         await prep_req.request(
