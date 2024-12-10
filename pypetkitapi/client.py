@@ -22,7 +22,14 @@ from pypetkitapi.const import (
     PetkitURL,
 )
 from pypetkitapi.containers import AccountData, Device, RegionInfo, SessionInfo
-from pypetkitapi.exceptions import PypetkitError
+from pypetkitapi.exceptions import (
+    PetkitAuthenticationError,
+    PetkitInvalidHTTPResponseCodeError,
+    PetkitInvalidResponseFormat,
+    PetkitRegionalServerNotFoundError,
+    PetkitTimeoutError,
+    PypetkitError,
+)
 from pypetkitapi.feeder_container import Feeder
 from pypetkitapi.litter_container import Litter
 from pypetkitapi.water_fountain_container import WaterFountain
@@ -49,12 +56,13 @@ class PetKitClient:
         """Initialize the PetKit Client."""
         self.username = username
         self.password = password
-        self.region = region
+        self.region = region.lower()
         self.timezone = timezone
 
     async def _generate_header(self) -> dict[str, str]:
         """Create header for interaction with devices."""
         session_id = self._session.id if self._session is not None else ""
+
         return {
             "Accept": Header.ACCEPT.value,
             "Accept-Language": Header.ACCEPT_LANG,
@@ -92,7 +100,11 @@ class PetKitClient:
         _LOGGER.debug("Finding region server for region: %s", self.region)
 
         regional_server = next(
-            (server for server in self._servers_list if server.name == self.region),
+            (
+                server
+                for server in self._servers_list
+                if server.name.lower() == self.region
+            ),
             None,
         )
 
@@ -102,7 +114,7 @@ class PetKitClient:
             )
             self._base_url = regional_server.gateway
             return
-        _LOGGER.debug("Region %s not found in server list", self.region)
+        raise PetkitRegionalServerNotFoundError(self.region)
 
     async def request_login_code(self) -> bool:
         """Request a login code to be sent to the user's email."""
@@ -334,14 +346,7 @@ class PrepReq:
                     data=data,
                     headers=_headers,
                 ) as resp:
-                    response = await resp.json()
-                    if ERR_KEY in response:
-                        error_msg = response[ERR_KEY].get("msg", "Unknown error")
-                        raise PypetkitError(f"Request failed: {error_msg}")
-                    if RES_KEY in response:
-                        _LOGGER.debug("Request response: %s", response)
-                        return response[RES_KEY]
-                    raise PypetkitError("Unexpected response format")
+                    return await self._handle_response(resp, _url)
             except ContentTypeError:
                 """If we get an error, lets log everything for debugging."""
                 try:
@@ -353,3 +358,41 @@ class PrepReq:
                 _LOGGER.info("Resp raw: %s", resp_raw)
                 # Still raise the err so that it's clear it failed.
                 raise
+            except TimeoutError:
+                raise PetkitTimeoutError("The request timed out") from None
+
+    @staticmethod
+    async def _handle_response(response: aiohttp.ClientResponse, url: str) -> dict:
+        """Handle the response from the PetKit API."""
+
+        try:
+            response.raise_for_status()
+        except aiohttp.ClientResponseError as e:
+            raise PetkitInvalidHTTPResponseCodeError(
+                f"Request failed with status code {e.status}"
+            ) from e
+
+        try:
+            response_json = await response.json()
+        except ContentTypeError:
+            raise PetkitInvalidResponseFormat(
+                "Response is not in JSON format"
+            ) from None
+
+        if ERR_KEY in response_json:
+            error_msg = response_json[ERR_KEY].get("msg", "Unknown error")
+            if any(
+                endpoint in url
+                for endpoint in [
+                    PetkitEndpoint.LOGIN,
+                    PetkitEndpoint.GET_LOGIN_CODE,
+                    PetkitEndpoint.REFRESH_SESSION,
+                ]
+            ):
+                raise PetkitAuthenticationError(f"Login failed: {error_msg}")
+            raise PypetkitError(f"Request failed: {error_msg}")
+
+        if RES_KEY in response_json:
+            return response_json[RES_KEY]
+
+        raise PypetkitError("Unexpected response format")
