@@ -187,7 +187,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "pypetkitapi"
-version = "0.1.0"
+version = "0.1.1"
 description = "Python client for PetKit API"
 authors = ["Jezza34000 <info@mail.com>"]
 readme = "README.md"
@@ -217,6 +217,7 @@ push = true
 
 [tool.bumpver.file_patterns]
 "pyproject.toml" = [
+    'version = "{version}"',
     'current_version = "{version}"',
 ]
 
