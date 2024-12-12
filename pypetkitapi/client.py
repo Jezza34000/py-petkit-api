@@ -1,5 +1,6 @@
 """Pypetkit Client: A Python library for interfacing with PetKit"""
 
+import asyncio
 from datetime import datetime, timedelta
 from enum import StrEnum
 import hashlib
@@ -212,6 +213,7 @@ class PetKitClient:
 
     async def get_devices_data(self) -> None:
         """Get the devices data from the PetKit servers."""
+        start_time = datetime.now()
         if not self.account_data:
             await self._get_account_data()
 
@@ -222,18 +224,24 @@ class PetKitClient:
                 device_list.extend(account.device_list)
 
         _LOGGER.debug("Fetch %s devices for this account", len(device_list))
+
+        tasks = []
         for device in device_list:
             _LOGGER.debug("Fetching devices data: %s", device)
             device_type = device.device_type.lower()
-            # TODO: Fetch device records
             if device_type in DEVICES_FEEDER:
-                await self._fetch_device_data(device, Feeder)
+                tasks.append(self._fetch_device_data(device, Feeder))
             elif device_type in DEVICES_LITTER_BOX:
-                await self._fetch_device_data(device, Litter)
+                tasks.append(self._fetch_device_data(device, Litter))
             elif device_type in DEVICES_WATER_FOUNTAIN:
-                await self._fetch_device_data(device, WaterFountain)
+                tasks.append(self._fetch_device_data(device, WaterFountain))
             else:
                 _LOGGER.warning("Unknown device type: %s", device_type)
+        await asyncio.gather(*tasks)
+
+        end_time = datetime.now()
+        total_time = end_time - start_time
+        _LOGGER.debug("Petkit fetch took : %s", total_time)
 
     async def _fetch_device_data(
         self,
