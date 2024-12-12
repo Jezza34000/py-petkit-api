@@ -106,6 +106,7 @@ class PetKitClient:
                 server
                 for server in self._servers_list
                 if server.name.lower() == self.region
+                or server.id.lower() == self.region
             ),
             None,
         )
