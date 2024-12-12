@@ -18,6 +18,7 @@ from pypetkitapi.const import (
     ERR_KEY,
     LOGIN_DATA,
     RES_KEY,
+    SUCCESS_KEY,
     Header,
     PetkitEndpoint,
     PetkitURL,
@@ -45,7 +46,7 @@ class PetKitClient:
     _session: SessionInfo | None = None
     _servers_list: list[RegionInfo] = []
     account_data: list[AccountData] = []
-    device_list: list[Feeder | Litter | WaterFountain] = []
+    device_list: dict[int, Feeder | Litter | WaterFountain] = {}
 
     def __init__(
         self,
@@ -263,22 +264,28 @@ class PetKitClient:
         )
         device_data = data_class(**response)
         device_data.device_type = device.device_type  # Add the device_type attribute
-        _LOGGER.debug("Reading device type : %s", device.device_type)
-        self.device_list.append(device_data)
+        _LOGGER.debug(
+            "Reading device type : %s (id=%s)", device.device_type, device.device_id
+        )
+        self.device_list[device.device_id] = device_data
 
     async def send_api_request(
         self,
-        device: Feeder | Litter | WaterFountain,
+        device_id: int,
         action: StrEnum,
         setting: dict | None = None,
     ) -> None:
         """Control the device using the PetKit API."""
+        device = self.device_list.get(device_id)
+        if not device:
+            raise PypetkitError(f"Device with ID {device_id} not found.")
 
         _LOGGER.debug(
-            "Control API: %s %s %s",
+            "Control API device=%s id=%s action=%s param=%s",
+            device.device_type,
+            device_id,
             action,
             setting,
-            device,
         )
 
         if device.device_type:
@@ -312,12 +319,16 @@ class PetKitClient:
             params = action_info.params(device)
 
         prep_req = PrepReq(base_url=self._base_url)
-        await prep_req.request(
+        res = await prep_req.request(
             method=HTTPMethod.POST,
             url=url,
             data=params,
             headers=headers,
         )
+        if res == SUCCESS_KEY:
+            _LOGGER.info("Command executed successfully")
+        else:
+            _LOGGER.error("Command execution failed")
 
 
 class PrepReq:
