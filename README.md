@@ -2,10 +2,6 @@
 
 ---
 
-# WIP - UNDER DEVELOPMENT
-
----
-
 [![PyPI](https://img.shields.io/pypi/v/pypetkitapi.svg)][pypi_]
 [![Python Version](https://img.shields.io/pypi/pyversions/pypetkitapi)][python version]
 
@@ -55,29 +51,29 @@ logging.basicConfig(level=logging.DEBUG)
 
 async def main():
     client = PetKitClient(
-        username="username",  # Your PetKit account username
+        username="username",  # Your PetKit account username or id
         password="password",  # Your PetKit account password
-        region="France",  # Your region
+        region="France",  # Your region or country code (e.g. FR, US, etc.)
         timezone="Europe/Paris",  # Your timezone
     )
 
     # To get the account and devices data attached to the account
     await client.get_devices_data()
+
     # Read the account data
     print(client.account_data)
+
     # Read the devices data
     print(client.device_list)
 
-    # client.device_list[0] is the first device in the list in this example it's a Feeder
-    # Get the Feeder from the device list
-    my_feeder = client.device_list[0]
-
     # Send command to the devices
     ### Example 1 : Turn on the indicator light
-    await client.send_api_request(my_feeder, DeviceCommand.UPDATE_SETTING, {"lightMode": 1})
+    ### Device_ID, Command, Payload
+    await client.send_api_request(012346789, DeviceCommand.UPDATE_SETTING, {"lightMode": 1})
 
     ### Example 2 : Feed the pet
-    await client.send_api_request(my_feeder, FeederCommand.MANUAL_FEED, {"amount": 1})
+    ### Device_ID, Command, Payload
+    await client.send_api_request(0123467, FeederCommand.MANUAL_FEED, {"amount": 1})
 
 
 if __name__ == "__main__":
