@@ -136,6 +136,8 @@ class PetKitClient:
         # Retrieve the list of servers
         await self._get_base_url()
 
+        _LOGGER.debug("Logging in to PetKit server")
+
         # Prepare the data to send
         data = LOGIN_DATA.copy()
         data["encrypt"] = "1"
@@ -219,7 +221,7 @@ class PetKitClient:
             if account.device_list:
                 device_list.extend(account.device_list)
 
-        _LOGGER.info("%s devices found for this account", len(device_list))
+        _LOGGER.debug("Fetch %s devices for this account", len(device_list))
         for device in device_list:
             _LOGGER.debug("Fetching devices data: %s", device)
             device_type = device.device_type.lower()
@@ -253,7 +255,7 @@ class PetKitClient:
         )
         device_data = data_class(**response)
         device_data.device_type = device.device_type  # Add the device_type attribute
-        _LOGGER.info("Adding device type: %s", device.device_type)
+        _LOGGER.debug("Reading device type : %s", device.device_type)
         self.device_list.append(device_data)
 
     async def send_api_request(
