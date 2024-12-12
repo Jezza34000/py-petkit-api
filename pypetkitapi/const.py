@@ -35,6 +35,7 @@ class PetkitURL(StrEnum):
     """Petkit URL constants"""
 
     REGION_SRV = "https://passport.petkt.com/v1/regionservers"
+    CHINA_SRV = "https://api.petkit.cn/6/"
 
 
 class Client(StrEnum):

@@ -26,7 +26,7 @@ class SessionInfo(BaseModel):
     id: str
     user_id: str = Field(alias="userId")
     expires_in: int = Field(alias="expiresIn")
-    region: str
+    region: str | None = None
     created_at: str = Field(alias="createdAt")
 
 
