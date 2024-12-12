@@ -100,9 +100,9 @@ class WaterFountain(BaseModel):
     filter_expected_days: int | None = Field(None, alias="filterExpectedDays")
     filter_percent: int | None = Field(None, alias="filterPercent")
     filter_warning: int | None = Field(None, alias="filterWarning")
-    firmware: int | None = None
-    hardware: int | None = None
-    id: int | None = None
+    firmware: float
+    hardware: int
+    id: int
     is_night_no_disturbing: int | None = Field(None, alias="isNightNoDisturbing")
     lack_warning: int | None = Field(None, alias="lackWarning")
     locale: str | None = None
@@ -110,14 +110,14 @@ class WaterFountain(BaseModel):
     mac: str | None = None
     mode: int | None = None
     module_status: int | None = Field(None, alias="moduleStatus")
-    name: str | None = None
+    name: str
     record_automatic_add_water: int | None = Field(
         None, alias="recordAutomaticAddWater"
     )
     schedule: Schedule | None = None
     secret: str | None = None
     settings: SettingsFountain | None = None
-    sn: str | None = None
+    sn: str
     status: Status | None = None
     sync_time: str | None = Field(None, alias="syncTime")
     timezone: float | None = None

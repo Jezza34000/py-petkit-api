@@ -91,6 +91,7 @@ class StateLitter(BaseModel):
     box_full: bool | None = Field(None, alias="boxFull")
     box_state: int | None = Field(None, alias="boxState")
     deodorant_left_days: int | None = Field(None, alias="deodorantLeftDays")
+    error_msg: str | None = Field(None, alias="errorMsg")
     frequent_restroom: int | None = Field(None, alias="frequentRestroom")
     liquid_empty: bool | None = Field(None, alias="liquidEmpty")
     liquid_lack: bool | None = Field(None, alias="liquidLack")
@@ -140,10 +141,10 @@ class Litter(BaseModel):
     auto_upgrade: int | None = Field(None, alias="autoUpgrade")
     bt_mac: str | None = Field(None, alias="btMac")
     created_at: str | None = Field(None, alias="createdAt")
-    firmware: str | None = None
-    firmware_details: list[FirmwareDetail] | None = Field(None, alias="firmwareDetails")
-    hardware: int | None = None
-    id: int | None = None
+    firmware: float
+    firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
+    hardware: int
+    id: int
     is_pet_out_tips: int | None = Field(None, alias="isPetOutTips")
     locale: str | None = None
     mac: str | None = None
@@ -156,7 +157,7 @@ class Litter(BaseModel):
     settings: SettingsLitter | None = None
     share_open: int | None = Field(None, alias="shareOpen")
     signup_at: str | None = Field(None, alias="signupAt")
-    sn: str | None = None
+    sn: str
     state: StateLitter | None = None
     timezone: float | None = None
     cloud_product: CloudProduct | None = Field(None, alias="cloudProduct")  # For T5/T6

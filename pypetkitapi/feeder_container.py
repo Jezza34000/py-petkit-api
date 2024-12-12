@@ -141,6 +141,7 @@ class StateFeeder(BaseModel):
     door: int | None = None
     feed_state: FeedState | None = Field(None, alias="feedState")
     feeding: int | None = None
+    error_msg: str | None = Field(None, alias="errorMsg")
     ota: int | None = None
     overall: int | None = None
     pim: int | None = None
@@ -163,10 +164,10 @@ class Feeder(BaseModel):
     bt_mac: str | None = Field(None, alias="btMac")
     cloud_product: CloudProduct | None = Field(None, alias="cloudProduct")
     created_at: str | None = Field(None, alias="createdAt")
-    firmware: str | None = None
-    firmware_details: list[FirmwareDetail] | None = Field(None, alias="firmwareDetails")
-    hardware: int | None = None
-    id: int | None = None
+    firmware: float
+    firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
+    hardware: int
+    id: int
     locale: str | None = None
     mac: str | None = None
     model_code: int | None = Field(None, alias="modelCode")
@@ -177,7 +178,7 @@ class Feeder(BaseModel):
     settings: SettingsFeeder | None = None
     share_open: int | None = Field(None, alias="shareOpen")
     signup_at: str | None = Field(None, alias="signupAt")
-    sn: str | None = None
+    sn: str
     state: StateFeeder | None = None
     timezone: float | None = None
     p2p_type: int | None = Field(None, alias="p2pType")
