@@ -22,8 +22,8 @@ class PetkitRegionalServerNotFoundError(PypetkitError):
         """Initialize the exception."""
         self.region = region
         self.message = (
-            f"Region you provided: '{region}' was not found in the server list. "
-            f"Are you sure you provided the correct region?"
+            f"Region you provided: '{region}' was not found in the Petkit's server list. "
+            f"Are you sure you provided the correct region ?"
         )
         super().__init__(self.message)
 

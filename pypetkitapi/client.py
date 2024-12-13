@@ -101,6 +101,7 @@ class PetKitClient:
         await self._get_api_server_list()
         _LOGGER.debug("Finding region server for region: %s", self.region)
 
+        # TODO : Improve this
         if self.region == "china":
             self._base_url = PetkitURL.CHINA_SRV
             return
@@ -117,7 +118,7 @@ class PetKitClient:
 
         if regional_server:
             _LOGGER.debug(
-                "Found server %s for region : %s", regional_server, self.region
+                "Using server %s for region : %s", regional_server, self.region
             )
             self._base_url = regional_server.gateway
             return
