@@ -160,10 +160,10 @@ class CmdData:
 def get_endpoint_manual_feed(device):
     """Get the endpoint for the device"""
     if device.device_type == FEEDER_MINI:
-        return PetkitEndpoint.MINI_MANUAL_FEED
+        return PetkitEndpoint.MANUAL_FEED_MINI
     if device.device_type == FEEDER:
-        return PetkitEndpoint.FRESH_ELEMENT_MANUAL_FEED
-    return PetkitEndpoint.MANUAL_FEED
+        return PetkitEndpoint.MANUAL_FEED_FRESH_ELEMENT
+    return PetkitEndpoint.MANUAL_FEED_DUAL
 
 
 def get_endpoint_reset_desiccant(device):
@@ -195,7 +195,7 @@ ACTIONS_MAP = {
         supported_device=DEVICES_FEEDER,  # TODO: Check if this is correct
     ),
     FeederCommand.MANUAL_FEED_DUAL: CmdData(
-        endpoint=PetkitEndpoint.UPDATE_SETTING,
+        endpoint=PetkitEndpoint.MANUAL_FEED_DUAL,
         params=lambda device, setting: {
             "day": datetime.datetime.now().strftime("%Y%m%d"),
             "deviceId": device.id,
@@ -203,7 +203,7 @@ ACTIONS_MAP = {
             "time": "-1",
             **setting,
         },
-        supported_device=ALL_DEVICES,
+        supported_device=[D4S, D4SH],
     ),
     FeederCommand.CANCEL_MANUAL_FEED: CmdData(
         endpoint=lambda device: (
