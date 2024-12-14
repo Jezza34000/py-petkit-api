@@ -15,6 +15,21 @@ class RegionInfo(BaseModel):
     name: str
 
 
+class BleRelay(BaseModel):
+    """Dataclass for BLE relay devices
+    Fetched from the API endpoint :
+        - ble/ownSupportBleDevices
+    """
+
+    id: int
+    low_version: int = Field(alias="lowVersion")
+    mac: str
+    name: str
+    pim: int
+    sn: str
+    type_id: int = Field(alias="typeId")
+
+
 class SessionInfo(BaseModel):
     """Dataclass for session data.
     Fetched from the API endpoint :
