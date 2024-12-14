@@ -133,11 +133,12 @@ class StateLitter(BaseModel):
 class WorkState(BaseModel):
     """Dataclass for work state data."""
 
-    safe_warn: int = Field(alias="safeWarn")
-    stop_time: int = Field(alias="stopTime")
-    work_mode: int = Field(alias="workMode")
-    work_process: int = Field(alias="workProcess")
-    work_reason: int = Field(alias="workReason")
+    safe_warn: int | None = Field(None, alias="safeWarn")
+    stop_time: int | None = Field(None, alias="stopTime")
+    work_mode: int | None = Field(None, alias="workMode")
+    work_process: int | None = Field(None, alias="workProcess")
+    work_reason: int | None = Field(None, alias="workReason")
+    pet_in_time: int | None = Field(None, alias="petInTime")
 
 
 class Litter(BaseModel):
