@@ -82,6 +82,17 @@ class SettingsLitter(BaseModel):
     wander_detection: int | None = Field(None, alias="wanderDetection")
 
 
+class WorkState(BaseModel):
+    """Dataclass for work state data."""
+
+    safe_warn: int | None = Field(None, alias="safeWarn")
+    stop_time: int | None = Field(None, alias="stopTime")
+    work_mode: int | None = Field(None, alias="workMode")
+    work_process: int | None = Field(None, alias="workProcess")
+    work_reason: int | None = Field(None, alias="workReason")
+    pet_in_time: int | None = Field(None, alias="petInTime")
+
+
 class StateLitter(BaseModel):
     """Dataclass for state.
     -> LitterData subclass.
@@ -128,17 +139,7 @@ class StateLitter(BaseModel):
     seal_door_state: int | None = Field(None, alias="sealDoorState")
     top_ins: int | None = Field(None, alias="topIns")
     wander_time: int | None = Field(None, alias="wanderTime")
-
-
-class WorkState(BaseModel):
-    """Dataclass for work state data."""
-
-    safe_warn: int | None = Field(None, alias="safeWarn")
-    stop_time: int | None = Field(None, alias="stopTime")
-    work_mode: int | None = Field(None, alias="workMode")
-    work_process: int | None = Field(None, alias="workProcess")
-    work_reason: int | None = Field(None, alias="workReason")
-    pet_in_time: int | None = Field(None, alias="petInTime")
+    work_state: WorkState | None = Field(None, alias="workState")
 
 
 class Litter(BaseModel):
@@ -182,7 +183,6 @@ class Litter(BaseModel):
     service_status: int | None = Field(None, alias="serviceStatus")
     total_time: int | None = Field(None, alias="totalTime")
     device_type: str | None = Field(None, alias="deviceType")
-    work_state: WorkState | None = Field(None, alias="workState")
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
