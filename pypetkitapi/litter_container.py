@@ -133,6 +133,7 @@ class StateLitter(BaseModel):
 class WorkState(BaseModel):
     """Dataclass for work state data."""
 
+    safe_warn: int = Field(alias="safeWarn")
     stop_time: int = Field(alias="stopTime")
     work_mode: int = Field(alias="workMode")
     work_process: int = Field(alias="workProcess")
