@@ -154,6 +154,19 @@ class StateFeeder(BaseModel):
     conservation_status: int | None = Field(None, alias="conservationStatus")
 
 
+class ManualFeed(BaseModel):
+    """Dataclass for result data."""
+
+    amount1: int | None = None
+    amount2: int | None = None
+    id: str | None = None
+    is_executed: int | None = Field(None, alias="isExecuted")
+    is_need_upload_video: int | None = Field(None, alias="isNeedUploadVideo")
+    src: int | None = None
+    status: int | None = None
+    time: int | None = None
+
+
 class Feeder(BaseModel):
     """Dataclass for feeder data."""
 
@@ -184,7 +197,7 @@ class Feeder(BaseModel):
     p2p_type: int | None = Field(None, alias="p2pType")
     multi_config: bool | None = Field(None, alias="multiConfig")
     device_type: str | None = Field(None, alias="deviceType")
-    manual_feed_id: int = 0
+    manual_feed: ManualFeed | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
