@@ -9,6 +9,7 @@ import json
 from pypetkitapi.const import (
     ALL_DEVICES,
     D3,
+    D4,
     D4H,
     D4S,
     D4SH,
@@ -44,6 +45,7 @@ class FeederCommand(StrEnum):
 class LitterCommand(StrEnum):
     """LitterCommand"""
 
+    POWER = "power"
     CONTROL_DEVICE = "control_device"
     RESET_DEODORIZER = "reset_deodorizer"
 
@@ -52,6 +54,12 @@ class PetCommand(StrEnum):
     """PetCommand"""
 
     UPDATE_SETTING = "update_setting"
+
+
+class FountainCommand(StrEnum):
+    """Fountain Command"""
+
+    CONTROL_DEVICE = "control_device"
 
 
 class LitterBoxCommand(StrEnum):
@@ -148,6 +156,43 @@ LB_CMD_TO_VALUE = {
 }
 
 
+class FountainAction(StrEnum):
+    """Fountain Action"""
+
+    PAUSE = "Pause"
+    NORMAL_TO_PAUSE = "Normal To Pause"
+    SMART_TO_PAUSE = "Smart To Pause"
+    NORMAL = "Normal"
+    SMART = "Smart"
+    RESET_FILTER = "Reset Filter"
+    DO_NOT_DISTURB = "Do Not Disturb"
+    DO_NOT_DISTURB_OFF = "Do Not Disturb Off"
+    FIRST_BLE_CMND = "First BLE Command"
+    SECOND_BLE_CMND = "Second BLE Command"
+    LIGHT_LOW = "Light Low"
+    LIGHT_MEDIUM = "Light Medium"
+    LIGHT_HIGH = "Light High"
+    LIGHT_ON = "Light On"
+    LIGHT_OFF = "Light Off"
+
+
+FOUNTAIN_COMMAND_TO_CODE = {
+    FountainAction.DO_NOT_DISTURB: "221",
+    FountainAction.DO_NOT_DISTURB_OFF: "221",
+    FountainAction.LIGHT_ON: "221",
+    FountainAction.LIGHT_OFF: "221",
+    FountainAction.LIGHT_LOW: "221",
+    FountainAction.LIGHT_MEDIUM: "221",
+    FountainAction.LIGHT_HIGH: "221",
+    FountainAction.PAUSE: "220",
+    FountainAction.RESET_FILTER: "222",
+    FountainAction.NORMAL: "220",
+    FountainAction.NORMAL_TO_PAUSE: "220",
+    FountainAction.SMART: "220",
+    FountainAction.SMART_TO_PAUSE: "220",
+}
+
+
 @dataclass
 class CmdData:
     """Command Info"""
@@ -192,7 +237,7 @@ ACTIONS_MAP = {
             "time": "-1",
             **setting,
         },
-        supported_device=DEVICES_FEEDER,  # TODO: Check if this is correct
+        supported_device=[FEEDER, FEEDER_MINI, D3, D4, D4H],
     ),
     FeederCommand.MANUAL_FEED_DUAL: CmdData(
         endpoint=PetkitEndpoint.MANUAL_FEED_DUAL,
@@ -259,7 +304,15 @@ ACTIONS_MAP = {
         },
         supported_device=[D3],
     ),
-    # TODO : Find how to support power ON/OFF
+    LitterCommand.POWER: CmdData(
+        endpoint=PetkitEndpoint.CONTROL_DEVICE,
+        params=lambda device, setting: {
+            "id": device.id,
+            "kv": json.dumps(setting),
+            "type": "power",
+        },
+        supported_device=[T3, T4, T5, T6],
+    ),
     LitterCommand.CONTROL_DEVICE: CmdData(
         endpoint=PetkitEndpoint.CONTROL_DEVICE,
         params=lambda device, command: {
@@ -269,22 +322,21 @@ ACTIONS_MAP = {
         },
         supported_device=[T3, T4, T5, T6],
     ),
-    # TODO : Find how to support Pet Setting with send_api_request
-    # PetCommand.UPDATE_SETTING: CmdData(
-    #     endpoint=PetkitEndpoint.CONTROL_DEVICE,
-    #     params=lambda pet, setting: {
-    #         "petId": pet,
-    #         "kv": json.dumps(setting),
-    #     },
-    #     supported_device=ALL_DEVICES,
-    # ),
+    PetCommand.UPDATE_SETTING: CmdData(
+        endpoint=PetkitEndpoint.CONTROL_DEVICE,
+        params=lambda pet, setting: {
+            "petId": pet,
+            "kv": json.dumps(setting),
+        },
+        supported_device=ALL_DEVICES,
+    ),
     # FountainCommand.CONTROL_DEVICE: CmdData(
     #     endpoint=PetkitEndpoint.CONTROL_DEVICE,
     #     params=lambda device, setting: {
-    #         "bleId": water_fountain.data["id"],
+    #         "bleId": device.id,
     #         "cmd": cmnd_code,
     #         "data": ble_data,
-    #         "mac": water_fountain.data["mac"],
+    #         "mac": device.mac,
     #         "type": water_fountain.ble_relay,
     #     },
     #     supported_device=[CTW3],
