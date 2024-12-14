@@ -46,6 +46,7 @@ class PetKitClient:
     _session: SessionInfo | None = None
     _servers_list: list[RegionInfo] = []
     account_data: list[AccountData] = []
+    # TODO : Adding pet as entity ?
     device_list: dict[int, Feeder | Litter | WaterFountain] = {}
 
     def __init__(
@@ -279,7 +280,7 @@ class PetKitClient:
         self,
         device_id: int,
         action: StrEnum,
-        setting: dict | None = None,
+        setting: dict | StrEnum | None = None,
     ) -> None:
         """Control the device using the PetKit API."""
         device = self.device_list.get(device_id)
@@ -331,7 +332,8 @@ class PetKitClient:
             data=params,
             headers=headers,
         )
-        if res == SUCCESS_KEY:
+        if res in (SUCCESS_KEY, RES_KEY):
+            # TODO : Manage to get the response from manul feeding
             _LOGGER.info("Command executed successfully")
         else:
             _LOGGER.error("Command execution failed")
