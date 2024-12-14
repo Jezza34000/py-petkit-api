@@ -95,9 +95,17 @@ class PetkitEndpoint(StrEnum):
     GET_DEVICE_RECORD_RELEASE = "getDeviceRecordRelease"
     UPDATE_SETTING = "updateSettings"
 
+    # Bluetooth relay
+    BLE_AS_RELAY = "ble/ownSupportBleDevices"
+    BLE_CONNECT = "ble/connect"
+    BLE_POLL = "ble/poll"
+    BLE_CANCEL = "ble/cancel"
+
+    # Fountain & Litter Box
+    CONTROL_DEVICE = "controlDevice"
+
     # Litter Box
     DEODORANT_RESET = "deodorantReset"
-    CONTROL_DEVICE = "controlDevice"
 
     # Feeders
     REPLENISHED_FOOD = "added"
