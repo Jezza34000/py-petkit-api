@@ -130,6 +130,15 @@ class StateLitter(BaseModel):
     wander_time: int | None = Field(None, alias="wanderTime")
 
 
+class WorkState(BaseModel):
+    """Dataclass for work state data."""
+
+    stop_time: int = Field(alias="stopTime")
+    work_mode: int = Field(alias="workMode")
+    work_process: int = Field(alias="workProcess")
+    work_reason: int = Field(alias="workReason")
+
+
 class Litter(BaseModel):
     """Dataclass for Litter Data.
     Supported devices = T4, T6
@@ -171,6 +180,7 @@ class Litter(BaseModel):
     service_status: int | None = Field(None, alias="serviceStatus")
     total_time: int | None = Field(None, alias="totalTime")
     device_type: str | None = Field(None, alias="deviceType")
+    work_state: WorkState | None = Field(None, alias="workState")
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
