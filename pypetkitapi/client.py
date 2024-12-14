@@ -280,7 +280,7 @@ class PetKitClient:
         self,
         device_id: int,
         action: StrEnum,
-        setting: dict | StrEnum | None = None,
+        setting: dict | None = None,
     ) -> None:
         """Control the device using the PetKit API."""
         device = self.device_list.get(device_id)
@@ -333,7 +333,7 @@ class PetKitClient:
             headers=headers,
         )
         if res in (SUCCESS_KEY, RES_KEY):
-            # TODO : Manage to get the response from manul feeding
+            # TODO : Manage to get the response from manual feeding
             _LOGGER.info("Command executed successfully")
         else:
             _LOGGER.error("Command execution failed")
