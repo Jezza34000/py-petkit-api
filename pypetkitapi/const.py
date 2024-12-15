@@ -9,6 +9,9 @@ RES_KEY = "result"
 ERR_KEY = "error"
 SUCCESS_KEY = "success"
 
+DEVICE_RECORDS = "deviceRecords"
+DEVICE_DATA = "deviceData"
+
 # PetKit Models
 FEEDER = "feeder"
 FEEDER_MINI = "feedermini"
@@ -89,6 +92,8 @@ class PetkitEndpoint(StrEnum):
     REFRESH_SESSION = "user/refreshsession"
     FAMILY_LIST = "group/family/list"
     REFRESH_HOME_V2 = "refreshHomeV2"
+
+    # Common to many device
     DEVICE_DETAIL = "device_detail"
     DEVICE_DATA = "deviceData"
     GET_DEVICE_RECORD = "getDeviceRecord"
@@ -103,6 +108,7 @@ class PetkitEndpoint(StrEnum):
 
     # Fountain & Litter Box
     CONTROL_DEVICE = "controlDevice"
+    GET_WORK_RECORD = "getWorkRecord"
 
     # Litter Box
     DEODORANT_RESET = "deodorantReset"
