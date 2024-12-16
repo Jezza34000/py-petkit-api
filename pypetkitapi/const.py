@@ -34,10 +34,10 @@ DEVICES_WATER_FOUNTAIN = [W5, CTW3]
 ALL_DEVICES = [*DEVICES_LITTER_BOX, *DEVICES_FEEDER, *DEVICES_WATER_FOUNTAIN]
 
 
-class PetkitURL(StrEnum):
+class PetkitDomain(StrEnum):
     """Petkit URL constants"""
 
-    REGION_SRV = "https://passport.petkt.com/v1/regionservers"
+    PASSPORT_PETKIT = "https://passport.petkt.com/"
     CHINA_SRV = "https://api.petkit.cn/6/"
 
 
@@ -61,7 +61,7 @@ class Header(StrEnum):
     AGENT = "okhttp/3.12.11"
     CLIENT = f"{Client.PLATFORM_TYPE}({Client.OS_VERSION};{Client.MODEL_NAME})"
     TIMEZONE = "1.0"
-    TIMEZONE_ID = "Europe/Paris"  # TODO: Make this dynamic, check if this really matters (record hours?)
+    TIMEZONE_ID = "Europe/Paris"  # TODO: Make this dynamic
     LOCALE = "en-US"
     IMG_VERSION = "1.0"
     HOUR = "24"
@@ -74,7 +74,7 @@ CLIENT_NFO = {
     "platform": Client.PLATFORM_TYPE.value,
     "source": Client.SOURCE.value,
     "timezone": Header.TIMEZONE.value,  # TODO: Make this dynamic
-    "timezoneId": Header.TIMEZONE_ID.value,  # TODO: Make this dynamic
+    "timezoneId": Header.TIMEZONE_ID.value,
     "version": Header.API_VERSION.value,
 }
 
@@ -87,6 +87,7 @@ LOGIN_DATA = {
 class PetkitEndpoint(StrEnum):
     """Petkit Endpoint constants"""
 
+    REGION_SERVERS = "v1/regionservers"
     LOGIN = "user/login"
     GET_LOGIN_CODE = "user/sendcodeforquicklogin"
     REFRESH_SESSION = "user/refreshsession"
