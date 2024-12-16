@@ -66,9 +66,10 @@ class Pet(BaseModel):
     """
 
     avatar: str | None = None
-    created_at: int | None = Field(None, alias="createdAt")
-    pet_id: int | None = Field(None, alias="petId")
+    created_at: int = Field(alias="createdAt")
+    pet_id: int = Field(alias="petId")
     pet_name: str | None = Field(None, alias="petName")
+    device_type: str = "pet"
 
 
 class User(BaseModel):
