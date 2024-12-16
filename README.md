@@ -42,38 +42,42 @@ pip install pypetkitapi
 ## Usage Example:
 
 ```python
-import asyncio
-import logging
+import aiohttp
 from pypetkitapi.client import PetKitClient
+from pypetkitapi.command import DeviceCommand, FeederCommand, LBCommand, LBAction, LitterCommand
 
 logging.basicConfig(level=logging.DEBUG)
 
-
 async def main():
-    client = PetKitClient(
-        username="username",  # Your PetKit account username or id
-        password="password",  # Your PetKit account password
-        region="France",  # Your region or country code (e.g. FR, US, etc.)
-        timezone="Europe/Paris",  # Your timezone
-    )
+    async with aiohttp.ClientSession() as session:
+        client = PetKitClient(
+            username="username",  # Your PetKit account username or id
+            password="password",  # Your PetKit account password
+            region="FR",  # Your region or country code (e.g. FR, US, etc.)
+            timezone="Europe/Paris",  # Your timezone
+            session=session,
+        )
 
-    # To get the account and devices data attached to the account
-    await client.get_devices_data()
+        await client.get_devices_data()
 
-    # Read the account data
-    print(client.account_data)
+        # Read the account data
+        print(client.account_data)
 
-    # Read the devices data
-    print(client.device_list)
+        # Read the devices data
+        print(client.petkit_entities)
 
-    # Send command to the devices
-    ### Example 1 : Turn on the indicator light
-    ### Device_ID, Command, Payload
-    await client.send_api_request(012346789, DeviceCommand.UPDATE_SETTING, {"lightMode": 1})
+        # Send command to the devices
+        ### Example 1 : Turn on the indicator light
+        ### Device_ID, Command, Payload
+        await client.send_api_request(123456789, DeviceCommand.UPDATE_SETTING, {"lightMode": 1})
 
-    ### Example 2 : Feed the pet
-    ### Device_ID, Command, Payload
-    await client.send_api_request(0123467, FeederCommand.MANUAL_FEED, {"amount": 1})
+        ### Example 2 : Feed the pet
+        ### Device_ID, Command, Payload
+        await client.send_api_request(123456789, FeederCommand.MANUAL_FEED, {"amount": 1})
+
+        ### Example 3 : Start the cleaning process
+        ### Device_ID, Command, Payload
+        await client.send_api_request(123456789, LitterCommand.CONTROL_DEVICE, {LBAction.START: LBCommand.CLEANING})
 
 
 if __name__ == "__main__":
