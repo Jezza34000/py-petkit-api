@@ -12,6 +12,8 @@ from aiohttp import ContentTypeError
 
 from pypetkitapi.command import ACTIONS_MAP
 from pypetkitapi.const import (
+    DEVICE_DATA,
+    DEVICE_RECORDS,
     DEVICES_FEEDER,
     DEVICES_LITTER_BOX,
     DEVICES_WATER_FOUNTAIN,
@@ -23,7 +25,7 @@ from pypetkitapi.const import (
     PetkitEndpoint,
     PetkitURL,
 )
-from pypetkitapi.containers import AccountData, Device, RegionInfo, SessionInfo
+from pypetkitapi.containers import AccountData, Device, Pet, RegionInfo, SessionInfo
 from pypetkitapi.exceptions import (
     PetkitAuthenticationError,
     PetkitInvalidHTTPResponseCodeError,
@@ -32,9 +34,9 @@ from pypetkitapi.exceptions import (
     PetkitTimeoutError,
     PypetkitError,
 )
-from pypetkitapi.feeder_container import Feeder
-from pypetkitapi.litter_container import Litter
-from pypetkitapi.water_fountain_container import WaterFountain
+from pypetkitapi.feeder_container import Feeder, FeederRecord
+from pypetkitapi.litter_container import Litter, LitterRecord
+from pypetkitapi.water_fountain_container import WaterFountain, WaterFountainRecord
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,8 +48,10 @@ class PetKitClient:
     _session: SessionInfo | None = None
     _servers_list: list[RegionInfo] = []
     account_data: list[AccountData] = []
-    # TODO : Adding pet as entity ?
-    device_list: dict[int, Feeder | Litter | WaterFountain] = {}
+    petkit_entities: dict[int, Feeder | Litter | WaterFountain | Pet] = {}
+    petkit_entities_records: dict[
+        int, FeederRecord | LitterRecord | WaterFountainRecord
+    ] = {}
 
     def __init__(
         self,
@@ -55,42 +59,23 @@ class PetKitClient:
         password: str,
         region: str,
         timezone: str,
+        session: aiohttp.ClientSession | None = None,
     ) -> None:
         """Initialize the PetKit Client."""
         self.username = username
         self.password = password
         self.region = region.lower()
         self.timezone = timezone
-
-    async def _generate_header(self) -> dict[str, str]:
-        """Create header for interaction with devices."""
-        session_id = self._session.id if self._session is not None else ""
-
-        return {
-            "Accept": Header.ACCEPT.value,
-            "Accept-Language": Header.ACCEPT_LANG,
-            "Accept-Encoding": Header.ENCODING,
-            "Content-Type": Header.CONTENT_TYPE,
-            "User-Agent": Header.AGENT,
-            "X-Img-Version": Header.IMG_VERSION,
-            "X-Locale": Header.LOCALE,
-            "F-Session": session_id,
-            "X-Session": session_id,
-            "X-Client": Header.CLIENT,
-            "X-Hour": Header.HOUR,
-            "X-TimezoneId": Header.TIMEZONE_ID,
-            "X-Api-Version": Header.API_VERSION,
-            "X-Timezone": Header.TIMEZONE,
-        }
+        self._session = None
+        self.aiohttp_session = session or aiohttp.ClientSession()
+        self.req = PrepReq(base_url=PetkitURL.REGION_SRV, session=self.aiohttp_session)
 
     async def _get_api_server_list(self) -> None:
         """Get the list of API servers and set the base URL."""
         _LOGGER.debug("Getting API server list")
-        prep_req = PrepReq(base_url=PetkitURL.REGION_SRV)
-        response = await prep_req.request(
+        response = await self.req.request(
             method=HTTPMethod.GET,
             url="",
-            headers=await self._generate_header(),
         )
         _LOGGER.debug("API server list: %s", response)
         self._servers_list = [
@@ -102,7 +87,6 @@ class PetKitClient:
         await self._get_api_server_list()
         _LOGGER.debug("Finding region server for region: %s", self.region)
 
-        # TODO : Improve this
         if self.region == "china":
             self._base_url = PetkitURL.CHINA_SRV
             return
@@ -121,19 +105,17 @@ class PetKitClient:
             _LOGGER.debug(
                 "Using server %s for region : %s", regional_server, self.region
             )
-            self._base_url = regional_server.gateway
+            self.req.base_url = regional_server.gateway
             return
         raise PetkitRegionalServerNotFoundError(self.region)
 
     async def request_login_code(self) -> bool:
         """Request a login code to be sent to the user's email."""
         _LOGGER.debug("Requesting login code for username: %s", self.username)
-        prep_req = PrepReq(base_url=self._base_url)
-        response = await prep_req.request(
+        response = await self.req.request(
             method=HTTPMethod.GET,
             url=PetkitEndpoint.GET_LOGIN_CODE,
             params={"username": self.username},
-            headers=await self._generate_header(),
         )
         if response:
             _LOGGER.info("Login code sent to user's email")
@@ -162,12 +144,10 @@ class PetKitClient:
             data["password"] = pwd  # noqa: S324
 
         # Send the login request
-        prep_req = PrepReq(base_url=self._base_url)
-        response = await prep_req.request(
+        response = await self.req.request(
             method=HTTPMethod.POST,
             url=PetkitEndpoint.LOGIN,
             data=data,
-            headers=await self._generate_header(),
         )
         session_data = response["session"]
         self._session = SessionInfo(**session_data)
@@ -175,11 +155,9 @@ class PetKitClient:
     async def refresh_session(self) -> None:
         """Refresh the session."""
         _LOGGER.debug("Refreshing session")
-        prep_req = PrepReq(base_url=self._base_url)
-        response = await prep_req.request(
+        response = await self.req.request(
             method=HTTPMethod.POST,
             url=PetkitEndpoint.REFRESH_SESSION,
-            headers=await self._generate_header(),
         )
         session_data = response["session"]
         self._session = SessionInfo(**session_data)
@@ -207,17 +185,28 @@ class PetKitClient:
             await self.refresh_session()
         return
 
+    async def get_session_id(self) -> dict:
+        """Return the session ID."""
+        if self._session is None:
+            raise PypetkitError("Session is not initialized.")
+        return {"F-Session": self._session.id, "X-Session": self._session.id}
+
     async def _get_account_data(self) -> None:
         """Get the account data from the PetKit service."""
         await self.validate_session()
         _LOGGER.debug("Fetching account data")
-        prep_req = PrepReq(base_url=self._base_url)
-        response = await prep_req.request(
+        response = await self.req.request(
             method=HTTPMethod.GET,
             url=PetkitEndpoint.FAMILY_LIST,
-            headers=await self._generate_header(),
+            headers=await self.get_session_id(),
         )
         self.account_data = [AccountData(**account) for account in response]
+
+        # Add pets to device_list
+        for account in self.account_data:
+            if account.pet_list:
+                for pet in account.pet_list:
+                    self.petkit_entities[pet.pet_id] = pet
 
     async def get_devices_data(self) -> None:
         """Get the devices data from the PetKit servers."""
@@ -225,26 +214,40 @@ class PetKitClient:
         if not self.account_data:
             await self._get_account_data()
 
+        # TODO : Change usage to use the account_data attribute
+        tasks = []
         device_list: list[Device] = []
+
         for account in self.account_data:
             _LOGGER.debug("Fetching devices data for account: %s", account)
             if account.device_list:
                 device_list.extend(account.device_list)
 
-        _LOGGER.debug("Fetch %s devices for this account", len(device_list))
+            _LOGGER.debug("Fetch %s devices for this account", len(device_list))
 
-        tasks = []
-        for device in device_list:
-            _LOGGER.debug("Fetching devices data: %s", device)
-            device_type = device.device_type.lower()
-            if device_type in DEVICES_FEEDER:
-                tasks.append(self._fetch_device_data(device, Feeder))
-            elif device_type in DEVICES_LITTER_BOX:
-                tasks.append(self._fetch_device_data(device, Litter))
-            elif device_type in DEVICES_WATER_FOUNTAIN:
-                tasks.append(self._fetch_device_data(device, WaterFountain))
-            else:
-                _LOGGER.warning("Unknown device type: %s", device_type)
+            for device in device_list:
+                _LOGGER.debug("Fetching devices data: %s", device)
+                device_type = device.device_type.lower()
+                device_id = device.device_id
+                if device_type in DEVICES_FEEDER:
+                    tasks.append(self._fetch_device_data(account, device_id, Feeder))
+                    tasks.append(
+                        self._fetch_device_data(account, device_id, FeederRecord)
+                    )
+                elif device_type in DEVICES_LITTER_BOX:
+                    tasks.append(self._fetch_device_data(account, device_id, Litter))
+                    tasks.append(
+                        self._fetch_device_data(account, device_id, LitterRecord)
+                    )
+                elif device_type in DEVICES_WATER_FOUNTAIN:
+                    tasks.append(
+                        self._fetch_device_data(account, device_id, WaterFountain)
+                    )
+                    tasks.append(
+                        self._fetch_device_data(account, device_id, WaterFountainRecord)
+                    )
+                else:
+                    _LOGGER.warning("Unknown device type: %s", device_type)
         await asyncio.gather(*tasks)
 
         end_time = datetime.now()
@@ -253,28 +256,60 @@ class PetKitClient:
 
     async def _fetch_device_data(
         self,
-        device: Device,
-        data_class: type[Feeder | Litter | WaterFountain],
+        account: AccountData,
+        device_id: int,
+        data_class: type[Feeder | Litter | WaterFountain | FeederRecord | LitterRecord],
     ) -> None:
         """Fetch the device data from the PetKit servers."""
         await self.validate_session()
-        endpoint = data_class.get_endpoint(device.device_type)
-        device_type = device.device_type.lower()
-        query_param = data_class.query_param(device.device_id)
 
-        prep_req = PrepReq(base_url=self._base_url)
-        response = await prep_req.request(
-            method=HTTPMethod.GET,
+        if account.device_list:
+            device = next(
+                (
+                    device
+                    for device in account.device_list
+                    if device.device_id == device_id
+                ),
+                None,
+            )
+        if device is None:
+            _LOGGER.error("Device not found: id=%s", device_id)
+            return
+        device_type = device.device_type.lower()
+
+        endpoint = data_class.get_endpoint(device_type)
+        query_param = data_class.query_param(account, device.device_id)
+
+        response = await self.req.request(
+            method=HTTPMethod.POST,
             url=f"{device_type}/{endpoint}",
             params=query_param,
-            headers=await self._generate_header(),
+            headers=await self.get_session_id(),
         )
-        device_data = data_class(**response)
-        device_data.device_type = device.device_type  # Add the device_type attribute
-        _LOGGER.debug(
-            "Reading device type : %s (id=%s)", device.device_type, device.device_id
-        )
-        self.device_list[device.device_id] = device_data
+
+        if isinstance(response, list):
+            device_data = [data_class(**item) for item in response]
+        elif isinstance(response, dict):
+            device_data = data_class(**response)
+        else:
+            _LOGGER.error("Unexpected response type: %s", type(response))
+            return
+
+        # Ajout de l'attribut device_type pour chaque dataclass
+        if isinstance(device_data, list):
+            for item in device_data:
+                item.device_type = device_type
+        else:
+            device_data.device_type = device_type
+
+        _LOGGER.debug("Reading device type : %s (id=%s)", device_type, device_id)
+
+        if data_class.data_type == DEVICE_DATA:
+            self.petkit_entities[device_id] = device_data
+        elif data_class.data_type == DEVICE_RECORDS:
+            self.petkit_entities_records[device_id] = device_data
+        else:
+            _LOGGER.error("Unknown data type: %s", data_class.data_type)
 
     async def send_api_request(
         self,
@@ -283,7 +318,7 @@ class PetKitClient:
         setting: dict | None = None,
     ) -> None:
         """Control the device using the PetKit API."""
-        device = self.device_list.get(device_id)
+        device = self.petkit_entities.get(device_id)
         if not device:
             raise PypetkitError(f"Device with ID {device_id} not found.")
 
@@ -306,6 +341,8 @@ class PetKitClient:
             raise PypetkitError(f"Action {action} not supported.")
 
         action_info = ACTIONS_MAP[action]
+        _LOGGER.debug(action)
+        _LOGGER.debug(action_info)
         if device_type not in action_info.supported_device:
             raise PypetkitError(
                 f"Device type {device.device_type} not supported for action {action}."
@@ -313,11 +350,11 @@ class PetKitClient:
 
         if callable(action_info.endpoint):
             endpoint = action_info.endpoint(device)
+            _LOGGER.debug("Endpoint from callable")
         else:
             endpoint = action_info.endpoint
+            _LOGGER.debug("Endpoint field")
         url = f"{device.device_type.lower()}/{endpoint}"
-
-        headers = await self._generate_header()
 
         # Use the lambda to generate params
         if setting is not None:
@@ -325,12 +362,11 @@ class PetKitClient:
         else:
             params = action_info.params(device)
 
-        prep_req = PrepReq(base_url=self._base_url)
-        res = await prep_req.request(
+        res = await self.req.request(
             method=HTTPMethod.POST,
             url=url,
             data=params,
-            headers=headers,
+            headers=await self.get_session_id(),
         )
         if res in (SUCCESS_KEY, RES_KEY):
             # TODO : Manage to get the response from manual feeding
@@ -338,14 +374,39 @@ class PetKitClient:
         else:
             _LOGGER.error("Command execution failed")
 
+    async def close(self) -> None:
+        """Close the aiohttp session if it was created by the client."""
+        if self.aiohttp_session:
+            await self.aiohttp_session.close()
+
 
 class PrepReq:
     """Prepare the request to the PetKit API."""
 
-    def __init__(self, base_url: str, base_headers: dict | None = None) -> None:
+    def __init__(self, base_url: str, session: aiohttp.ClientSession) -> None:
         """Initialize the request."""
         self.base_url = base_url
-        self.base_headers = base_headers or {}
+        self.session = session
+        self.base_headers = self._generate_header()
+
+    @staticmethod
+    def _generate_header() -> dict[str, str]:
+        """Create header for interaction with API endpoint."""
+
+        return {
+            "Accept": Header.ACCEPT.value,
+            "Accept-Language": Header.ACCEPT_LANG,
+            "Accept-Encoding": Header.ENCODING,
+            "Content-Type": Header.CONTENT_TYPE,
+            "User-Agent": Header.AGENT,
+            "X-Img-Version": Header.IMG_VERSION,
+            "X-Locale": Header.LOCALE,
+            "X-Client": Header.CLIENT,
+            "X-Hour": Header.HOUR,
+            "X-TimezoneId": Header.TIMEZONE_ID,
+            "X-Api-Version": Header.API_VERSION,
+            "X-Timezone": Header.TIMEZONE,
+        }
 
     async def request(
         self,
@@ -366,34 +427,21 @@ class PrepReq:
             data,
             _headers,
         )
-        async with aiohttp.ClientSession() as session:
-            try:
-                async with session.request(
-                    method,
-                    _url,
-                    params=params,
-                    data=data,
-                    headers=_headers,
-                ) as resp:
-                    return await self._handle_response(resp, _url)
-            except ContentTypeError:
-                """If we get an error, lets log everything for debugging."""
-                try:
-                    resp_json = await resp.json(content_type=None)
-                    _LOGGER.info("Resp: %s", resp_json)
-                except ContentTypeError as err_2:
-                    _LOGGER.info(err_2)
-                resp_raw = await resp.read()
-                _LOGGER.info("Resp raw: %s", resp_raw)
-                # Still raise the err so that it's clear it failed.
-                raise
-            except TimeoutError:
-                raise PetkitTimeoutError("The request timed out") from None
+        try:
+            async with self.session.request(
+                method,
+                _url,
+                params=params,
+                data=data,
+                headers=_headers,
+            ) as resp:
+                return await self._handle_response(resp, _url)
+        except aiohttp.ClientConnectorError as e:
+            raise PetkitTimeoutError(f"Cannot connect to host: {e}") from e
 
     @staticmethod
     async def _handle_response(response: aiohttp.ClientResponse, url: str) -> dict:
         """Handle the response from the PetKit API."""
-
         try:
             response.raise_for_status()
         except aiohttp.ClientResponseError as e:
