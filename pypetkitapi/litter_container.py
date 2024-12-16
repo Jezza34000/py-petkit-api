@@ -1,12 +1,12 @@
 """Dataclasses for Litter."""
 
-from collections.abc import Callable
+from datetime import datetime
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
-from pypetkitapi.const import PetkitEndpoint
-from pypetkitapi.containers import CloudProduct, FirmwareDetail, Wifi
+from pypetkitapi.const import DEVICE_DATA, DEVICE_RECORDS, PetkitEndpoint
+from pypetkitapi.containers import AccountData, CloudProduct, FirmwareDetail, Wifi
 
 
 class SettingsLitter(BaseModel):
@@ -147,8 +147,7 @@ class Litter(BaseModel):
     Supported devices = T4, T6
     """
 
-    url_endpoint: ClassVar[PetkitEndpoint] = PetkitEndpoint.DEVICE_DETAIL
-    query_param: ClassVar[Callable] = lambda device_id: {"id": device_id}
+    data_type: ClassVar[str] = DEVICE_DATA
 
     auto_upgrade: int | None = Field(None, alias="autoUpgrade")
     bt_mac: str | None = Field(None, alias="btMac")
@@ -187,4 +186,64 @@ class Litter(BaseModel):
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
         """Get the endpoint URL for the given device type."""
-        return cls.url_endpoint.value
+        return PetkitEndpoint.DEVICE_DETAIL
+
+    @classmethod
+    def query_param(cls, account: AccountData, device_id: int) -> dict:
+        """Generate query parameters including request_date."""
+        return {"id": device_id}
+
+
+class Content(BaseModel):
+    """Dataclass for content data."""
+
+    box: int | None = None
+    box_full: bool | None = Field(None, alias="boxFull")
+    litter_percent: int | None = Field(None, alias="litterPercent")
+    result: int | None = None
+    start_reason: int | None = Field(None, alias="startReason")
+    start_time: int | None = Field(None, alias="startTime")
+
+
+class SubContent(BaseModel):
+    """Dataclass for sub-content data."""
+
+    content: Content | None = None
+    device_id: int | None = Field(None, alias="deviceId")
+    enum_event_type: str | None = Field(None, alias="enumEventType")
+    event_type: int | None = Field(None, alias="eventType")
+    sub_content: list[Any] | None = Field(None, alias="subContent")
+    timestamp: int | None = None
+    user_id: str | None = Field(None, alias="userId")
+
+
+class LitterRecord(BaseModel):
+    """Dataclass for feeder record data."""
+
+    data_type: ClassVar[str] = DEVICE_RECORDS
+
+    avatar: str | None = None
+    content: dict[str, Any] | None = None
+    device_id: int | None = Field(None, alias="deviceId")
+    enum_event_type: str | None = Field(None, alias="enumEventType")
+    event_type: int | None = Field(None, alias="eventType")
+    pet_id: str | None = Field(None, alias="petId")
+    pet_name: str | None = Field(None, alias="petName")
+    sub_content: list[SubContent] | None = Field(None, alias="subContent")
+    timestamp: int | None = None
+    user_id: str | None = Field(None, alias="userId")
+    device_type: str | None = Field(None, alias="deviceType")
+
+    @classmethod
+    def get_endpoint(cls, device_type: str) -> str:
+        """Get the endpoint URL for the given device type."""
+        return PetkitEndpoint.GET_DEVICE_RECORD
+
+    @classmethod
+    def query_param(
+        cls, account: AccountData, device_id: int, request_date: str | None = None
+    ) -> dict:
+        """Generate query parameters including request_date."""
+        if request_date is None:
+            request_date = datetime.now().strftime("%Y%m%d")
+        return {"date": int(request_date), "deviceId": device_id}

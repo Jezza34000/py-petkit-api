@@ -1,12 +1,12 @@
 """Dataclasses for feeder data."""
 
-from collections.abc import Callable
+from datetime import datetime
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
-from pypetkitapi.const import PetkitEndpoint
-from pypetkitapi.containers import CloudProduct, FirmwareDetail, Wifi
+from pypetkitapi.const import DEVICE_DATA, DEVICE_RECORDS, PetkitEndpoint
+from pypetkitapi.containers import AccountData, CloudProduct, FirmwareDetail, Wifi
 
 
 class FeedItem(BaseModel):
@@ -170,8 +170,7 @@ class ManualFeed(BaseModel):
 class Feeder(BaseModel):
     """Dataclass for feeder data."""
 
-    url_endpoint: ClassVar[PetkitEndpoint] = PetkitEndpoint.DEVICE_DETAIL
-    query_param: ClassVar[Callable] = lambda device_id: {"id": device_id}
+    data_type: ClassVar[str] = DEVICE_DATA
 
     auto_upgrade: int | None = Field(None, alias="autoUpgrade")
     bt_mac: str | None = Field(None, alias="btMac")
@@ -202,7 +201,12 @@ class Feeder(BaseModel):
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
         """Get the endpoint URL for the given device type."""
-        return cls.url_endpoint.value
+        return PetkitEndpoint.DEVICE_DETAIL
+
+    @classmethod
+    def query_param(cls, account: AccountData, device_id: int) -> dict:
+        """Generate query parameters including request_date."""
+        return {"id": device_id}
 
 
 class EventState(BaseModel):
@@ -217,8 +221,8 @@ class EventState(BaseModel):
     surplus_standard: int | None = Field(None, alias="surplusStandard")
 
 
-class FeederRecord(BaseModel):
-    """Dataclass for feeder record data."""
+class RecordsItems(BaseModel):
+    """Dataclass for records items data."""
 
     aes_key: str | None = Field(None, alias="aesKey")
     duration: int | None = None
@@ -259,3 +263,40 @@ class FeederRecord(BaseModel):
     src: int | None = None
     state: EventState | None = None
     status: int | None = None
+
+
+class RecordsType(BaseModel):
+    """Dataclass for records type data."""
+
+    add_amount1: int | None = Field(None, alias="addAmount1")
+    add_amount2: int | None = Field(None, alias="addAmount2")
+    day: int | None = None
+    device_id: int | None = Field(None, alias="deviceId")
+    eat_count: int | None = Field(None, alias="eatCount")
+    items: list[RecordsItems] | None = None
+
+
+class FeederRecord(BaseModel):
+    """Dataclass for feeder record data."""
+
+    data_type: ClassVar[str] = DEVICE_RECORDS
+
+    eat: list[RecordsType] | None = None
+    feed: list[RecordsType] | None = None
+    move: list[RecordsType] | None = None
+    pet: list[RecordsType] | None = None
+    device_type: str | None = Field(None, alias="deviceType")
+
+    @classmethod
+    def get_endpoint(cls, device_type: str) -> str:
+        """Get the endpoint URL for the given device type."""
+        return PetkitEndpoint.GET_DEVICE_RECORD
+
+    @classmethod
+    def query_param(
+        cls, account: AccountData, device_id: int, request_date: str | None = None
+    ) -> dict:
+        """Generate query parameters including request_date."""
+        if request_date is None:
+            request_date = datetime.now().strftime("%Y%m%d")
+        return {"days": int(request_date), "deviceId": device_id}
