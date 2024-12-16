@@ -22,8 +22,8 @@ from pypetkitapi.const import (
     RES_KEY,
     SUCCESS_KEY,
     Header,
+    PetkitDomain,
     PetkitEndpoint,
-    PetkitURL,
 )
 from pypetkitapi.containers import AccountData, Device, Pet, RegionInfo, SessionInfo
 from pypetkitapi.exceptions import (
@@ -68,45 +68,31 @@ class PetKitClient:
         self.timezone = timezone
         self._session = None
         self.aiohttp_session = session or aiohttp.ClientSession()
-        self.req = PrepReq(base_url=PetkitURL.REGION_SRV, session=self.aiohttp_session)
-
-    async def _get_api_server_list(self) -> None:
-        """Get the list of API servers and set the base URL."""
-        _LOGGER.debug("Getting API server list")
-        response = await self.req.request(
-            method=HTTPMethod.GET,
-            url="",
+        self.req = PrepReq(
+            base_url=PetkitDomain.PASSPORT_PETKIT, session=self.aiohttp_session
         )
-        _LOGGER.debug("API server list: %s", response)
-        self._servers_list = [
-            RegionInfo(**region) for region in response.get("list", [])
-        ]
 
     async def _get_base_url(self) -> None:
-        """Find the region server for the specified region."""
-        await self._get_api_server_list()
-        _LOGGER.debug("Finding region server for region: %s", self.region)
+        """Get the list of API servers, filter by region, and return the matching server."""
+        _LOGGER.debug("Getting API server list")
 
-        if self.region == "china":
-            self._base_url = PetkitURL.CHINA_SRV
+        if self.region.lower() == "china":
+            self._base_url = PetkitDomain.CHINA_SRV
             return
 
-        regional_server = next(
-            (
-                server
-                for server in self._servers_list
-                if server.name.lower() == self.region
-                or server.id.lower() == self.region
-            ),
-            None,
+        response = await self.req.request(
+            method=HTTPMethod.GET,
+            url=PetkitEndpoint.REGION_SERVERS,
         )
+        _LOGGER.debug("API server list: %s", response)
 
-        if regional_server:
-            _LOGGER.debug(
-                "Using server %s for region : %s", regional_server, self.region
-            )
-            self.req.base_url = regional_server.gateway
-            return
+        # Filter the servers by region
+        for region in response.get("list", []):
+            server = RegionInfo(**region)
+            if server.name.lower() == self.region or server.id.lower() == self.region:
+                self.req.base_url = server.gateway
+                _LOGGER.debug("Found matching server: %s", server)
+                return
         raise PetkitRegionalServerNotFoundError(self.region)
 
     async def request_login_code(self) -> bool:
@@ -127,7 +113,7 @@ class PetKitClient:
         # Retrieve the list of servers
         await self._get_base_url()
 
-        _LOGGER.debug("Logging in to PetKit server")
+        _LOGGER.info("Logging in to PetKit server")
 
         # Prepare the data to send
         data = LOGIN_DATA.copy()
@@ -214,7 +200,6 @@ class PetKitClient:
         if not self.account_data:
             await self._get_account_data()
 
-        # TODO : Change usage to use the account_data attribute
         tasks = []
         device_list: list[Device] = []
 
@@ -230,16 +215,19 @@ class PetKitClient:
                 device_type = device.device_type.lower()
                 device_id = device.device_id
                 if device_type in DEVICES_FEEDER:
+                    # Add tasks for feeders
                     tasks.append(self._fetch_device_data(account, device_id, Feeder))
                     tasks.append(
                         self._fetch_device_data(account, device_id, FeederRecord)
                     )
                 elif device_type in DEVICES_LITTER_BOX:
+                    # Add tasks for litter boxes
                     tasks.append(self._fetch_device_data(account, device_id, Litter))
                     tasks.append(
                         self._fetch_device_data(account, device_id, LitterRecord)
                     )
                 elif device_type in DEVICES_WATER_FOUNTAIN:
+                    # Add tasks for water fountains
                     tasks.append(
                         self._fetch_device_data(account, device_id, WaterFountain)
                     )
@@ -252,16 +240,24 @@ class PetKitClient:
 
         end_time = datetime.now()
         total_time = end_time - start_time
-        _LOGGER.debug("Petkit fetch took : %s", total_time)
+        _LOGGER.info("OK Petkit data fetched in : %s", total_time)
 
     async def _fetch_device_data(
         self,
         account: AccountData,
         device_id: int,
-        data_class: type[Feeder | Litter | WaterFountain | FeederRecord | LitterRecord],
+        data_class: type[
+            Feeder
+            | Litter
+            | WaterFountain
+            | FeederRecord
+            | LitterRecord
+            | WaterFountainRecord
+        ],
     ) -> None:
         """Fetch the device data from the PetKit servers."""
         await self.validate_session()
+        device = None
 
         if account.device_list:
             device = next(
@@ -287,6 +283,7 @@ class PetKitClient:
             headers=await self.get_session_id(),
         )
 
+        # Check if the response is a list or a dict
         if isinstance(response, list):
             device_data = [data_class(**item) for item in response]
         elif isinstance(response, dict):
@@ -295,7 +292,6 @@ class PetKitClient:
             _LOGGER.error("Unexpected response type: %s", type(response))
             return
 
-        # Ajout de l'attribut device_type pour chaque dataclass
         if isinstance(device_data, list):
             for item in device_data:
                 item.device_type = device_type
@@ -330,13 +326,14 @@ class PetKitClient:
             setting,
         )
 
+        # Check if the device type is supported
         if device.device_type:
             device_type = device.device_type.lower()
         else:
             raise PypetkitError(
                 "Device type is not available, and is mandatory for sending commands."
             )
-
+        # Check if the action is supported
         if action not in ACTIONS_MAP:
             raise PypetkitError(f"Action {action} not supported.")
 
@@ -347,7 +344,7 @@ class PetKitClient:
             raise PypetkitError(
                 f"Device type {device.device_type} not supported for action {action}."
             )
-
+        # Get the endpoint
         if callable(action_info.endpoint):
             endpoint = action_info.endpoint(device)
             _LOGGER.debug("Endpoint from callable")
@@ -356,7 +353,7 @@ class PetKitClient:
             _LOGGER.debug("Endpoint field")
         url = f"{device.device_type.lower()}/{endpoint}"
 
-        # Use the lambda to generate params
+        # Get the parameters
         if setting is not None:
             params = action_info.params(device, setting)
         else:
@@ -456,6 +453,7 @@ class PrepReq:
                 "Response is not in JSON format"
             ) from None
 
+        # Check for errors in the response
         if ERR_KEY in response_json:
             error_msg = response_json[ERR_KEY].get("msg", "Unknown error")
             if any(
@@ -469,6 +467,7 @@ class PrepReq:
                 raise PetkitAuthenticationError(f"Login failed: {error_msg}")
             raise PypetkitError(f"Request failed: {error_msg}")
 
+        # Check for success in the response
         if RES_KEY in response_json:
             return response_json[RES_KEY]
 
