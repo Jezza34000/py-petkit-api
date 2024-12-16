@@ -53,7 +53,7 @@ class LitterCommand(StrEnum):
 class PetCommand(StrEnum):
     """PetCommand"""
 
-    UPDATE_SETTING = "update_setting"
+    PET_UPDATE_SETTING = "pet_update_setting"
 
 
 class FountainCommand(StrEnum):
@@ -235,15 +235,6 @@ ACTIONS_MAP = {
         },
         supported_device=[D3],
     ),
-    LitterCommand.POWER: CmdData(
-        endpoint=PetkitEndpoint.CONTROL_DEVICE,
-        params=lambda device, setting: {
-            "id": device.id,
-            "kv": json.dumps(setting),
-            "type": "power",
-        },
-        supported_device=[T3, T4, T5, T6],
-    ),
     LitterCommand.CONTROL_DEVICE: CmdData(
         endpoint=PetkitEndpoint.CONTROL_DEVICE,
         params=lambda device, command: {
@@ -253,7 +244,7 @@ ACTIONS_MAP = {
         },
         supported_device=[T3, T4, T5, T6],
     ),
-    PetCommand.UPDATE_SETTING: CmdData(
+    PetCommand.PET_UPDATE_SETTING: CmdData(
         endpoint=PetkitEndpoint.CONTROL_DEVICE,
         params=lambda pet, setting: {
             "petId": pet,
