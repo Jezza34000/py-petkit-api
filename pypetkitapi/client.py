@@ -19,6 +19,7 @@ from pypetkitapi.const import (
     DEVICES_WATER_FOUNTAIN,
     ERR_KEY,
     LOGIN_DATA,
+    PET_DATA,
     RES_KEY,
     SUCCESS_KEY,
     Header,
@@ -48,10 +49,11 @@ class PetKitClient:
     _session: SessionInfo | None = None
     _servers_list: list[RegionInfo] = []
     account_data: list[AccountData] = []
-    petkit_entities: dict[int, Feeder | Litter | WaterFountain | Pet] = {}
-    petkit_entities_records: dict[
-        int, FeederRecord | LitterRecord | WaterFountainRecord
-    ] = {}
+    petkit_entities: dict[
+        str,
+        dict[int, Feeder | Litter | WaterFountain | Pet]
+        | dict[int, FeederRecord | LitterRecord | WaterFountainRecord],
+    ]
 
     def __init__(
         self,
@@ -67,6 +69,7 @@ class PetKitClient:
         self.region = region.lower()
         self.timezone = timezone
         self._session = None
+        self.petkit_entities = {DEVICE_RECORDS: {}, DEVICE_DATA: {}, PET_DATA: {}}
         self.aiohttp_session = session or aiohttp.ClientSession()
         self.req = PrepReq(
             base_url=PetkitDomain.PASSPORT_PETKIT, session=self.aiohttp_session
@@ -169,7 +172,6 @@ class PetKitClient:
         elif half_max_age < token_age <= max_age:
             _LOGGER.debug("Token still OK, but refreshing session")
             await self.refresh_session()
-        return
 
     async def get_session_id(self) -> dict:
         """Return the session ID."""
@@ -192,7 +194,7 @@ class PetKitClient:
         for account in self.account_data:
             if account.pet_list:
                 for pet in account.pet_list:
-                    self.petkit_entities[pet.pet_id] = pet
+                    self.petkit_entities[PET_DATA][pet.pet_id] = pet
 
     async def get_devices_data(self) -> None:
         """Get the devices data from the PetKit servers."""
@@ -300,12 +302,7 @@ class PetKitClient:
 
         _LOGGER.debug("Reading device type : %s (id=%s)", device_type, device_id)
 
-        if data_class.data_type == DEVICE_DATA:
-            self.petkit_entities[device_id] = device_data
-        elif data_class.data_type == DEVICE_RECORDS:
-            self.petkit_entities_records[device_id] = device_data
-        else:
-            _LOGGER.error("Unknown data type: %s", data_class.data_type)
+        self.petkit_entities[data_class.data_type][device_id] = device_data
 
     async def send_api_request(
         self,
@@ -314,7 +311,8 @@ class PetKitClient:
         setting: dict | None = None,
     ) -> None:
         """Control the device using the PetKit API."""
-        device = self.petkit_entities.get(device_id)
+        device_dict = self.petkit_entities.get(DEVICE_DATA, {})
+        device = device_dict.get(device_id)
         if not device:
             raise PypetkitError(f"Device with ID {device_id} not found.")
 
