@@ -11,6 +11,7 @@ SUCCESS_KEY = "success"
 
 DEVICE_RECORDS = "deviceRecords"
 DEVICE_DATA = "deviceData"
+PET_DATA = "petData"
 
 # PetKit Models
 FEEDER = "feeder"

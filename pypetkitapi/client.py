@@ -166,7 +166,6 @@ class PetKitClient:
         elif half_max_age < token_age <= max_age:
             _LOGGER.debug("Token still OK, but refreshing session")
             await self.refresh_session()
-        return
 
     async def get_session_id(self) -> dict:
         """Return the session ID."""
