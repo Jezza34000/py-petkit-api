@@ -297,6 +297,13 @@ class PetKitClient:
             _LOGGER.error("Unexpected response type: %s", type(response))
             return
 
+        # Add the device type into dataclass
+        if isinstance(device_data, list):
+            for item in device_data:
+                item.device_type = device_type
+        else:
+            device_data.device_type = device_type
+
         if data_class.data_type == DEVICE_DATA:
             self.petkit_entities[device_id] = device_data
             _LOGGER.debug("Device data fetched OK for %s", device_type)
