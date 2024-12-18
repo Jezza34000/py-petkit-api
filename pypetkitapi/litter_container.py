@@ -5,7 +5,7 @@ from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
-from pypetkitapi.const import DEVICE_DATA, DEVICE_RECORDS, PetkitEndpoint
+from pypetkitapi.const import DEVICE_DATA, DEVICE_RECORDS, T4, T6, PetkitEndpoint
 from pypetkitapi.containers import AccountData, CloudProduct, FirmwareDetail, Wifi
 
 
@@ -226,16 +226,32 @@ class LitterRecord(BaseModel):
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
         """Get the endpoint URL for the given device type."""
-        return PetkitEndpoint.GET_DEVICE_RECORD
+        if device_type == T4:
+            return PetkitEndpoint.GET_DEVICE_RECORD
+        if device_type == T6:
+            return PetkitEndpoint.GET_DEVICE_RECORD_RELEASE
+        raise ValueError(f"Invalid device type: {device_type}")
 
     @classmethod
     def query_param(
-        cls, account: AccountData, device_id: int, request_date: str | None = None
+        cls,
+        account: AccountData,
+        device_type: str,
+        device_id: int,
+        request_date: str | None = None,
     ) -> dict:
         """Generate query parameters including request_date."""
-        if request_date is None:
-            request_date = datetime.now().strftime("%Y%m%d")
-        return {"date": int(request_date), "deviceId": device_id}
+        if device_type == T4:
+            if request_date is None:
+                request_date = datetime.now().strftime("%Y%m%d")
+            return {"date": int(request_date), "deviceId": device_id}
+        if device_type == T6:
+            return {
+                "timestamp": int(datetime.now().timestamp()),
+                "deviceId": device_id,
+                "type": 2,
+            }
+        raise ValueError(f"Invalid device type: {device_type}")
 
 
 class Litter(BaseModel):
@@ -286,6 +302,8 @@ class Litter(BaseModel):
         return PetkitEndpoint.DEVICE_DETAIL
 
     @classmethod
-    def query_param(cls, account: AccountData, device_id: int) -> dict:
+    def query_param(
+        cls, account: AccountData, device_type: str, device_id: int
+    ) -> dict:
         """Generate query parameters including request_date."""
         return {"id": device_id}

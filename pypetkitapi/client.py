@@ -241,7 +241,7 @@ class PetKitClient:
 
         end_time = datetime.now()
         total_time = end_time - start_time
-        _LOGGER.info("Petkit data fetched successfully in: %s", total_time)
+        _LOGGER.debug("Petkit data fetched successfully in: %s", total_time)
 
     async def _fetch_device_data(
         self,
@@ -277,7 +277,7 @@ class PetKitClient:
         _LOGGER.debug("Reading device type : %s (id=%s)", device_type, device_id)
 
         endpoint = data_class.get_endpoint(device_type)
-        query_param = data_class.query_param(account, device.device_id)
+        query_param = data_class.query_param(account, device_type, device.device_id)
 
         response = await self.req.request(
             method=HTTPMethod.POST,
@@ -285,6 +285,10 @@ class PetKitClient:
             params=query_param,
             headers=await self.get_session_id(),
         )
+
+        # Workaround for the litter box T6
+        if isinstance(response, dict) and response.get("list", None):
+            response = response.get("list")
 
         # Check if the response is a list or a dict
         if isinstance(response, list):
@@ -316,7 +320,7 @@ class PetKitClient:
         device_id: int,
         action: StrEnum,
         setting: dict | None = None,
-    ) -> None:
+    ) -> bool:
         """Control the device using the PetKit API."""
         device = self.petkit_entities.get(device_id)
         if not device:
@@ -345,9 +349,11 @@ class PetKitClient:
         _LOGGER.debug(action)
         _LOGGER.debug(action_info)
         if device_type not in action_info.supported_device:
-            raise PypetkitError(
-                f"Device type {device.device_type} not supported for action {action}."
+            _LOGGER.error(
+                "Device type %s not supported for action %s.", device_type, action
             )
+            return False
+
         # Get the endpoint
         if callable(action_info.endpoint):
             endpoint = action_info.endpoint(device)
@@ -372,8 +378,9 @@ class PetKitClient:
         if res in (SUCCESS_KEY, RES_KEY):
             # TODO : Manage to get the response from manual feeding
             _LOGGER.debug("Command executed successfully")
-        else:
-            _LOGGER.error("Command execution failed")
+            return True
+        _LOGGER.error("Command execution failed")
+        return False
 
     async def close(self) -> None:
         """Close the aiohttp session if it was created by the client."""

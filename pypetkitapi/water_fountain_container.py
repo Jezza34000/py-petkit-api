@@ -102,7 +102,11 @@ class WaterFountainRecord(BaseModel):
 
     @classmethod
     def query_param(
-        cls, account: AccountData, device_id: int, request_date: str | None = None
+        cls,
+        account: AccountData,
+        device_type: str,
+        device_id: int,
+        request_date: str | None = None,
     ) -> dict:
         """Generate query parameters including request_date."""
         if not account.user_list or not account.user_list[0]:
@@ -168,6 +172,8 @@ class WaterFountain(BaseModel):
         return PetkitEndpoint.DEVICE_DATA
 
     @classmethod
-    def query_param(cls, account: AccountData, device_id: int) -> dict:
+    def query_param(
+        cls, account: AccountData, device_type: str, device_id: int
+    ) -> dict:
         """Generate query parameters including request_date."""
         return {"id": device_id}

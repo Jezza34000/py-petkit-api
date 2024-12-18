@@ -259,7 +259,11 @@ class FeederRecord(BaseModel):
 
     @classmethod
     def query_param(
-        cls, account: AccountData, device_id: int, request_date: str | None = None
+        cls,
+        account: AccountData,
+        device_type: str,
+        device_id: int,
+        request_date: str | None = None,
     ) -> dict:
         """Generate query parameters including request_date."""
         if request_date is None:
@@ -305,6 +309,8 @@ class Feeder(BaseModel):
         return PetkitEndpoint.DEVICE_DETAIL
 
     @classmethod
-    def query_param(cls, account: AccountData, device_id: int) -> dict:
+    def query_param(
+        cls, account: AccountData, device_type: str, device_id: int
+    ) -> dict:
         """Generate query parameters including request_date."""
         return {"id": device_id}
