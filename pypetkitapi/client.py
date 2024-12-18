@@ -44,9 +44,7 @@ _LOGGER = logging.getLogger(__name__)
 class PetKitClient:
     """Petkit Client"""
 
-    _base_url: str
     _session: SessionInfo | None = None
-    _servers_list: list[RegionInfo] = []
     account_data: list[AccountData] = []
     petkit_entities: dict[int, Feeder | Litter | WaterFountain | Pet] = {}
 
@@ -75,7 +73,7 @@ class PetKitClient:
         _LOGGER.debug("Getting API server list")
 
         if self.region.lower() == "china":
-            self._base_url = PetkitDomain.CHINA_SRV
+            self.req.base_url = PetkitDomain.CHINA_SRV
             return
 
         response = await self.req.request(
