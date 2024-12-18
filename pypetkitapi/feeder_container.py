@@ -173,6 +173,7 @@ class EventState(BaseModel):
     completed_at: str | None = Field(None, alias="completedAt")
     err_code: int | None = Field(None, alias="errCode")
     media: int | None = None
+    real_amount: int | None = Field(None, alias="realAmount")
     real_amount1: int | None = Field(None, alias="realAmount1")
     real_amount2: int | None = Field(None, alias="realAmount2")
     result: int | None = None
@@ -183,55 +184,61 @@ class RecordsItems(BaseModel):
     """Dataclass for records items data."""
 
     aes_key: str | None = Field(None, alias="aesKey")
-    duration: int | None = None
-    event_id: str | None = Field(None, alias="eventId")
-    expire: int | None = None
-    mark: int | None = None
-    media_api: str | None = Field(None, alias="mediaApi")
-    start_time: int | None = Field(None, alias="startTime")
-    storage_space: int | None = Field(None, alias="storageSpace")
-    eat_video: int | None = Field(None, alias="eatVideo")
-    is_need_upload_video: int | None = Field(None, alias="isNeedUploadVideo")
-    preview: str | None = None
-    time: int | None = None
-    timestamp: int | None = None
     aes_key1: str | None = Field(None, alias="aesKey1")
     aes_key2: str | None = Field(None, alias="aesKey2")
+    amount: int | None = Field(None, alias="amount")
     amount1: int | None = Field(None, alias="amount1")
     amount2: int | None = Field(None, alias="amount2")
     completed_at: int | None = Field(None, alias="completedAt")
     content: dict[str, Any] | None = None
     desc: str | None = None
     device_id: int | None = Field(None, alias="deviceId")
+    duration: int | None = None
     eat_end_time: int | None = Field(None, alias="eatEndTime")
     eat_start_time: int | None = Field(None, alias="eatStartTime")
+    eat_video: int | None = Field(None, alias="eatVideo")
     empty: int | None = None
     end_time: int | None = Field(None, alias="endTime")
     enum_event_type: str | None = Field(None, alias="enumEventType")
     event: str | None = None
+    event_id: str | None = Field(None, alias="eventId")
     event_type: int | None = Field(None, alias="eventType")
+    expire: int | None = None
     expire1: int | None = Field(None, alias="expire1")
     expire2: int | None = Field(None, alias="expire2")
     id: str | None = None
     is_executed: int | None = Field(None, alias="isExecuted")
+    is_need_upload_video: int | None = Field(None, alias="isNeedUploadVideo")
+    mark: int | None = None
+    media_api: str | None = Field(None, alias="mediaApi")
     media_list: list[Any] | None = Field(None, alias="mediaList")
     name: str | None = None
+    preview: str | None = None
     preview1: str | None = Field(None, alias="preview1")
     preview2: str | None = Field(None, alias="preview2")
     src: int | None = None
+    start_time: int | None = Field(None, alias="startTime")
     state: EventState | None = None
     status: int | None = None
+    storage_space: int | None = Field(None, alias="storageSpace")
+    time: int | None = None
+    timestamp: int | None = None
 
 
 class RecordsType(BaseModel):
     """Dataclass for records type data."""
 
+    add_amount: int | None = Field(None, alias="addAmount")
     add_amount1: int | None = Field(None, alias="addAmount1")
     add_amount2: int | None = Field(None, alias="addAmount2")
     day: int | None = None
     device_id: int | None = Field(None, alias="deviceId")
     eat_count: int | None = Field(None, alias="eatCount")
     items: list[RecordsItems] | None = None
+    plan_amount: int | None = Field(None, alias="planAmount")
+    real_amount: int | None = Field(None, alias="realAmount")
+    amount: int | None = None
+    times: int | None = None
 
 
 class FeederRecord(BaseModel):
