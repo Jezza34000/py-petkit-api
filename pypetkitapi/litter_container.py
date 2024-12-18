@@ -147,21 +147,38 @@ class Content(BaseModel):
 
     box: int | None = None
     box_full: bool | None = Field(None, alias="boxFull")
+    err: str | None = None
     litter_percent: int | None = Field(None, alias="litterPercent")
+    mark: int | None = None
+    media: int | None = None
     result: int | None = None
     start_reason: int | None = Field(None, alias="startReason")
     start_time: int | None = Field(None, alias="startTime")
+    upload: int | None = None
 
 
 class SubContent(BaseModel):
     """Dataclass for sub-content data."""
 
+    aes_key: str | None = Field(None, alias="aesKey")
     content: Content | None = None
     device_id: int | None = Field(None, alias="deviceId")
+    duration: int | None = None
     enum_event_type: str | None = Field(None, alias="enumEventType")
+    event_id: str | None = Field(None, alias="eventId")
     event_type: int | None = Field(None, alias="eventType")
+    expire: int | None = None
+    mark: int | None = None
+    media: int | None = None
+    media_api: str | None = Field(None, alias="mediaApi")
+    preview: str | None = None
+    related_event: str | None = Field(None, alias="relatedEvent")
+    shit_aes_key: str | None = Field(None, alias="shitAesKey")
+    shit_picture: str | None = Field(None, alias="shitPicture")
+    storage_space: int | None = Field(None, alias="storageSpace")
     sub_content: list[Any] | None = Field(None, alias="subContent")
     timestamp: int | None = None
+    upload: int | None = None
     user_id: str | None = Field(None, alias="userId")
 
 
@@ -170,15 +187,28 @@ class LitterRecord(BaseModel):
 
     data_type: ClassVar[str] = DEVICE_RECORDS
 
+    aes_key: str | None = Field(None, alias="aesKey")
     avatar: str | None = None
     content: dict[str, Any] | None = None
     device_id: int | None = Field(None, alias="deviceId")
+    duration: int | None = None
     enum_event_type: str | None = Field(None, alias="enumEventType")
+    event_id: str | None = Field(None, alias="eventId")
     event_type: int | None = Field(None, alias="eventType")
+    expire: int | None = None
+    is_need_upload_video: int | None = Field(None, alias="isNeedUploadVideo")
+    mark: int | None = None
+    media: int | None = None
+    media_api: str | None = Field(None, alias="mediaApi")
     pet_id: str | None = Field(None, alias="petId")
     pet_name: str | None = Field(None, alias="petName")
+    preview: str | None = None
+    related_event: str | None = Field(None, alias="relatedEvent")
+    storage_space: int | None = Field(None, alias="storageSpace")
     sub_content: list[SubContent] | None = Field(None, alias="subContent")
     timestamp: int | None = None
+    toilet_detection: int | None = Field(None, alias="toiletDetection")
+    upload: int | None = None
     user_id: str | None = Field(None, alias="userId")
     device_type: str | None = Field(None, alias="deviceType")
 
