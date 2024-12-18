@@ -167,48 +167,6 @@ class ManualFeed(BaseModel):
     time: int | None = None
 
 
-class Feeder(BaseModel):
-    """Dataclass for feeder data."""
-
-    data_type: ClassVar[str] = DEVICE_DATA
-
-    auto_upgrade: int | None = Field(None, alias="autoUpgrade")
-    bt_mac: str | None = Field(None, alias="btMac")
-    cloud_product: CloudProduct | None = Field(None, alias="cloudProduct")
-    created_at: str | None = Field(None, alias="createdAt")
-    firmware: float
-    firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
-    hardware: int
-    id: int
-    locale: str | None = None
-    mac: str | None = None
-    model_code: int | None = Field(None, alias="modelCode")
-    multi_feed_item: MultiFeedItem | None = Field(None, alias="multiFeedItem")
-    name: str | None = None
-    secret: str | None = None
-    service_status: int | None = Field(None, alias="serviceStatus")
-    settings: SettingsFeeder | None = None
-    share_open: int | None = Field(None, alias="shareOpen")
-    signup_at: str | None = Field(None, alias="signupAt")
-    sn: str
-    state: StateFeeder | None = None
-    timezone: float | None = None
-    p2p_type: int | None = Field(None, alias="p2pType")
-    multi_config: bool | None = Field(None, alias="multiConfig")
-    device_type: str | None = Field(None, alias="deviceType")
-    manual_feed: ManualFeed | None = None
-
-    @classmethod
-    def get_endpoint(cls, device_type: str) -> str:
-        """Get the endpoint URL for the given device type."""
-        return PetkitEndpoint.DEVICE_DETAIL
-
-    @classmethod
-    def query_param(cls, account: AccountData, device_id: int) -> dict:
-        """Generate query parameters including request_date."""
-        return {"id": device_id}
-
-
 class EventState(BaseModel):
     """Dataclass for event state data."""
 
@@ -300,3 +258,46 @@ class FeederRecord(BaseModel):
         if request_date is None:
             request_date = datetime.now().strftime("%Y%m%d")
         return {"days": int(request_date), "deviceId": device_id}
+
+
+class Feeder(BaseModel):
+    """Dataclass for feeder data."""
+
+    data_type: ClassVar[str] = DEVICE_DATA
+
+    auto_upgrade: int | None = Field(None, alias="autoUpgrade")
+    bt_mac: str | None = Field(None, alias="btMac")
+    cloud_product: CloudProduct | None = Field(None, alias="cloudProduct")
+    created_at: str | None = Field(None, alias="createdAt")
+    firmware: float
+    firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
+    hardware: int
+    id: int
+    locale: str | None = None
+    mac: str | None = None
+    model_code: int | None = Field(None, alias="modelCode")
+    multi_feed_item: MultiFeedItem | None = Field(None, alias="multiFeedItem")
+    name: str | None = None
+    secret: str | None = None
+    service_status: int | None = Field(None, alias="serviceStatus")
+    settings: SettingsFeeder | None = None
+    share_open: int | None = Field(None, alias="shareOpen")
+    signup_at: str | None = Field(None, alias="signupAt")
+    sn: str
+    state: StateFeeder | None = None
+    timezone: float | None = None
+    p2p_type: int | None = Field(None, alias="p2pType")
+    multi_config: bool | None = Field(None, alias="multiConfig")
+    device_type: str | None = Field(None, alias="deviceType")
+    manual_feed: ManualFeed | None = None
+    device_records: FeederRecord | None = None
+
+    @classmethod
+    def get_endpoint(cls, device_type: str) -> str:
+        """Get the endpoint URL for the given device type."""
+        return PetkitEndpoint.DEVICE_DETAIL
+
+    @classmethod
+    def query_param(cls, account: AccountData, device_id: int) -> dict:
+        """Generate query parameters including request_date."""
+        return {"id": device_id}

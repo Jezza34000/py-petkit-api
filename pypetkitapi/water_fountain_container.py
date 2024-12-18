@@ -85,6 +85,38 @@ class Status(BaseModel):
     suspend_status: int | None = Field(None, alias="suspendStatus")
 
 
+class WaterFountainRecord(BaseModel):
+    """Dataclass for feeder record data."""
+
+    data_type: ClassVar[str] = DEVICE_RECORDS
+
+    day_time: int | None = Field(None, alias="dayTime")
+    stay_time: int | None = Field(None, alias="stayTime")
+    work_time: int | None = Field(None, alias="workTime")
+    device_type: str | None = Field(None, alias="deviceType")
+
+    @classmethod
+    def get_endpoint(cls, device_type: str) -> str:
+        """Get the endpoint URL for the given device type."""
+        return PetkitEndpoint.GET_WORK_RECORD
+
+    @classmethod
+    def query_param(
+        cls, account: AccountData, device_id: int, request_date: str | None = None
+    ) -> dict:
+        """Generate query parameters including request_date."""
+        if not account.user_list or not account.user_list[0]:
+            raise ValueError("The account does not have a valid user_list.")
+
+        if request_date is None:
+            request_date = datetime.now().strftime("%Y%m%d")
+        return {
+            "day": int(request_date),
+            "deviceId": device_id,
+            "userId": account.user_list[0].user_id,
+        }
+
+
 class WaterFountain(BaseModel):
     """Dataclass for Water Fountain Data.
     Supported devices = CTW3
@@ -128,6 +160,7 @@ class WaterFountain(BaseModel):
     user_id: str | None = Field(None, alias="userId")
     water_pump_run_time: int | None = Field(None, alias="waterPumpRunTime")
     device_type: str | None = Field(None, alias="deviceType")
+    device_records: list[WaterFountainRecord] | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
@@ -138,35 +171,3 @@ class WaterFountain(BaseModel):
     def query_param(cls, account: AccountData, device_id: int) -> dict:
         """Generate query parameters including request_date."""
         return {"id": device_id}
-
-
-class WaterFountainRecord(BaseModel):
-    """Dataclass for feeder record data."""
-
-    data_type: ClassVar[str] = DEVICE_RECORDS
-
-    day_time: int | None = Field(None, alias="dayTime")
-    stay_time: int | None = Field(None, alias="stayTime")
-    work_time: int | None = Field(None, alias="workTime")
-    device_type: str | None = Field(None, alias="deviceType")
-
-    @classmethod
-    def get_endpoint(cls, device_type: str) -> str:
-        """Get the endpoint URL for the given device type."""
-        return PetkitEndpoint.GET_WORK_RECORD
-
-    @classmethod
-    def query_param(
-        cls, account: AccountData, device_id: int, request_date: str | None = None
-    ) -> dict:
-        """Generate query parameters including request_date."""
-        if not account.user_list or not account.user_list[0]:
-            raise ValueError("The account does not have a valid user_list.")
-
-        if request_date is None:
-            request_date = datetime.now().strftime("%Y%m%d")
-        return {
-            "day": int(request_date),
-            "deviceId": device_id,
-            "userId": account.user_list[0].user_id,
-        }

@@ -142,58 +142,6 @@ class StateLitter(BaseModel):
     work_state: WorkState | None = Field(None, alias="workState")
 
 
-class Litter(BaseModel):
-    """Dataclass for Litter Data.
-    Supported devices = T4, T6
-    """
-
-    data_type: ClassVar[str] = DEVICE_DATA
-
-    auto_upgrade: int | None = Field(None, alias="autoUpgrade")
-    bt_mac: str | None = Field(None, alias="btMac")
-    created_at: str | None = Field(None, alias="createdAt")
-    firmware: float
-    firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
-    hardware: int
-    id: int
-    is_pet_out_tips: int | None = Field(None, alias="isPetOutTips")
-    locale: str | None = None
-    mac: str | None = None
-    maintenance_time: int | None = Field(None, alias="maintenanceTime")
-    multi_config: bool | None = Field(None, alias="multiConfig")
-    name: str | None = None
-    pet_in_tip_limit: int | None = Field(None, alias="petInTipLimit")
-    pet_out_tips: list[Any] | None = Field(None, alias="petOutTips")
-    secret: str | None = None
-    settings: SettingsLitter | None = None
-    share_open: int | None = Field(None, alias="shareOpen")
-    signup_at: str | None = Field(None, alias="signupAt")
-    sn: str
-    state: StateLitter | None = None
-    timezone: float | None = None
-    cloud_product: CloudProduct | None = Field(None, alias="cloudProduct")  # For T5/T6
-    in_times: int | None = Field(None, alias="inTimes")
-    last_out_time: int | None = Field(None, alias="lastOutTime")
-    p2p_type: int | None = Field(None, alias="p2pType")
-    package_ignore_state: int | None = Field(None, alias="packageIgnoreState")
-    package_total_count: int | None = Field(None, alias="packageTotalCount")
-    package_used_count: int | None = Field(None, alias="packageUsedCount")
-    pet_out_records: list[list[int]] | None = Field(None, alias="petOutRecords")
-    service_status: int | None = Field(None, alias="serviceStatus")
-    total_time: int | None = Field(None, alias="totalTime")
-    device_type: str | None = Field(None, alias="deviceType")
-
-    @classmethod
-    def get_endpoint(cls, device_type: str) -> str:
-        """Get the endpoint URL for the given device type."""
-        return PetkitEndpoint.DEVICE_DETAIL
-
-    @classmethod
-    def query_param(cls, account: AccountData, device_id: int) -> dict:
-        """Generate query parameters including request_date."""
-        return {"id": device_id}
-
-
 class Content(BaseModel):
     """Dataclass for content data."""
 
@@ -247,3 +195,56 @@ class LitterRecord(BaseModel):
         if request_date is None:
             request_date = datetime.now().strftime("%Y%m%d")
         return {"date": int(request_date), "deviceId": device_id}
+
+
+class Litter(BaseModel):
+    """Dataclass for Litter Data.
+    Supported devices = T4, T6
+    """
+
+    data_type: ClassVar[str] = DEVICE_DATA
+
+    auto_upgrade: int | None = Field(None, alias="autoUpgrade")
+    bt_mac: str | None = Field(None, alias="btMac")
+    created_at: str | None = Field(None, alias="createdAt")
+    firmware: float
+    firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
+    hardware: int
+    id: int
+    is_pet_out_tips: int | None = Field(None, alias="isPetOutTips")
+    locale: str | None = None
+    mac: str | None = None
+    maintenance_time: int | None = Field(None, alias="maintenanceTime")
+    multi_config: bool | None = Field(None, alias="multiConfig")
+    name: str | None = None
+    pet_in_tip_limit: int | None = Field(None, alias="petInTipLimit")
+    pet_out_tips: list[Any] | None = Field(None, alias="petOutTips")
+    secret: str | None = None
+    settings: SettingsLitter | None = None
+    share_open: int | None = Field(None, alias="shareOpen")
+    signup_at: str | None = Field(None, alias="signupAt")
+    sn: str
+    state: StateLitter | None = None
+    timezone: float | None = None
+    cloud_product: CloudProduct | None = Field(None, alias="cloudProduct")  # For T5/T6
+    in_times: int | None = Field(None, alias="inTimes")
+    last_out_time: int | None = Field(None, alias="lastOutTime")
+    p2p_type: int | None = Field(None, alias="p2pType")
+    package_ignore_state: int | None = Field(None, alias="packageIgnoreState")
+    package_total_count: int | None = Field(None, alias="packageTotalCount")
+    package_used_count: int | None = Field(None, alias="packageUsedCount")
+    pet_out_records: list[list[int]] | None = Field(None, alias="petOutRecords")
+    service_status: int | None = Field(None, alias="serviceStatus")
+    total_time: int | None = Field(None, alias="totalTime")
+    device_type: str | None = Field(None, alias="deviceType")
+    device_records: LitterRecord | None = None
+
+    @classmethod
+    def get_endpoint(cls, device_type: str) -> str:
+        """Get the endpoint URL for the given device type."""
+        return PetkitEndpoint.DEVICE_DETAIL
+
+    @classmethod
+    def query_param(cls, account: AccountData, device_id: int) -> dict:
+        """Generate query parameters including request_date."""
+        return {"id": device_id}

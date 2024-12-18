@@ -49,9 +49,6 @@ class PetKitClient:
     _servers_list: list[RegionInfo] = []
     account_data: list[AccountData] = []
     petkit_entities: dict[int, Feeder | Litter | WaterFountain | Pet] = {}
-    petkit_entities_records: dict[
-        int, FeederRecord | LitterRecord | WaterFountainRecord
-    ] = {}
 
     def __init__(
         self,
@@ -67,6 +64,7 @@ class PetKitClient:
         self.region = region.lower()
         self.timezone = timezone
         self._session = None
+        self.petkit_entities = {}
         self.aiohttp_session = session or aiohttp.ClientSession()
         self.req = PrepReq(
             base_url=PetkitDomain.PASSPORT_PETKIT, session=self.aiohttp_session
@@ -84,7 +82,6 @@ class PetKitClient:
             method=HTTPMethod.GET,
             url=PetkitEndpoint.REGION_SERVERS,
         )
-        _LOGGER.debug("API server list: %s", response)
 
         # Filter the servers by region
         for region in response.get("list", []):
@@ -200,47 +197,54 @@ class PetKitClient:
         if not self.account_data:
             await self._get_account_data()
 
-        tasks = []
+        main_tasks = []
+        record_tasks = []
         device_list: list[Device] = []
 
         for account in self.account_data:
-            _LOGGER.debug("Fetching devices data for account: %s", account)
+            _LOGGER.debug("List devices data for account: %s", account)
             if account.device_list:
                 device_list.extend(account.device_list)
 
             _LOGGER.debug("Fetch %s devices for this account", len(device_list))
 
             for device in device_list:
-                _LOGGER.debug("Fetching devices data: %s", device)
                 device_type = device.device_type.lower()
-                device_id = device.device_id
                 if device_type in DEVICES_FEEDER:
-                    # Add tasks for feeders
-                    tasks.append(self._fetch_device_data(account, device_id, Feeder))
-                    tasks.append(
-                        self._fetch_device_data(account, device_id, FeederRecord)
+                    main_tasks.append(
+                        self._fetch_device_data(account, device.device_id, Feeder)
+                    )
+                    record_tasks.append(
+                        self._fetch_device_data(account, device.device_id, FeederRecord)
                     )
                 elif device_type in DEVICES_LITTER_BOX:
-                    # Add tasks for litter boxes
-                    tasks.append(self._fetch_device_data(account, device_id, Litter))
-                    tasks.append(
-                        self._fetch_device_data(account, device_id, LitterRecord)
+                    main_tasks.append(
+                        self._fetch_device_data(account, device.device_id, Litter)
+                    )
+                    record_tasks.append(
+                        self._fetch_device_data(account, device.device_id, LitterRecord)
                     )
                 elif device_type in DEVICES_WATER_FOUNTAIN:
-                    # Add tasks for water fountains
-                    tasks.append(
-                        self._fetch_device_data(account, device_id, WaterFountain)
+                    main_tasks.append(
+                        self._fetch_device_data(
+                            account, device.device_id, WaterFountain
+                        )
                     )
-                    tasks.append(
-                        self._fetch_device_data(account, device_id, WaterFountainRecord)
+                    record_tasks.append(
+                        self._fetch_device_data(
+                            account, device.device_id, WaterFountainRecord
+                        )
                     )
-                else:
-                    _LOGGER.warning("Unknown device type: %s", device_type)
-        await asyncio.gather(*tasks)
+
+        # Execute main device tasks first
+        await asyncio.gather(*main_tasks)
+
+        # Then execute record tasks
+        await asyncio.gather(*record_tasks)
 
         end_time = datetime.now()
         total_time = end_time - start_time
-        _LOGGER.info("OK Petkit data fetched in : %s", total_time)
+        _LOGGER.info("Petkit data fetched successfully in: %s", total_time)
 
     async def _fetch_device_data(
         self,
@@ -273,6 +277,8 @@ class PetKitClient:
             return
         device_type = device.device_type.lower()
 
+        _LOGGER.debug("Reading device type : %s (id=%s)", device_type, device_id)
+
         endpoint = data_class.get_endpoint(device_type)
         query_param = data_class.query_param(account, device.device_id)
 
@@ -292,18 +298,12 @@ class PetKitClient:
             _LOGGER.error("Unexpected response type: %s", type(response))
             return
 
-        if isinstance(device_data, list):
-            for item in device_data:
-                item.device_type = device_type
-        else:
-            device_data.device_type = device_type
-
-        _LOGGER.debug("Reading device type : %s (id=%s)", device_type, device_id)
-
         if data_class.data_type == DEVICE_DATA:
             self.petkit_entities[device_id] = device_data
+            _LOGGER.debug("Device data fetched OK for %s", device_type)
         elif data_class.data_type == DEVICE_RECORDS:
-            self.petkit_entities_records[device_id] = device_data
+            self.petkit_entities[device_id].device_records = device_data
+            _LOGGER.debug("Device records fetched OK for %s", device_type)
         else:
             _LOGGER.error("Unknown data type: %s", data_class.data_type)
 
@@ -367,7 +367,7 @@ class PetKitClient:
         )
         if res in (SUCCESS_KEY, RES_KEY):
             # TODO : Manage to get the response from manual feeding
-            _LOGGER.info("Command executed successfully")
+            _LOGGER.debug("Command executed successfully")
         else:
             _LOGGER.error("Command execution failed")
 
@@ -416,14 +416,7 @@ class PrepReq:
         """Make a request to the PetKit API."""
         _url = "/".join(s.strip("/") for s in [self.base_url, url])
         _headers = {**self.base_headers, **(headers or {})}
-        _LOGGER.debug(
-            "Request: %s %s Params: %s Data: %s Headers: %s",
-            method,
-            _url,
-            params,
-            data,
-            _headers,
-        )
+        _LOGGER.debug("Request: %s %s", method, _url)
         try:
             async with self.session.request(
                 method,
