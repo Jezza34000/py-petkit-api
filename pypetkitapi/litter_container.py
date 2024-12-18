@@ -142,7 +142,7 @@ class StateLitter(BaseModel):
     work_state: WorkState | None = Field(None, alias="workState")
 
 
-class Content(BaseModel):
+class ContentSC(BaseModel):
     """Dataclass for content data."""
 
     box: int | None = None
@@ -157,11 +157,22 @@ class Content(BaseModel):
     upload: int | None = None
 
 
-class SubContent(BaseModel):
+class LRContent(BaseModel):
+    """Dataclass for pet data."""
+
+    auto_clear: int | None = Field(None, alias="autoClear")
+    interval: int | None = None
+    pet_weight: int | None = Field(None, alias="petWeight")
+    time_in: int | None = Field(None, alias="timeIn")
+    time_out: int | None = Field(None, alias="timeOut")
+    error: int | None = None
+
+
+class LRSubContent(BaseModel):
     """Dataclass for sub-content data."""
 
     aes_key: str | None = Field(None, alias="aesKey")
-    content: Content | None = None
+    content: ContentSC | None = None
     device_id: int | None = Field(None, alias="deviceId")
     duration: int | None = None
     enum_event_type: str | None = Field(None, alias="enumEventType")
@@ -189,7 +200,7 @@ class LitterRecord(BaseModel):
 
     aes_key: str | None = Field(None, alias="aesKey")
     avatar: str | None = None
-    content: dict[str, Any] | None = None
+    content: LRContent | None = None
     device_id: int | None = Field(None, alias="deviceId")
     duration: int | None = None
     enum_event_type: str | None = Field(None, alias="enumEventType")
@@ -205,7 +216,7 @@ class LitterRecord(BaseModel):
     preview: str | None = None
     related_event: str | None = Field(None, alias="relatedEvent")
     storage_space: int | None = Field(None, alias="storageSpace")
-    sub_content: list[SubContent] | None = Field(None, alias="subContent")
+    sub_content: list[LRSubContent] | None = Field(None, alias="subContent")
     timestamp: int | None = None
     toilet_detection: int | None = Field(None, alias="toiletDetection")
     upload: int | None = None
@@ -267,7 +278,7 @@ class Litter(BaseModel):
     service_status: int | None = Field(None, alias="serviceStatus")
     total_time: int | None = Field(None, alias="totalTime")
     device_type: str | None = Field(None, alias="deviceType")
-    device_records: LitterRecord | None = None
+    device_records: list[LitterRecord] | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
