@@ -6,7 +6,7 @@ from typing import Any, ClassVar
 from pydantic import BaseModel, Field
 
 from pypetkitapi.const import DEVICE_DATA, DEVICE_RECORDS, PetkitEndpoint
-from pypetkitapi.containers import AccountData, CloudProduct, FirmwareDetail, Wifi
+from pypetkitapi.containers import CloudProduct, Device, FirmwareDetail, Wifi
 
 
 class FeedItem(BaseModel):
@@ -157,6 +157,7 @@ class StateFeeder(BaseModel):
 class ManualFeed(BaseModel):
     """Dataclass for result data."""
 
+    amount: int | None = None
     amount1: int | None = None
     amount2: int | None = None
     id: str | None = None
@@ -260,15 +261,14 @@ class FeederRecord(BaseModel):
     @classmethod
     def query_param(
         cls,
-        account: AccountData,
-        device_type: str,
-        device_id: int,
+        device: Device,
+        device_data: Any | None = None,
         request_date: str | None = None,
     ) -> dict:
         """Generate query parameters including request_date."""
         if request_date is None:
             request_date = datetime.now().strftime("%Y%m%d")
-        return {"days": int(request_date), "deviceId": device_id}
+        return {"days": int(request_date), "deviceId": device.device_id}
 
 
 class Feeder(BaseModel):
@@ -310,7 +310,9 @@ class Feeder(BaseModel):
 
     @classmethod
     def query_param(
-        cls, account: AccountData, device_type: str, device_id: int
+        cls,
+        device: Device,
+        device_data: Any | None = None,
     ) -> dict:
         """Generate query parameters including request_date."""
-        return {"id": device_id}
+        return {"id": int(device.device_id)}
