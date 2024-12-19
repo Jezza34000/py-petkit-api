@@ -1,6 +1,6 @@
 repos:
   - repo: https://gitlab.com/vojko.pribudic.foss/pre-commit-update
-    rev: v0.6.0post1
+    rev: v0.6.1
     hooks:
       - id: pre-commit-update
 
@@ -35,12 +35,12 @@ repos:
       - id: black
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.3
+    rev: v0.8.4
     hooks:
       - id: ruff
         args:
           - --fix
-      - id: ruff-format
+  #      - id: ruff-format
 
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.21.2
