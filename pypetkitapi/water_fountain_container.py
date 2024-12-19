@@ -6,7 +6,7 @@ from typing import Any, ClassVar
 from pydantic import BaseModel, Field
 
 from pypetkitapi.const import DEVICE_DATA, DEVICE_RECORDS, PetkitEndpoint
-from pypetkitapi.containers import AccountData
+from pypetkitapi.containers import Device
 
 
 class Electricity(BaseModel):
@@ -103,21 +103,19 @@ class WaterFountainRecord(BaseModel):
     @classmethod
     def query_param(
         cls,
-        account: AccountData,
-        device_type: str,
-        device_id: int,
+        device: Device,
+        device_data: Any | None = None,
         request_date: str | None = None,
     ) -> dict:
         """Generate query parameters including request_date."""
-        if not account.user_list or not account.user_list[0]:
-            raise ValueError("The account does not have a valid user_list.")
-
         if request_date is None:
             request_date = datetime.now().strftime("%Y%m%d")
+        if device_data is None or not hasattr(device_data, "user_id"):
+            raise ValueError("The device_data does not have a valid user_id.")
         return {
             "day": int(request_date),
-            "deviceId": device_id,
-            "userId": account.user_list[0].user_id,
+            "deviceId": device.device_id,
+            "userId": device_data.user_id,
         }
 
 
@@ -173,7 +171,9 @@ class WaterFountain(BaseModel):
 
     @classmethod
     def query_param(
-        cls, account: AccountData, device_type: str, device_id: int
+        cls,
+        device: Device,
+        device_data: Any | None = None,
     ) -> dict:
         """Generate query parameters including request_date."""
-        return {"id": device_id}
+        return {"id": device.device_id}
