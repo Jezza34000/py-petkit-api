@@ -14,6 +14,7 @@ from pypetkitapi.command import ACTIONS_MAP
 from pypetkitapi.const import (
     DEVICE_DATA,
     DEVICE_RECORDS,
+    DEVICE_STATS,
     DEVICES_FEEDER,
     DEVICES_LITTER_BOX,
     DEVICES_WATER_FOUNTAIN,
@@ -21,6 +22,8 @@ from pypetkitapi.const import (
     LOGIN_DATA,
     RES_KEY,
     SUCCESS_KEY,
+    T4,
+    T6,
     Header,
     PetkitDomain,
     PetkitEndpoint,
@@ -35,7 +38,7 @@ from pypetkitapi.exceptions import (
     PypetkitError,
 )
 from pypetkitapi.feeder_container import Feeder, FeederRecord
-from pypetkitapi.litter_container import Litter, LitterRecord
+from pypetkitapi.litter_container import Litter, LitterRecord, LitterStats, PetOuGraph
 from pypetkitapi.water_fountain_container import WaterFountain, WaterFountainRecord
 
 _LOGGER = logging.getLogger(__name__)
@@ -201,37 +204,30 @@ class PetKitClient:
         for account in self.account_data:
             _LOGGER.debug("List devices data for account: %s", account)
             if account.device_list:
+                _LOGGER.debug("Devices in account: %s", account.device_list)
                 device_list.extend(account.device_list)
 
-            _LOGGER.debug("Fetch %s devices for this account", len(device_list))
+        for device in device_list:
+            device_type = device.device_type.lower()
+            if device_type in DEVICES_FEEDER:
+                main_tasks.append(self._fetch_device_data(device, Feeder))
+                record_tasks.append(self._fetch_device_data(device, FeederRecord))
+            elif device_type in DEVICES_LITTER_BOX:
+                main_tasks.append(
+                    self._fetch_device_data(device, Litter),
+                )
+                record_tasks.append(self._fetch_device_data(device, LitterRecord))
 
-            for device in device_list:
-                device_type = device.device_type.lower()
-                if device_type in DEVICES_FEEDER:
-                    main_tasks.append(
-                        self._fetch_device_data(account, device.device_id, Feeder)
-                    )
-                    record_tasks.append(
-                        self._fetch_device_data(account, device.device_id, FeederRecord)
-                    )
-                elif device_type in DEVICES_LITTER_BOX:
-                    main_tasks.append(
-                        self._fetch_device_data(account, device.device_id, Litter)
-                    )
-                    record_tasks.append(
-                        self._fetch_device_data(account, device.device_id, LitterRecord)
-                    )
-                elif device_type in DEVICES_WATER_FOUNTAIN:
-                    main_tasks.append(
-                        self._fetch_device_data(
-                            account, device.device_id, WaterFountain
-                        )
-                    )
-                    record_tasks.append(
-                        self._fetch_device_data(
-                            account, device.device_id, WaterFountainRecord
-                        )
-                    )
+                if device_type == T4:
+                    record_tasks.append(self._fetch_device_data(device, LitterStats))
+                if device_type == T6:
+                    record_tasks.append(self._fetch_device_data(device, PetOuGraph))
+
+            elif device_type in DEVICES_WATER_FOUNTAIN:
+                main_tasks.append(self._fetch_device_data(device, WaterFountain))
+                record_tasks.append(
+                    self._fetch_device_data(device, WaterFountainRecord)
+                )
 
         # Execute main device tasks first
         await asyncio.gather(*main_tasks)
@@ -245,8 +241,7 @@ class PetKitClient:
 
     async def _fetch_device_data(
         self,
-        account: AccountData,
-        device_id: int,
+        device: Device,
         data_class: type[
             Feeder
             | Litter
@@ -258,26 +253,19 @@ class PetKitClient:
     ) -> None:
         """Fetch the device data from the PetKit servers."""
         await self.validate_session()
-        device = None
 
-        if account.device_list:
-            device = next(
-                (
-                    device
-                    for device in account.device_list
-                    if device.device_id == device_id
-                ),
-                None,
-            )
-        if device is None:
-            _LOGGER.error("Device not found: id=%s", device_id)
-            return
         device_type = device.device_type.lower()
 
-        _LOGGER.debug("Reading device type : %s (id=%s)", device_type, device_id)
+        _LOGGER.debug("Reading device type : %s (id=%s)", device_type, device.device_id)
 
         endpoint = data_class.get_endpoint(device_type)
-        query_param = data_class.query_param(account, device_type, device.device_id)
+
+        # Specific device ask for data from the device
+        device_cont = None
+        if self.petkit_entities.get(device.device_id, None):
+            device_cont = self.petkit_entities[device.device_id]
+
+        query_param = data_class.query_param(device, device_cont)
 
         response = await self.req.request(
             method=HTTPMethod.POST,
@@ -288,7 +276,7 @@ class PetKitClient:
 
         # Workaround for the litter box T6
         if isinstance(response, dict) and response.get("list", None):
-            response = response.get("list")
+            response = response.get("list", [])
 
         # Check if the response is a list or a dict
         if isinstance(response, list):
@@ -307,11 +295,19 @@ class PetKitClient:
             device_data.device_type = device_type
 
         if data_class.data_type == DEVICE_DATA:
-            self.petkit_entities[device_id] = device_data
+            self.petkit_entities[device.device_id] = device_data
             _LOGGER.debug("Device data fetched OK for %s", device_type)
         elif data_class.data_type == DEVICE_RECORDS:
-            self.petkit_entities[device_id].device_records = device_data
+            self.petkit_entities[device.device_id].device_records = device_data
             _LOGGER.debug("Device records fetched OK for %s", device_type)
+        elif data_class.data_type == DEVICE_STATS:
+            if device_type == T4:
+                self.petkit_entities[device.device_id].device_stats = device_data
+            if device_type == T6:
+                self.petkit_entities[device.device_id].device_pet_graph_out = (
+                    device_data
+                )
+            _LOGGER.debug("Device stats fetched OK for %s", device_type)
         else:
             _LOGGER.error("Unknown data type: %s", data_class.data_type)
 
@@ -375,8 +371,8 @@ class PetKitClient:
             data=params,
             headers=await self.get_session_id(),
         )
-        if res in (SUCCESS_KEY, RES_KEY):
-            # TODO : Manage to get the response from manual feeding
+
+        if res in [RES_KEY, SUCCESS_KEY]:
             _LOGGER.debug("Command executed successfully")
             return True
         _LOGGER.error("Command execution failed")
