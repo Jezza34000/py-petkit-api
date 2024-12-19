@@ -414,6 +414,7 @@ class Litter(BaseModel):
     pet_out_records: list[list[int]] | None = Field(None, alias="petOutRecords")
     service_status: int | None = Field(None, alias="serviceStatus")
     total_time: int | None = Field(None, alias="totalTime")
+    with_k3: int | None = Field(None, alias="withK3")
     device_type: str | None = Field(None, alias="deviceType")
     device_records: list[LitterRecord] | None = None
     device_stats: LitterStats | None = None
