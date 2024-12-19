@@ -5,8 +5,15 @@ from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
-from pypetkitapi.const import DEVICE_DATA, DEVICE_RECORDS, T4, T6, PetkitEndpoint
-from pypetkitapi.containers import AccountData, CloudProduct, FirmwareDetail, Wifi
+from pypetkitapi.const import (
+    DEVICE_DATA,
+    DEVICE_RECORDS,
+    DEVICE_STATS,
+    T4,
+    T6,
+    PetkitEndpoint,
+)
+from pypetkitapi.containers import CloudProduct, Device, FirmwareDetail, Wifi
 
 
 class SettingsLitter(BaseModel):
@@ -194,7 +201,9 @@ class LRSubContent(BaseModel):
 
 
 class LitterRecord(BaseModel):
-    """Dataclass for feeder record data."""
+    """Dataclass for feeder record data.
+    Litter records
+    """
 
     data_type: ClassVar[str] = DEVICE_RECORDS
 
@@ -235,28 +244,140 @@ class LitterRecord(BaseModel):
     @classmethod
     def query_param(
         cls,
-        account: AccountData,
-        device_type: str,
-        device_id: int,
+        device: Device,
+        device_data: Any | None = None,
         request_date: str | None = None,
     ) -> dict:
         """Generate query parameters including request_date."""
+        device_type = device.device_type.lower()
         if device_type == T4:
             if request_date is None:
                 request_date = datetime.now().strftime("%Y%m%d")
-            return {"date": int(request_date), "deviceId": device_id}
+            return {"date": int(request_date), "deviceId": device.device_id}
         if device_type == T6:
             return {
                 "timestamp": int(datetime.now().timestamp()),
-                "deviceId": device_id,
+                "deviceId": device.device_id,
                 "type": 2,
             }
         raise ValueError(f"Invalid device type: {device_type}")
 
 
+class StatisticInfo(BaseModel):
+    """Dataclass for statistic information.
+    Subclass of LitterStats.
+    """
+
+    pet_id: str | None = Field(None, alias="petId")
+    pet_name: str | None = Field(None, alias="petName")
+    pet_times: int | None = Field(None, alias="petTimes")
+    pet_total_time: int | None = Field(None, alias="petTotalTime")
+    pet_weight: int | None = Field(None, alias="petWeight")
+    statistic_date: str | None = Field(None, alias="statisticDate")
+    x_time: int | None = Field(None, alias="xTime")
+
+
+class LitterStats(BaseModel):
+    """Dataclass for result data.
+    Supported devices = T4 only (T3 ?)
+    """
+
+    data_type: ClassVar[str] = DEVICE_STATS
+
+    avg_time: int | None = Field(None, alias="avgTime")
+    pet_ids: list[dict] | None = Field(None, alias="petIds")
+    statistic_info: list[StatisticInfo] | None = Field(None, alias="statisticInfo")
+    statistic_time: str | None = Field(None, alias="statisticTime")
+    times: int | None = None
+    total_time: int | None = Field(None, alias="totalTime")
+    device_type: str | None = None
+
+    @classmethod
+    def get_endpoint(cls, device_type: str) -> str:
+        """Get the endpoint URL for the given device type."""
+        return PetkitEndpoint.STATISTIC
+
+    @classmethod
+    def query_param(
+        cls,
+        device: Device,
+        device_data: Any | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> dict:
+        """Generate query parameters including request_date."""
+
+        if start_date is None and end_date is None:
+            start_date = datetime.now().strftime("%Y%m%d")
+            end_date = datetime.now().strftime("%Y%m%d")
+
+        return {
+            "endDate": end_date,
+            "deviceId": device.device_id,
+            "type": 0,
+            "startDate": start_date,
+        }
+
+
+class PetGraphContent(BaseModel):
+    """Dataclass for content data."""
+
+    auto_clear: int | None = Field(None, alias="autoClear")
+    img: str | None = None
+    interval: int | None = None
+    is_shit: int | None = Field(None, alias="isShit")
+    mark: int | None = None
+    media: int | None = None
+    pet_weight: int | None = Field(None, alias="petWeight")
+    shit_weight: int | None = Field(None, alias="shitWeight")
+    time_in: int | None = Field(None, alias="timeIn")
+    time_out: int | None = Field(None, alias="timeOut")
+
+
+class PetOuGraph(BaseModel):
+    """Dataclass for event data."""
+
+    data_type: ClassVar[str] = DEVICE_STATS
+
+    aes_key: str | None = Field(None, alias="aesKey")
+    content: PetGraphContent | None = None
+    duration: int | None = None
+    event_id: str | None = Field(None, alias="eventId")
+    expire: int | None = None
+    is_need_upload_video: int | None = Field(None, alias="isNeedUploadVideo")
+    media_api: str | None = Field(None, alias="mediaApi")
+    pet_id: str | None = Field(None, alias="petId")
+    pet_name: str | None = Field(None, alias="petName")
+    preview: str | None = None
+    storage_space: int | None = Field(None, alias="storageSpace")
+    time: int | None = None
+    toilet_time: int | None = Field(None, alias="toiletTime")
+    device_type: str | None = None
+
+    @classmethod
+    def get_endpoint(cls, device_type: str) -> str:
+        """Get the endpoint URL for the given device type."""
+        return PetkitEndpoint.GET_PET_OUT_GRAPH
+
+    @classmethod
+    def query_param(
+        cls,
+        device: Device,
+        device_data: Any | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> dict:
+        """Generate query parameters including request_date."""
+
+        return {
+            "timestamp": int(datetime.now().timestamp()),
+            "deviceId": device.device_id,
+        }
+
+
 class Litter(BaseModel):
     """Dataclass for Litter Data.
-    Supported devices = T4, T6
+    Supported devices = T3, T4, T6
     """
 
     data_type: ClassVar[str] = DEVICE_DATA
@@ -295,6 +416,8 @@ class Litter(BaseModel):
     total_time: int | None = Field(None, alias="totalTime")
     device_type: str | None = Field(None, alias="deviceType")
     device_records: list[LitterRecord] | None = None
+    device_stats: LitterStats | None = None
+    device_pet_graph_out: PetOuGraph | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
@@ -303,7 +426,9 @@ class Litter(BaseModel):
 
     @classmethod
     def query_param(
-        cls, account: AccountData, device_type: str, device_id: int
+        cls,
+        device: Device,
+        device_data: Any | None = None,
     ) -> dict:
         """Generate query parameters including request_date."""
-        return {"id": device_id}
+        return {"id": device.device_id}

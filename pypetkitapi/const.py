@@ -11,6 +11,7 @@ SUCCESS_KEY = "success"
 
 DEVICE_RECORDS = "deviceRecords"
 DEVICE_DATA = "deviceData"
+DEVICE_STATS = "deviceStats"
 PET_DATA = "petData"
 
 # PetKit Models
@@ -114,6 +115,9 @@ class PetkitEndpoint(StrEnum):
 
     # Litter Box
     DEODORANT_RESET = "deodorantReset"
+    STATISTIC = "statistic"
+    STATISTIC_RELEASE = "statisticRelease"
+    GET_PET_OUT_GRAPH = "getPetOutGraph"
 
     # Feeders
     REPLENISHED_FOOD = "added"
