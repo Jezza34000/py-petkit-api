@@ -197,11 +197,13 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = ">=3.11"
 aiohttp = "^3.11.0"
+pycryptodome = "^3.21.0"
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^4.0.1"
 black = "^24.10.0"
 ruff = "^0.8.1"
+types-aiofiles = "^24.1.0.20240626"
 
 [tool.bumpver]
 current_version = "1.5.0"
