@@ -418,7 +418,7 @@ class Litter(BaseModel):
     device_type: str | None = Field(None, alias="deviceType")
     device_records: list[LitterRecord] | None = None
     device_stats: LitterStats | None = None
-    device_pet_graph_out: PetOuGraph | None = None
+    device_pet_graph_out: list[PetOuGraph] | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
