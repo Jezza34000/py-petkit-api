@@ -25,6 +25,7 @@ class MediasFiles:
     record_type: str
     url: str
     aes_key: str
+    timestamp: str | None = None
 
 
 async def extract_filename_from_url(url: str) -> str:
@@ -70,49 +71,46 @@ class MediaHandler:
         """Process individual records and return media info."""
         media_files = []
 
+        async def process_item(record_items, reversed_order=False):
+            items = reversed(record_items) if reversed_order else record_items
+            last_item = next(
+                (item for item in items if item.preview and item.aes_key),
+                None,
+            )
+            if last_item:
+                filename = await extract_filename_from_url(last_item.preview)
+                await self.media_download_decode.get_file(
+                    last_item.preview, last_item.aes_key
+                )
+
+                timestamp = (
+                    last_item.eat_start_time
+                    or last_item.completed_at
+                    or last_item.timestamp
+                    or None
+                )
+
+                media_files.append(
+                    MediasFiles(
+                        record_type=record_type,
+                        filename=filename,
+                        url=last_item.preview,
+                        aes_key=last_item.aes_key,
+                        timestamp=timestamp,
+                    )
+                )
+
         if record_type == "feed":
             for record in reversed(records):
                 if record.items:
-                    last_item = next(
-                        (
-                            item
-                            for item in reversed(record.items)
-                            if item.preview and item.aes_key
-                        ),
-                        None,
-                    )
-                    if last_item:
-                        filename = await extract_filename_from_url(last_item.preview)
-                        await self.media_download_decode.get_file(
-                            last_item.preview, last_item.aes_key
-                        )
-                        media_files.append(
-                            MediasFiles(
-                                record_type=record_type,
-                                filename=filename,
-                                url=last_item.preview,
-                                aes_key=last_item.aes_key,
-                            )
-                        )
+                    await process_item(record.items, reversed_order=True)
+                    if media_files:  # Stop processing if a media file is added
                         return media_files
         else:
             for record in records:
                 if record.items:
-                    last_item = record.items[-1]
-                    preview_url = last_item.preview
-                    aes_key = last_item.aes_key
+                    await process_item(record.items)
 
-                    if preview_url and aes_key:
-                        filename = await extract_filename_from_url(preview_url)
-                        await self.media_download_decode.get_file(preview_url, aes_key)
-                        media_files.append(
-                            MediasFiles(
-                                record_type=record_type,
-                                filename=filename,
-                                url=preview_url,
-                                aes_key=aes_key,
-                            )
-                        )
         return media_files
 
 
