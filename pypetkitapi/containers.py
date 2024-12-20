@@ -1,6 +1,6 @@
 """Dataclasses container for petkit API."""
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, root_validator
 
 
 class RegionInfo(BaseModel):
@@ -75,7 +75,7 @@ class Pet(BaseModel):
     device_type: str = "pet"  # Fictive field (for HA compatibility) fixed
     firmware: str | None = None  # Fictive field (for HA compatibility) fixed
 
-    @model_validator(mode="before")
+    @root_validator(pre=True)
     def populate_fictive_fields(cls, values):  # noqa: N805
         """Populate fictive fields based on other fields."""
         values["id"] = values.get("id") or values.get("petId")
