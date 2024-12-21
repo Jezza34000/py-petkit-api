@@ -196,7 +196,8 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.11"
-aiohttp = "^3.10.1"
+aiohttp = "^3.10.10"
+aiofiles = "^24.1.0"
 pycryptodome = "^3.19.1"
 pydantic = "^1.10.19"
 
