@@ -71,10 +71,13 @@ class MediaHandler:
         """Process individual records and return media info."""
         media_files = []
 
-        async def process_item(record_items, reversed_order=False):
-            items = reversed(record_items) if reversed_order else record_items
+        async def process_item(record_items):
             last_item = next(
-                (item for item in items if item.preview and item.aes_key),
+                (
+                    item
+                    for item in reversed(record_items)
+                    if item.preview and item.aes_key
+                ),
                 None,
             )
             if last_item:
@@ -82,14 +85,12 @@ class MediaHandler:
                 await self.media_download_decode.get_file(
                     last_item.preview, last_item.aes_key
                 )
-
                 timestamp = (
                     last_item.eat_start_time
                     or last_item.completed_at
                     or last_item.timestamp
                     or None
                 )
-
                 media_files.append(
                     MediasFiles(
                         record_type=record_type,
@@ -100,16 +101,9 @@ class MediaHandler:
                     )
                 )
 
-        if record_type == "feed":
-            for record in reversed(records):
-                if record.items:
-                    await process_item(record.items, reversed_order=True)
-                    if media_files:  # Stop processing if a media file is added
-                        return media_files
-        else:
-            for record in records:
-                if record.items:
-                    await process_item(record.items)
+        for record in records:
+            if record.items:
+                await process_item(record.items)
 
         return media_files
 
@@ -162,11 +156,22 @@ class MediaDownloadDecode:
         """Save content to a file asynchronously and return the file path."""
         file_path = Path(self.download_path) / filename
         try:
+            # Ensure the directory exists
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+
             async with aio_open(file_path, "wb") as file:
                 await file.write(content)
-            _LOGGER.debug("Saved file: %s", file_path)
+            _LOGGER.debug("Save file OK : %s", file_path)
+        except PermissionError as e:
+            _LOGGER.error("Save file, permission denied %s: %s", file_path, e)
+        except FileNotFoundError as e:
+            _LOGGER.error("Save file, file/folder not found %s: %s", file_path, e)
         except OSError as e:
-            _LOGGER.error("Error saving file %s: %s", file_path, e)
+            _LOGGER.error("Save file, error saving file %s: %s", file_path, e)
+        except Exception as e:  # noqa: BLE001
+            _LOGGER.error(
+                "Save file, unexpected error saving file %s: %s", file_path, e
+            )
         return file_path
 
     async def _decrypt_image_from_file(
