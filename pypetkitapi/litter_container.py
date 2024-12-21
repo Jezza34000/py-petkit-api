@@ -220,7 +220,7 @@ class LitterRecord(BaseModel):
     mark: int | None = None
     media: int | None = None
     media_api: str | None = Field(None, alias="mediaApi")
-    pet_id: str | None = Field(None, alias="petId")
+    pet_id: int | None = Field(None, alias="petId")
     pet_name: str | None = Field(None, alias="petName")
     preview: str | None = None
     related_event: str | None = Field(None, alias="relatedEvent")
@@ -268,12 +268,12 @@ class StatisticInfo(BaseModel):
     Subclass of LitterStats.
     """
 
-    pet_id: str | None = Field(None, alias="petId")
+    pet_id: int | None = Field(None, alias="petId")
     pet_name: str | None = Field(None, alias="petName")
     pet_times: int | None = Field(None, alias="petTimes")
     pet_total_time: int | None = Field(None, alias="petTotalTime")
     pet_weight: int | None = Field(None, alias="petWeight")
-    statistic_date: str | None = Field(None, alias="statisticDate")
+    statistic_date: int | None = Field(None, alias="statisticDate")
     x_time: int | None = Field(None, alias="xTime")
 
 
@@ -334,8 +334,10 @@ class PetGraphContent(BaseModel):
     time_out: int | None = Field(None, alias="timeOut")
 
 
-class PetOuGraph(BaseModel):
-    """Dataclass for event data."""
+class PetOutGraph(BaseModel):
+    """Dataclass for event data.
+    Main Dataclass
+    """
 
     data_type: ClassVar[str] = DEVICE_STATS
 
@@ -346,7 +348,7 @@ class PetOuGraph(BaseModel):
     expire: int | None = None
     is_need_upload_video: int | None = Field(None, alias="isNeedUploadVideo")
     media_api: str | None = Field(None, alias="mediaApi")
-    pet_id: str | None = Field(None, alias="petId")
+    pet_id: int | None = Field(None, alias="petId")
     pet_name: str | None = Field(None, alias="petName")
     preview: str | None = None
     storage_space: int | None = Field(None, alias="storageSpace")
@@ -418,7 +420,7 @@ class Litter(BaseModel):
     device_type: str | None = Field(None, alias="deviceType")
     device_records: list[LitterRecord] | None = None
     device_stats: LitterStats | None = None
-    device_pet_graph_out: list[PetOuGraph] | None = None
+    device_pet_graph_out: list[PetOutGraph] | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
