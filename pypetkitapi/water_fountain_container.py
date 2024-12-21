@@ -5,7 +5,7 @@ from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
-from pypetkitapi.const import DEVICE_DATA, DEVICE_RECORDS, PetkitEndpoint
+from pypetkitapi.const import CTW3, DEVICE_DATA, DEVICE_RECORDS, PetkitEndpoint
 from pypetkitapi.containers import Device
 
 
@@ -96,9 +96,11 @@ class WaterFountainRecord(BaseModel):
     device_type: str | None = Field(None, alias="deviceType")
 
     @classmethod
-    def get_endpoint(cls, device_type: str) -> str:
+    def get_endpoint(cls, device_type: str) -> str | None:
         """Get the endpoint URL for the given device type."""
-        return PetkitEndpoint.GET_WORK_RECORD
+        if device_type == CTW3:
+            return PetkitEndpoint.GET_WORK_RECORD
+        return None
 
     @classmethod
     def query_param(

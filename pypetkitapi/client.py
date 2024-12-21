@@ -270,6 +270,10 @@ class PetKitClient:
 
         endpoint = data_class.get_endpoint(device_type)
 
+        if endpoint is None:
+            _LOGGER.debug("Endpoint not found for device type: %s", device_type)
+            return
+
         # Specific device ask for data from the device
         device_cont = None
         if self.petkit_entities.get(device.device_id, None):
