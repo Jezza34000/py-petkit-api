@@ -21,7 +21,6 @@ from pypetkitapi.const import (
     ERR_KEY,
     LOGIN_DATA,
     RES_KEY,
-    SUCCESS_KEY,
     T4,
     T6,
     Header,
@@ -38,7 +37,7 @@ from pypetkitapi.exceptions import (
     PypetkitError,
 )
 from pypetkitapi.feeder_container import Feeder, FeederRecord
-from pypetkitapi.litter_container import Litter, LitterRecord, LitterStats, PetOuGraph
+from pypetkitapi.litter_container import Litter, LitterRecord, LitterStats, PetOutGraph
 from pypetkitapi.water_fountain_container import WaterFountain, WaterFountainRecord
 
 _LOGGER = logging.getLogger(__name__)
@@ -200,6 +199,7 @@ class PetKitClient:
         main_tasks = []
         record_tasks = []
         device_list: list[Device] = []
+        stats_tasks = []
 
         for account in self.account_data:
             _LOGGER.debug("List devices data for account: %s", account)
@@ -221,7 +221,7 @@ class PetKitClient:
                 if device_type == T4:
                     record_tasks.append(self._fetch_device_data(device, LitterStats))
                 if device_type == T6:
-                    record_tasks.append(self._fetch_device_data(device, PetOuGraph))
+                    record_tasks.append(self._fetch_device_data(device, PetOutGraph))
 
             elif device_type in DEVICES_WATER_FOUNTAIN:
                 main_tasks.append(self._fetch_device_data(device, WaterFountain))
@@ -234,6 +234,16 @@ class PetKitClient:
 
         # Then execute record tasks
         await asyncio.gather(*record_tasks)
+
+        # Add populate_pet_stats tasks
+        stats_tasks = [
+            self.populate_pet_stats(self.petkit_entities[device.device_id])
+            for device in device_list
+            if device.device_type.lower() in DEVICES_LITTER_BOX
+        ]
+
+        # Execute stats tasks
+        await asyncio.gather(*stats_tasks)
 
         end_time = datetime.now()
         total_time = end_time - start_time
@@ -311,6 +321,69 @@ class PetKitClient:
         else:
             _LOGGER.error("Unknown data type: %s", data_class.data_type)
 
+    async def get_pets_list(self) -> list[Pet]:
+        """Extract and return the list of pets."""
+        return [
+            entity
+            for entity in self.petkit_entities.values()
+            if isinstance(entity, Pet)
+        ]
+
+    @staticmethod
+    def get_safe_value(value: int | None, default: int = 0) -> int:
+        """Return the value if not None, otherwise return the default."""
+        return value if value is not None else default
+
+    @staticmethod
+    def calculate_duration(start: int | None, end: int | None) -> int:
+        """Calculate the duration, ensuring both start and end are not None."""
+        if start is None or end is None:
+            return 0
+        return end - start
+
+    async def populate_pet_stats(self, stats_data: Litter | None) -> None:
+        """Collect data from litter data to populate pet stats."""
+        if stats_data is None:
+            return
+
+        pets_list = await self.get_pets_list()
+        for pet in pets_list:
+            if stats_data.device_records:
+                await self._process_t4(pet, stats_data.device_records)
+            elif stats_data.device_pet_graph_out:
+                await self._process_t6(pet, stats_data.device_pet_graph_out)
+
+    async def _process_t4(self, pet, device_records):
+        """Process T4 device records."""
+        for stat in device_records:
+            if stat.pet_id == pet.pet_id and (
+                pet.last_litter_usage is None
+                or self.get_safe_value(stat.timestamp) > pet.last_litter_usage
+            ):
+                pet.last_litter_usage = stat.timestamp
+                pet.last_measured_weight = self.get_safe_value(
+                    stat.content.pet_weight if stat.content else None
+                )
+                pet.last_duration_usage = self.calculate_duration(
+                    stat.content.time_in if stat.content else None,
+                    stat.content.time_out if stat.content else None,
+                )
+                pet.last_device_used = "Pura Max"
+
+    async def _process_t6(self, pet, pet_graphs):
+        """Process T6 pet graphs."""
+        for graph in pet_graphs:
+            if graph.pet_id == pet.pet_id and (
+                pet.last_litter_usage is None
+                or self.get_safe_value(graph.time) > pet.last_litter_usage
+            ):
+                pet.last_litter_usage = graph.time
+                pet.last_measured_weight = self.get_safe_value(
+                    graph.content.pet_weight if graph.content else None
+                )
+                pet.last_duration_usage = self.get_safe_value(graph.toilet_time)
+                pet.last_device_used = "Purobot Ultra"
+
     async def send_api_request(
         self,
         device_id: int,
@@ -371,12 +444,8 @@ class PetKitClient:
             data=params,
             headers=await self.get_session_id(),
         )
-
-        if res in [RES_KEY, SUCCESS_KEY]:
-            _LOGGER.debug("Command executed successfully")
-            return True
-        _LOGGER.error("Command execution failed")
-        return False
+        _LOGGER.debug("Command execution success, API response : %s", res)
+        return True
 
     async def close(self) -> None:
         """Close the aiohttp session if it was created by the client."""
