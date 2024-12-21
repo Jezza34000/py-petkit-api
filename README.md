@@ -64,11 +64,13 @@ async def main():
 
         await client.get_devices_data()
 
-        # Read the account data
-        print(client.account_data)
+        # Lists all devices and pet from account
 
-        # Read the devices data
-        print(client.petkit_entities)
+        for key, value in client.petkit_entities.items():
+            print(f"{key}: {type(value).__name__} - {value.name}")
+
+        # Read devices or pet information
+        print(client.petkit_entities[123456789])
 
         # Send command to the devices
         ### Example 1 : Turn on the indicator light
