@@ -70,7 +70,7 @@ class Pet(BaseModel):
     pet_id: int = Field(alias="petId")
     pet_name: str | None = Field(None, alias="petName")
     id: int | None = None  # Fictive field (for HA compatibility) copied from id
-    sn: int | None = None  # Fictive field (for HA compatibility) copied from id
+    sn: str  # Fictive field (for HA compatibility) copied from id
     name: str | None = None  # Fictive field (for HA compatibility) copied from pet_name
     device_type: str = "pet"  # Fictive field (for HA compatibility) fixed
     firmware: str | None = None  # Fictive field (for HA compatibility) fixed

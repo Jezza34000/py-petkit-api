@@ -259,6 +259,8 @@ class PetKitClient:
             | FeederRecord
             | LitterRecord
             | WaterFountainRecord
+            | PetOutGraph
+            | LitterStats
         ],
     ) -> None:
         """Fetch the device data from the PetKit servers."""
@@ -345,16 +347,14 @@ class PetKitClient:
             return 0
         return end - start
 
-    async def populate_pet_stats(self, stats_data: Litter | None) -> None:
+    async def populate_pet_stats(self, stats_data: Litter) -> None:
         """Collect data from litter data to populate pet stats."""
-        if stats_data is None:
-            return
 
         pets_list = await self.get_pets_list()
         for pet in pets_list:
-            if stats_data.device_records:
+            if stats_data.device_type == T4 and stats_data.device_records:
                 await self._process_t4(pet, stats_data.device_records)
-            elif stats_data.device_pet_graph_out:
+            elif stats_data.device_type == T6 and stats_data.device_pet_graph_out:
                 await self._process_t6(pet, stats_data.device_pet_graph_out)
 
     async def _process_t4(self, pet, device_records):
