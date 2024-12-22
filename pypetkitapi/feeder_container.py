@@ -145,6 +145,9 @@ class StateFeeder(BaseModel):
     door: int | None = None
     feed_state: FeedState | None = Field(None, alias="feedState")
     feeding: int | None = None
+    error_code: str | None = Field(None, alias="errorCode")
+    error_detail: str | None = Field(None, alias="errorDetail")
+    error_level: int | None = Field(None, alias="errorLevel")
     error_msg: str | None = Field(None, alias="errorMsg")
     ota: int | None = None
     overall: int | None = None
