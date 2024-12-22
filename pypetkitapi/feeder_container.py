@@ -5,7 +5,7 @@ from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
-from pypetkitapi.const import DEVICE_DATA, DEVICE_RECORDS, PetkitEndpoint
+from pypetkitapi.const import D3, DEVICE_DATA, DEVICE_RECORDS, PetkitEndpoint
 from pypetkitapi.containers import CloudProduct, Device, FirmwareDetail, Wifi
 
 
@@ -89,6 +89,7 @@ class SettingsFeeder(BaseModel):
     selected_sound: int | None = Field(None, alias="selectedSound")
     smart_frame: int | None = Field(None, alias="smartFrame")
     sound_enable: int | None = Field(None, alias="soundEnable")
+    surplus: int | None = None  # D3
     surplus_control: int | None = Field(None, alias="surplusControl")
     surplus_standard: int | None = Field(None, alias="surplusStandard")
     system_sound_enable: int | None = Field(None, alias="systemSoundEnable")
@@ -113,7 +114,7 @@ class FeedState(BaseModel):
     eat_avg: int | None = Field(None, alias="eatAvg")
     eat_count: int | None = Field(None, alias="eatCount")
     eat_times: list[int] | None = Field(None, alias="eatTimes")
-    feed_times: dict | None = Field(None, alias="feedTimes")
+    feed_times: dict | list | None = Field(None, alias="feedTimes")
     times: int | None = None
     add_amount_total: int | None = Field(None, alias="addAmountTotal")
     plan_amount_total: int | None = Field(None, alias="planAmountTotal")
@@ -135,7 +136,10 @@ class StateFeeder(BaseModel):
     battery_power: int | None = Field(None, alias="batteryPower")
     battery_status: int | None = Field(None, alias="batteryStatus")
     bowl: int | None = None
+    block: int | None = None
+    broadcast: dict | None = None
     camera_status: int | None = Field(None, alias="cameraStatus")
+    charge: int | None = None
     desiccant_left_days: int | None = Field(None, alias="desiccantLeftDays")
     desiccant_time: int | None = Field(None, alias="desiccantTime")
     door: int | None = None
@@ -146,6 +150,7 @@ class StateFeeder(BaseModel):
     overall: int | None = None
     pim: int | None = None
     runtime: int | None = None
+    weight: int | None = None
     wifi: Wifi | None = None
     eating: int | None = None
     food: int | None = None
@@ -198,6 +203,7 @@ class RecordsItems(BaseModel):
     eat_end_time: int | None = Field(None, alias="eatEndTime")
     eat_start_time: int | None = Field(None, alias="eatStartTime")
     eat_video: int | None = Field(None, alias="eatVideo")
+    eat_weight: int | None = Field(None, alias="eatWeight")  # D3
     empty: int | None = None
     end_time: int | None = Field(None, alias="endTime")
     enum_event_type: str | None = Field(None, alias="enumEventType")
@@ -210,10 +216,12 @@ class RecordsItems(BaseModel):
     id: str | None = None
     is_executed: int | None = Field(None, alias="isExecuted")
     is_need_upload_video: int | None = Field(None, alias="isNeedUploadVideo")
+    left_weight: int | None = Field(None, alias="leftWeight")  # D3
     mark: int | None = None
     media_api: str | None = Field(None, alias="mediaApi")
     media_list: list[Any] | None = Field(None, alias="mediaList")
     name: str | None = None
+    pet_id: str | None = Field(None, alias="petId")
     preview: str | None = None
     preview1: str | None = Field(None, alias="preview1")
     preview2: str | None = Field(None, alias="preview2")
@@ -235,11 +243,13 @@ class RecordsType(BaseModel):
     day: int | None = None
     device_id: int | None = Field(None, alias="deviceId")
     eat_count: int | None = Field(None, alias="eatCount")
+    eat_amount: int | None = Field(None, alias="eatAmount")  # D3
     items: list[RecordsItems] | None = None
     plan_amount: int | None = Field(None, alias="planAmount")
     real_amount: int | None = Field(None, alias="realAmount")
     amount: int | None = None
     times: int | None = None
+    user_id: str | None = Field(None, alias="userId")  # D3
 
 
 class FeederRecord(BaseModel):
@@ -254,8 +264,10 @@ class FeederRecord(BaseModel):
     device_type: str | None = Field(None, alias="deviceType")
 
     @classmethod
-    def get_endpoint(cls, device_type: str) -> str:
+    def get_endpoint(cls, device_type: str) -> str | None:
         """Get the endpoint URL for the given device type."""
+        if device_type == D3:
+            return PetkitEndpoint.DAILY_FEED_AND_EAT
         return PetkitEndpoint.GET_DEVICE_RECORD
 
     @classmethod
