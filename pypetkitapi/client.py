@@ -206,6 +206,7 @@ class PetKitClient:
             if account.device_list:
                 _LOGGER.debug("Devices in account: %s", account.device_list)
                 device_list.extend(account.device_list)
+                _LOGGER.debug("Found %s devices", len(account.device_list))
 
         for device in device_list:
             device_type = device.device_type.lower()
