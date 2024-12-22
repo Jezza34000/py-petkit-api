@@ -41,28 +41,30 @@ async def extract_filename_from_url(url: str) -> str:
 class MediaHandler:
     """Class to find media files from PetKit devices."""
 
-    def __init__(self, device: Feeder, file_path: str):
+    def __init__(self, file_path: Path):
         """Initialize the class."""
-        self.device = device
         self.media_download_decode = MediaDownloadDecode(file_path)
         self.media_files: list[MediasFiles] = []
 
-    async def get_last_image(self) -> list[MediasFiles]:
+    async def get_last_image(self, device: Feeder) -> list[MediasFiles]:
         """Process device records and extract media info."""
         record_types = ["eat", "feed", "move", "pet"]
         self.media_files = []
 
-        if not self.device.device_records:
+        if not isinstance(device, Feeder):
+            _LOGGER.error("Device is not a Feeder")
+            return []
+
+        if not device.device_records:
             _LOGGER.error("No device records found for feeder")
             return []
 
         for record_type in record_types:
-            records = getattr(self.device.device_records, record_type, None)
+            records = getattr(device.device_records, record_type, None)
             if records:
                 self.media_files.extend(
                     await self._process_records(records, record_type)
                 )
-
         return self.media_files
 
     async def _process_records(
@@ -111,45 +113,39 @@ class MediaHandler:
 class MediaDownloadDecode:
     """Class to download"""
 
-    def __init__(self, download_path: str):
+    def __init__(self, download_path: Path):
         """Initialize the class."""
         self.download_path = download_path
 
     async def get_file(self, url: str, aes_key: str) -> bool:
         """Download a file from a URL and decrypt it."""
-        try:
-            # Check if the file already exists
-            filename = await extract_filename_from_url(url)
-            full_file_path = Path(self.download_path) / filename
-            if full_file_path.exists():
-                _LOGGER.debug(
-                    "File already exist : %s don't need to download it", filename
+        # Check if the file already exists
+        filename = await extract_filename_from_url(url)
+        full_file_path = Path(self.download_path) / filename
+        if full_file_path.exists():
+            _LOGGER.debug("File already exist : %s don't need to download it", filename)
+            return True
+
+        # Download the file
+        async with aiohttp.ClientSession() as session, session.get(url) as response:
+            if response.status != 200:
+                _LOGGER.error(
+                    "Failed to download %s, status code: %s", url, response.status
                 )
-                return True
+                return False
 
-            # Download the file
-            async with aiohttp.ClientSession() as session, session.get(url) as response:
-                if response.status != 200:
-                    _LOGGER.error(
-                        "Failed to download %s, status code: %s", url, response.status
-                    )
-                    return False
+            content = await response.read()
 
-                content = await response.read()
-                encrypted_file_path = await self._save_file(content, f"{filename}.enc")
-                # Decrypt the image
-                decrypted_data = await self._decrypt_image_from_file(
-                    encrypted_file_path, aes_key
-                )
+        encrypted_file_path = await self._save_file(content, f"{filename}.enc")
+        # Decrypt the image
+        decrypted_data = await self._decrypt_image_from_file(
+            encrypted_file_path, aes_key
+        )
 
-                if decrypted_data:
-                    _LOGGER.debug("Decrypt was successful")
-                    await self._save_file(decrypted_data, filename)
-                    Path(encrypted_file_path).unlink()
-                    return True
-                _LOGGER.error("Failed to decrypt %s", encrypted_file_path)
-        except Exception as e:  # noqa: BLE001
-            _LOGGER.error("Error get media file from %s: %s", url, e)
+        if decrypted_data:
+            _LOGGER.debug("Decrypt was successful")
+            await self._save_file(decrypted_data, filename)
+            return True
         return False
 
     async def _save_file(self, content: bytes, filename: str) -> Path:
@@ -198,4 +194,5 @@ class MediaDownloadDecode:
         except Exception as e:  # noqa: BLE001
             logging.error("Error decrypting image from file %s: %s", file_path, e)
             return None
+        Path(file_path).unlink()
         return decrypted_data
