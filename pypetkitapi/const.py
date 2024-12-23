@@ -131,4 +131,5 @@ class PetkitEndpoint(StrEnum):
     MANUAL_FEED_MINI = "feedermini/save_dailyfeed"
     MANUAL_FEED_FRESH_ELEMENT = "feeder/save_dailyfeed"
     MANUAL_FEED_DUAL = "saveDailyFeed"
-    DAILY_FEED_AND_EAT = "dailyFeedAndEat"
+    DAILY_FEED_AND_EAT = "dailyFeedAndEat"  # D3
+    FEED_STATISTIC = "feedStatistic"  # D4
