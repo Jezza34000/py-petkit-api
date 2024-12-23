@@ -194,5 +194,6 @@ class MediaDownloadDecode:
         except Exception as e:  # noqa: BLE001
             logging.error("Error decrypting image from file %s: %s", file_path, e)
             return None
-        Path(file_path).unlink()
+        if Path(file_path).exists():
+            Path(file_path).unlink()
         return decrypted_data
