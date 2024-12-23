@@ -11,8 +11,12 @@ class PetkitTimeoutError(PypetkitError):
     """Class for PyPetkit timeout exceptions."""
 
 
-class PetkitConnectionError(PypetkitError):
+class PetkitSessionExpiredError(PypetkitError):
     """Class for PyPetkit connection exceptions."""
+
+
+class PetkitAuthenticationUnregisteredEmailError(PypetkitError):
+    """Exception raised when the email is not registered with Petkit."""
 
 
 class PetkitRegionalServerNotFoundError(PypetkitError):
