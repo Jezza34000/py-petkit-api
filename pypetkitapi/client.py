@@ -30,9 +30,11 @@ from pypetkitapi.const import (
 from pypetkitapi.containers import AccountData, Device, Pet, RegionInfo, SessionInfo
 from pypetkitapi.exceptions import (
     PetkitAuthenticationError,
+    PetkitAuthenticationUnregisteredEmailError,
     PetkitInvalidHTTPResponseCodeError,
     PetkitInvalidResponseFormat,
     PetkitRegionalServerNotFoundError,
+    PetkitSessionExpiredError,
     PetkitTimeoutError,
     PypetkitError,
 )
@@ -87,6 +89,7 @@ class PetKitClient:
         for region in response.get("list", []):
             server = RegionInfo(**region)
             if server.name.lower() == self.region or server.id.lower() == self.region:
+                self.region = server.id.lower()
                 self.req.base_url = server.gateway
                 _LOGGER.debug("Found matching server: %s", server)
                 return
@@ -529,17 +532,24 @@ class PrepReq:
 
         # Check for errors in the response
         if ERR_KEY in response_json:
+            error_code = int(response_json[ERR_KEY].get("code", 0))
             error_msg = response_json[ERR_KEY].get("msg", "Unknown error")
-            if any(
-                endpoint in url
-                for endpoint in [
-                    PetkitEndpoint.LOGIN,
-                    PetkitEndpoint.GET_LOGIN_CODE,
-                    PetkitEndpoint.REFRESH_SESSION,
-                ]
-            ):
-                raise PetkitAuthenticationError(f"Login failed: {error_msg}")
-            raise PypetkitError(f"Request failed: {error_msg}")
+
+            match error_code:
+                case 5:
+                    raise PetkitSessionExpiredError(f"Session expired: {error_msg}")
+                case 122:
+                    raise PetkitAuthenticationError(
+                        f"Authentication failed: {error_msg}"
+                    )
+                case 125:
+                    raise PetkitAuthenticationUnregisteredEmailError(
+                        f"Authentication failed: {error_msg}"
+                    )
+                case _:
+                    raise PypetkitError(
+                        f"Request failed code : {error_code} details : {error_msg}"
+                    )
 
         # Check for success in the response
         if RES_KEY in response_json:
