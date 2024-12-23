@@ -5,7 +5,7 @@ from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
-from pypetkitapi.const import D3, DEVICE_DATA, DEVICE_RECORDS, PetkitEndpoint
+from pypetkitapi.const import D3, D4, DEVICE_DATA, DEVICE_RECORDS, PetkitEndpoint
 from pypetkitapi.containers import CloudProduct, Device, FirmwareDetail, Wifi
 
 
@@ -271,6 +271,8 @@ class FeederRecord(BaseModel):
         """Get the endpoint URL for the given device type."""
         if device_type == D3:
             return PetkitEndpoint.DAILY_FEED_AND_EAT
+        if device_type == D4:
+            return PetkitEndpoint.FEED_STATISTIC
         return PetkitEndpoint.GET_DEVICE_RECORD
 
     @classmethod
@@ -283,7 +285,10 @@ class FeederRecord(BaseModel):
         """Generate query parameters including request_date."""
         if request_date is None:
             request_date = datetime.now().strftime("%Y%m%d")
-        return {"days": int(request_date), "deviceId": device.device_id}
+
+        if device.device_type.lower() == D4:
+            return {"date": request_date, "type": 0, "deviceId": device.device_id}
+        return {"days": request_date, "deviceId": device.device_id}
 
 
 class Feeder(BaseModel):
@@ -296,7 +301,7 @@ class Feeder(BaseModel):
     cloud_product: CloudProduct | None = Field(None, alias="cloudProduct")
     created_at: str | None = Field(None, alias="createdAt")
     firmware: float
-    firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
+    firmware_details: list[FirmwareDetail] | None = Field(None, alias="firmwareDetails")
     hardware: int
     id: int
     locale: str | None = None
