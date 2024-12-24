@@ -144,6 +144,8 @@ class PetKitClient:
         response = await self.req.request(
             method=HTTPMethod.POST,
             url=PetkitEndpoint.REFRESH_SESSION,
+            data=LOGIN_DATA,
+            headers=await self.get_session_id(),
         )
         session_data = response["session"]
         self._session = SessionInfo(**session_data)
@@ -151,6 +153,7 @@ class PetKitClient:
     async def validate_session(self) -> None:
         """Check if the session is still valid and refresh or re-login if necessary."""
         if self._session is None:
+            _LOGGER.debug("No token, logging in")
             await self.login()
             return
 
@@ -195,6 +198,8 @@ class PetKitClient:
 
     async def get_devices_data(self) -> None:
         """Get the devices data from the PetKit servers."""
+        await self.validate_session()
+
         start_time = datetime.now()
         if not self.account_data:
             await self._get_account_data()
@@ -202,7 +207,6 @@ class PetKitClient:
         main_tasks = []
         record_tasks = []
         device_list: list[Device] = []
-        stats_tasks = []
 
         for account in self.account_data:
             _LOGGER.debug("List devices data for account: %s", account)
@@ -268,8 +272,6 @@ class PetKitClient:
         ],
     ) -> None:
         """Fetch the device data from the PetKit servers."""
-        await self.validate_session()
-
         device_type = device.device_type.lower()
 
         _LOGGER.debug("Reading device type : %s (id=%s)", device_type, device.device_id)
@@ -399,6 +401,8 @@ class PetKitClient:
         setting: dict | None = None,
     ) -> bool:
         """Control the device using the PetKit API."""
+        await self.validate_session()
+
         device = self.petkit_entities.get(device_id)
         if not device:
             raise PypetkitError(f"Device with ID {device_id} not found.")
