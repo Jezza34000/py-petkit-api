@@ -5,7 +5,7 @@ from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
-from pypetkitapi.const import D3, D4, DEVICE_DATA, DEVICE_RECORDS, PetkitEndpoint
+from pypetkitapi.const import D3, D4, D4S, DEVICE_DATA, DEVICE_RECORDS, PetkitEndpoint
 from pypetkitapi.containers import CloudProduct, Device, FirmwareDetail, Wifi
 
 
@@ -273,6 +273,8 @@ class FeederRecord(BaseModel):
             return PetkitEndpoint.DAILY_FEED_AND_EAT
         if device_type == D4:
             return PetkitEndpoint.FEED_STATISTIC
+        if device_type == D4S:
+            return PetkitEndpoint.DAILY_FEED
         return PetkitEndpoint.GET_DEVICE_RECORD
 
     @classmethod
