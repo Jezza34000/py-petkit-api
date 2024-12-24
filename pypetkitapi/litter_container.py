@@ -51,6 +51,7 @@ class SettingsLitter(BaseModel):
     lightest: int | None = Field(None, alias="lightest")
     litter_full_notify: int | None = Field(None, alias="litterFullNotify")
     manual_lock: int | None = Field(None, alias="manualLock")
+    no_remind: int | None = Field(None, alias="noRemind")
     pet_in_notify: int | None = Field(None, alias="petInNotify")
     relate_k3_switch: int | None = Field(None, alias="relateK3Switch")
     sand_type: int | None = Field(None, alias="sandType")
@@ -76,6 +77,7 @@ class SettingsLitter(BaseModel):
     pet_detection: int | None = Field(None, alias="petDetection")
     pet_notify: int | None = Field(None, alias="petNotify")
     pre_live: int | None = Field(None, alias="preLive")
+    shortest: int | None = None
     system_sound_enable: int | None = Field(None, alias="systemSoundEnable")
     time_display: int | None = Field(None, alias="timeDisplay")
     toilet_detection: int | None = Field(None, alias="toiletDetection")
