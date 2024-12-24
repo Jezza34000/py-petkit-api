@@ -39,7 +39,9 @@ class FeederCommand(StrEnum):
     MANUAL_FEED_DUAL = "manual_feed_dual"
     CANCEL_MANUAL_FEED = "cancelRealtimeFeed"
     FOOD_REPLENISHED = "food_replenished"
-    RESET_DESICCANT = "desiccantReset"
+    RESET_DESICCANT = "desiccant_reset"
+    REMOVE_DAILY_FEED = "remove_daily_feed"
+    RESTORE_DAILY_FEED = "restore_daily_feed"
 
 
 class LitterCommand(StrEnum):
@@ -159,6 +161,24 @@ ACTIONS_MAP = {
             "kv": json.dumps(setting),
         },
         supported_device=ALL_DEVICES,
+    ),
+    FeederCommand.REMOVE_DAILY_FEED: CmdData(
+        endpoint=PetkitEndpoint.REMOVE_DAILY_FEED,
+        params=lambda device, setting: {
+            "deviceId": device.id,
+            "day": datetime.datetime.now().strftime("%Y%m%d"),
+            **setting,  # Need the id of the feed to remove
+        },
+        supported_device=DEVICES_FEEDER,
+    ),
+    FeederCommand.RESTORE_DAILY_FEED: CmdData(
+        endpoint=PetkitEndpoint.RESTORE_DAILY_FEED,
+        params=lambda device, setting: {
+            "deviceId": device.id,
+            "day": datetime.datetime.now().strftime("%Y%m%d"),
+            **setting,  # Need the id of the feed to restore
+        },
+        supported_device=DEVICES_FEEDER,
     ),
     FeederCommand.MANUAL_FEED: CmdData(
         endpoint=lambda device: get_endpoint_manual_feed(device),
