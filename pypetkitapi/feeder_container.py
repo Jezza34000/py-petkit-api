@@ -89,6 +89,7 @@ class SettingsFeeder(BaseModel):
     selected_sound: int | None = Field(None, alias="selectedSound")
     smart_frame: int | None = Field(None, alias="smartFrame")
     sound_enable: int | None = Field(None, alias="soundEnable")
+    shortest: int | None = None  # D4S
     surplus: int | None = None  # D3
     surplus_control: int | None = Field(None, alias="surplusControl")
     surplus_standard: int | None = Field(None, alias="surplusStandard")

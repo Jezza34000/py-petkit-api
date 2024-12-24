@@ -77,7 +77,6 @@ class SettingsLitter(BaseModel):
     pet_detection: int | None = Field(None, alias="petDetection")
     pet_notify: int | None = Field(None, alias="petNotify")
     pre_live: int | None = Field(None, alias="preLive")
-    shortest: int | None = None
     system_sound_enable: int | None = Field(None, alias="systemSoundEnable")
     time_display: int | None = Field(None, alias="timeDisplay")
     toilet_detection: int | None = Field(None, alias="toiletDetection")
