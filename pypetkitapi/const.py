@@ -133,3 +133,7 @@ class PetkitEndpoint(StrEnum):
     MANUAL_FEED_DUAL = "saveDailyFeed"
     DAILY_FEED_AND_EAT = "dailyFeedAndEat"  # D3
     FEED_STATISTIC = "feedStatistic"  # D4
+    DAILY_FEED = "dailyFeeds"  # D4S
+    REMOVE_DAILY_FEED = "removeDailyFeed"
+    RESTORE_DAILY_FEED = "restoreDailyFeed"
+    SAVE_FEED = "saveFeed"  # For Feeding plan
