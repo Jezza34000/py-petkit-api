@@ -1,6 +1,6 @@
 """Dataclasses container for petkit API."""
 
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field
 
 
 class RegionInfo(BaseModel):
@@ -69,25 +69,28 @@ class Pet(BaseModel):
     created_at: int = Field(alias="createdAt")
     pet_id: int = Field(alias="petId")
     pet_name: str | None = Field(None, alias="petName")
-    id: int | None = None  # Fictive field (for HA compatibility) copied from id
-    sn: str  # Fictive field (for HA compatibility) copied from id
-    name: str | None = None  # Fictive field (for HA compatibility) copied from pet_name
-    device_type: str = "pet"  # Fictive field (for HA compatibility) fixed
-    firmware: str | None = None  # Fictive field (for HA compatibility) fixed
+    id: int | None = None  # Fictive field copied from id (for HA compatibility)
+    sn: str | None = None  # Fictive field copied from id (for HA compatibility)
+    name: str | None = None  # Fictive field copied from pet_name (for HA compatibility)
+    device_type: str = "pet"  # Fictive fixed field (for HA compatibility)
+    firmware: str | None = None  # Fictive fixed field (for HA compatibility)
 
-    # Got from Litter stats
+    # Litter stats
     last_litter_usage: int = 0
     last_device_used: str | None = None
     last_duration_usage: int = 0
     last_measured_weight: int = 0
 
-    @root_validator(pre=True)
-    def populate_fictive_fields(cls, values):  # noqa: N805
-        """Populate fictive fields based on other fields."""
-        values["id"] = values.get("id") or values.get("petId")
-        values["sn"] = values.get("sn") or values.get("id")
-        values["name"] = values.get("name") or values.get("petName")
-        return values
+    def __init__(self, **data):
+        """Initialize the Pet dataclass.
+        This method is used to fill the fictive fields after the standard initialization.
+        """
+        # Appeler l'initialisation standard de Pydantic
+        super().__init__(**data)
+        # Remplir les champs fictifs après l'initialisation
+        self.id = self.id or self.pet_id
+        self.sn = self.sn or str(self.id)
+        self.name = self.name or self.pet_name
 
 
 class User(BaseModel):
