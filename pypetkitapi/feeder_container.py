@@ -12,12 +12,12 @@ from pypetkitapi.containers import CloudProduct, Device, FirmwareDetail, Wifi
 class FeedItem(BaseModel):
     """Dataclass for feed item data."""
 
-    id: str | None = None
-    name: str | None = None
-    time: int | None = None
     amount: int | None = None
     amount1: int | None = Field(None, alias="amount1")
     amount2: int | None = Field(None, alias="amount2")
+    id: str | None = None
+    name: str | None = None
+    time: int | None = None
 
 
 class FeedDailyList(BaseModel):
@@ -50,9 +50,14 @@ class SettingsFeeder(BaseModel):
     attire_id: int | None = Field(None, alias="attireId")
     attire_switch: int | None = Field(None, alias="attireSwitch")
     auto_product: int | None = Field(None, alias="autoProduct")
+    bucket_name1: str | None = Field(None, alias="bucketName1")
+    bucket_name2: str | None = Field(None, alias="bucketName2")
     camera: int | None = None
     camera_config: int | None = Field(None, alias="cameraConfig")
+    camera_multi_new: list[CameraMultiNew] | None = Field(None, alias="cameraMultiNew")
     camera_multi_range: list | None = Field(None, alias="cameraMultiRange")
+    color_setting: int | None = None
+    conservation: int | None = None
     control_settings: int | None = Field(None, alias="controlSettings")
     desiccant_notify: int | None = Field(None, alias="desiccantNotify")
     detect_config: int | None = Field(None, alias="detectConfig")
@@ -62,8 +67,10 @@ class SettingsFeeder(BaseModel):
     eat_notify: int | None = Field(None, alias="eatNotify")
     eat_sensitivity: int | None = Field(None, alias="eatSensitivity")
     eat_video: int | None = Field(None, alias="eatVideo")
+    factor: int | None = None
     feed_notify: int | None = Field(None, alias="feedNotify")
     feed_picture: int | None = Field(None, alias="feedPicture")
+    feed_sound: int | None = Field(None, alias="feedSound")
     food_notify: int | None = Field(None, alias="foodNotify")
     food_warn: int | None = Field(None, alias="foodWarn")
     food_warn_range: list[int] | None = Field(None, alias="foodWarnRange")
@@ -87,9 +94,9 @@ class SettingsFeeder(BaseModel):
     pet_sensitivity: int | None = Field(None, alias="petSensitivity")
     pre_live: int | None = Field(None, alias="preLive")
     selected_sound: int | None = Field(None, alias="selectedSound")
+    shortest: int | None = None  # D4S
     smart_frame: int | None = Field(None, alias="smartFrame")
     sound_enable: int | None = Field(None, alias="soundEnable")
-    shortest: int | None = None  # D4S
     surplus: int | None = None  # D3
     surplus_control: int | None = Field(None, alias="surplusControl")
     surplus_standard: int | None = Field(None, alias="surplusStandard")
@@ -100,35 +107,29 @@ class SettingsFeeder(BaseModel):
     tone_multi_range: list[tuple[int, int]] | None = Field(None, alias="toneMultiRange")
     upload: int | None = None
     volume: int | None = None
-    feed_sound: int | None = Field(None, alias="feedSound")
-    factor: int | None = None
-    color_setting: int | None = Field(None, alias="colorSetting")
-    conservation: int | None = None
-    bucket_name1: str | None = Field(None, alias="bucketName1")
-    bucket_name2: str | None = Field(None, alias="bucketName2")
-    camera_multi_new: list[CameraMultiNew] | None = Field(None, alias="cameraMultiNew")
 
 
 class FeedState(BaseModel):
     """Dataclass for feed state data."""
 
+    add_amount_total: int | None = Field(None, alias="addAmountTotal")
+    add_amount_total1: int | None = Field(None, alias="addAmountTotal1")
+    add_amount_total2: int | None = Field(None, alias="addAmountTotal2")
+    eat_amount_total: int | None = Field(None, alias="eatAmountTotal")  # D3
     eat_avg: int | None = Field(None, alias="eatAvg")
     eat_count: int | None = Field(None, alias="eatCount")
     eat_times: list[int] | None = Field(None, alias="eatTimes")
     feed_times: dict | list | None = Field(None, alias="feedTimes")
-    times: int | None = None
-    add_amount_total: int | None = Field(None, alias="addAmountTotal")
     plan_amount_total: int | None = Field(None, alias="planAmountTotal")
-    plan_real_amount_total: int | None = Field(None, alias="planRealAmountTotal")
-    real_amount_total: int | None = Field(None, alias="realAmountTotal")
-    add_amount_total1: int | None = Field(None, alias="addAmountTotal1")
-    add_amount_total2: int | None = Field(None, alias="addAmountTotal2")
     plan_amount_total1: int | None = Field(None, alias="planAmountTotal1")
     plan_amount_total2: int | None = Field(None, alias="planAmountTotal2")
+    plan_real_amount_total: int | None = Field(None, alias="planRealAmountTotal")
     plan_real_amount_total1: int | None = Field(None, alias="planRealAmountTotal1")
     plan_real_amount_total2: int | None = Field(None, alias="planRealAmountTotal2")
+    real_amount_total: int | None = Field(None, alias="realAmountTotal")
     real_amount_total1: int | None = Field(None, alias="realAmountTotal1")
     real_amount_total2: int | None = Field(None, alias="realAmountTotal2")
+    times: int | None = None
 
 
 class StateFeeder(BaseModel):
@@ -136,31 +137,31 @@ class StateFeeder(BaseModel):
 
     battery_power: int | None = Field(None, alias="batteryPower")
     battery_status: int | None = Field(None, alias="batteryStatus")
-    bowl: int | None = None
     block: int | None = None
+    bowl: int | None = None
     broadcast: dict | None = None
     camera_status: int | None = Field(None, alias="cameraStatus")
     charge: int | None = None
+    conservation_status: int | None = Field(None, alias="conservationStatus")
     desiccant_left_days: int | None = Field(None, alias="desiccantLeftDays")
     desiccant_time: int | None = Field(None, alias="desiccantTime")
     door: int | None = None
-    feed_state: FeedState | None = Field(None, alias="feedState")
-    feeding: int | None = None
+    eating: int | None = None
     error_code: str | None = Field(None, alias="errorCode")
     error_detail: str | None = Field(None, alias="errorDetail")
     error_level: int | None = Field(None, alias="errorLevel")
     error_msg: str | None = Field(None, alias="errorMsg")
+    feed_state: FeedState | None = Field(None, alias="feedState")
+    feeding: int | None = None
+    food: int | None = None
+    food1: int | None = Field(None, alias="food1")
+    food2: int | None = Field(None, alias="food2")
     ota: int | None = None
     overall: int | None = None
     pim: int | None = None
     runtime: int | None = None
     weight: int | None = None
     wifi: Wifi | None = None
-    eating: int | None = None
-    food: int | None = None
-    food1: int | None = Field(None, alias="food1")
-    food2: int | None = Field(None, alias="food2")
-    conservation_status: int | None = Field(None, alias="conservationStatus")
 
 
 class ManualFeed(BaseModel):
@@ -303,15 +304,20 @@ class Feeder(BaseModel):
     bt_mac: str | None = Field(None, alias="btMac")
     cloud_product: CloudProduct | None = Field(None, alias="cloudProduct")
     created_at: str | None = Field(None, alias="createdAt")
+    device_records: FeederRecord | None = None
+    device_type: str | None = Field(None, alias="deviceType")
     firmware: float
     firmware_details: list[FirmwareDetail] | None = Field(None, alias="firmwareDetails")
     hardware: int
     id: int
     locale: str | None = None
     mac: str | None = None
+    manual_feed: ManualFeed | None = None
     model_code: int | None = Field(None, alias="modelCode")
+    multi_config: bool | None = Field(None, alias="multiConfig")
     multi_feed_item: MultiFeedItem | None = Field(None, alias="multiFeedItem")
     name: str | None = None
+    p2p_type: int | None = Field(None, alias="p2pType")
     secret: str | None = None
     service_status: int | None = Field(None, alias="serviceStatus")
     settings: SettingsFeeder | None = None
@@ -320,11 +326,6 @@ class Feeder(BaseModel):
     sn: str
     state: StateFeeder | None = None
     timezone: float | None = None
-    p2p_type: int | None = Field(None, alias="p2pType")
-    multi_config: bool | None = Field(None, alias="multiConfig")
-    device_type: str | None = Field(None, alias="deviceType")
-    manual_feed: ManualFeed | None = None
-    device_records: FeederRecord | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
