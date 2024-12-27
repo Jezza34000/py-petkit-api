@@ -10,6 +10,7 @@ from pypetkitapi.const import (
     DEVICE_RECORDS,
     DEVICE_STATS,
     T4,
+    T5,
     T6,
     PetkitEndpoint,
 )
@@ -241,7 +242,7 @@ class LitterRecord(BaseModel):
         """Get the endpoint URL for the given device type."""
         if device_type == T4:
             return PetkitEndpoint.GET_DEVICE_RECORD
-        if device_type == T6:
+        if device_type in [T5, T6]:
             return PetkitEndpoint.GET_DEVICE_RECORD_RELEASE
         raise ValueError(f"Invalid device type: {device_type}")
 
@@ -258,7 +259,7 @@ class LitterRecord(BaseModel):
             if request_date is None:
                 request_date = datetime.now().strftime("%Y%m%d")
             return {"date": int(request_date), "deviceId": device.device_id}
-        if device_type == T6:
+        if device_type in [T5, T6]:
             return {
                 "timestamp": int(datetime.now().timestamp()),
                 "deviceId": device.device_id,
