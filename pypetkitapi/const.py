@@ -29,6 +29,7 @@ T6 = "t6"
 W5 = "w5"
 CTW3 = "ctw3"
 K2 = "k2"
+K3 = "k3"
 
 DEVICES_LITTER_BOX = [T3, T4, T5, T6]
 DEVICES_FEEDER = [FEEDER, FEEDER_MINI, D3, D4, D4S, D4H, D4SH]
@@ -86,6 +87,18 @@ LOGIN_DATA = {
 }
 
 
+class RecordType(StrEnum):
+    """Record Type constants"""
+
+    EAT = "eat"
+    FEED = "feed"
+    MOVE = "move"
+    PET = "pet"
+
+
+RecordTypeLST = [RecordType.EAT, RecordType.FEED, RecordType.MOVE, RecordType.PET]
+
+
 class PetkitEndpoint(StrEnum):
     """Petkit Endpoint constants"""
 
@@ -118,6 +131,11 @@ class PetkitEndpoint(StrEnum):
     STATISTIC = "statistic"
     STATISTIC_RELEASE = "statisticRelease"
     GET_PET_OUT_GRAPH = "getPetOutGraph"
+
+    # Video features
+    CLOUD_VIDEO = "cloud/video"
+    GET_DOWNLOAD_M3U8 = "getDownloadM3u8"
+    GET_M3U8 = "getM3u8"
 
     # Feeders
     REPLENISHED_FOOD = "added"
