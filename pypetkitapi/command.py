@@ -16,6 +16,7 @@ from pypetkitapi.const import (
     DEVICES_FEEDER,
     FEEDER,
     FEEDER_MINI,
+    K2,
     T3,
     T4,
     T5,
@@ -124,6 +125,28 @@ FOUNTAIN_COMMAND_TO_CODE = {
     FountainAction.SMART: "220",
     FountainAction.SMART_TO_PAUSE: "220",
 }
+
+
+class PurifierCommand(StrEnum):
+    """Fountain Command"""
+
+    CONTROL_DEVICE = "control_device"
+
+
+class PurAction(StrEnum):
+    """PurifierAction"""
+
+    POWER = "power"
+    MODE = "mode"
+
+
+class PurMode(IntEnum):
+    """PurifierMode"""
+
+    AUTO_MODE = 0
+    SILENT_MODE = 1
+    STANDARD_MODE = 2
+    STRONG_MODE = 3
 
 
 @dataclass
@@ -263,6 +286,15 @@ ACTIONS_MAP = {
             "type": list(command.keys())[0].split("_")[0],
         },
         supported_device=[T3, T4, T5, T6],
+    ),
+    PurifierCommand.CONTROL_DEVICE: CmdData(
+        endpoint=PetkitEndpoint.CONTROL_DEVICE,
+        params=lambda device, command: {
+            "id": device.id,
+            "kv": json.dumps(command),
+            "type": list(command.keys())[0].split("_")[0],
+        },
+        supported_device=[K2],
     ),
     PetCommand.PET_UPDATE_SETTING: CmdData(
         endpoint=PetkitEndpoint.CONTROL_DEVICE,
