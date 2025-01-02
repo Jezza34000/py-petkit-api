@@ -46,6 +46,8 @@ pip install pypetkitapi
 ## Usage Example:
 
 ```python
+import asyncio
+import logging
 import aiohttp
 from pypetkitapi.client import PetKitClient
 from pypetkitapi.command import DeviceCommand, FeederCommand, LBCommand, LBAction, LitterCommand
