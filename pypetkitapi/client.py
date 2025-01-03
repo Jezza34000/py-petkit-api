@@ -130,8 +130,9 @@ class PetKitClient:
             data["validCode"] = valid_code
         else:
             _LOGGER.debug("Login method: using password")
-            pwd = hashlib.md5(self.password.encode()).hexdigest()  # noqa: S324
-            data["password"] = pwd  # noqa: S324
+            data["password"] = hashlib.md5(
+                self.password.encode()
+            ).hexdigest()  # noqa: S324
 
         # Send the login request
         response = await self.req.request(
@@ -200,10 +201,7 @@ class PetKitClient:
             if account.pet_list:
                 for pet in account.pet_list:
                     self.petkit_entities[pet.pet_id] = pet
-                    pet.device_nfo = (
-                        Device()
-                    )  # Initialize with an empty Device dataclass
-                    pet.device_nfo.device_type = PET  # Set the device_type to PET
+                    pet.device_nfo = Device(deviceType=PET, deviceId=pet.pet_id)
 
     async def get_devices_data(self) -> None:
         """Get the devices data from the PetKit servers."""
