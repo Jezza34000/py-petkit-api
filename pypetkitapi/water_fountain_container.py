@@ -93,7 +93,6 @@ class WaterFountainRecord(BaseModel):
     day_time: int | None = Field(None, alias="dayTime")
     stay_time: int | None = Field(None, alias="stayTime")
     work_time: int | None = Field(None, alias="workTime")
-    device_type: str | None = Field(None, alias="deviceType")
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str | None:
@@ -163,8 +162,8 @@ class WaterFountain(BaseModel):
     update_at: str | None = Field(None, alias="updateAt")
     user_id: str | None = Field(None, alias="userId")
     water_pump_run_time: int | None = Field(None, alias="waterPumpRunTime")
-    device_type: str | None = Field(None, alias="deviceType")
     device_records: list[WaterFountainRecord] | None = None
+    device_nfo: Device | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
