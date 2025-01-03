@@ -60,7 +60,7 @@ class Purifier(BaseModel):
     state: State | None = None
     timezone: float | None = None
     work_time: list[tuple[int, int]] | None = Field(None, alias="workTime")
-    device_type: str | None = Field(None, alias="deviceType")
+    device_nfo: Device | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
