@@ -267,6 +267,7 @@ class FeederRecord(BaseModel):
     move: list[RecordsType] | None = None
     pet: list[RecordsType] | None = None
     device_type: str | None = Field(None, alias="deviceType")
+    type_code: int = Field(0, alias="typeCode")
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str | None:
@@ -305,7 +306,6 @@ class Feeder(BaseModel):
     cloud_product: CloudProduct | None = Field(None, alias="cloudProduct")
     created_at: str | None = Field(None, alias="createdAt")
     device_records: FeederRecord | None = None
-    device_type: str | None = Field(None, alias="deviceType")
     firmware: float
     firmware_details: list[FirmwareDetail] | None = Field(None, alias="firmwareDetails")
     hardware: int
@@ -326,6 +326,7 @@ class Feeder(BaseModel):
     sn: str
     state: StateFeeder | None = None
     timezone: float | None = None
+    device_nfo: Device | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
