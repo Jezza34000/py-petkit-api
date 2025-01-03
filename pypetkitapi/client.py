@@ -52,7 +52,7 @@ class PetKitClient:
 
     _session: SessionInfo | None = None
     account_data: list[AccountData] = []
-    petkit_entities: dict[int, Feeder | Litter | WaterFountain | Pet] = {}
+    petkit_entities: dict[int, Feeder | Litter | WaterFountain | Purifier | Pet] = {}
 
     def __init__(
         self,
