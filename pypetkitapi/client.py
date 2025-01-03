@@ -21,6 +21,7 @@ from pypetkitapi.const import (
     DEVICES_WATER_FOUNTAIN,
     ERR_KEY,
     LOGIN_DATA,
+    PET,
     RES_KEY,
     T4,
     T6,
@@ -199,6 +200,10 @@ class PetKitClient:
             if account.pet_list:
                 for pet in account.pet_list:
                     self.petkit_entities[pet.pet_id] = pet
+                    pet.device_nfo = (
+                        Device()
+                    )  # Initialize with an empty Device dataclass
+                    pet.device_nfo.device_type = PET  # Set the device_type to PET
 
     async def get_devices_data(self) -> None:
         """Get the devices data from the PetKit servers."""
@@ -221,6 +226,7 @@ class PetKitClient:
 
         for device in device_list:
             device_type = device.device_type.lower()
+
             if device_type in DEVICES_FEEDER:
                 main_tasks.append(self._fetch_device_data(device, Feeder))
                 record_tasks.append(self._fetch_device_data(device, FeederRecord))
@@ -318,15 +324,9 @@ class PetKitClient:
             _LOGGER.error("Unexpected response type: %s", type(response))
             return
 
-        # Add the device type into dataclass
-        if isinstance(device_data, list):
-            for item in device_data:
-                item.device_type = device_type
-        else:
-            device_data.device_type = device_type
-
         if data_class.data_type == DEVICE_DATA:
             self.petkit_entities[device.device_id] = device_data
+            self.petkit_entities[device.device_id].device_nfo = device
             _LOGGER.debug("Device data fetched OK for %s", device_type)
         elif data_class.data_type == DEVICE_RECORDS:
             self.petkit_entities[device.device_id].device_records = device_data
@@ -367,9 +367,12 @@ class PetKitClient:
 
         pets_list = await self.get_pets_list()
         for pet in pets_list:
-            if stats_data.device_type == T4 and stats_data.device_records:
+            if stats_data.device_nfo.device_type == T4 and stats_data.device_records:
                 await self._process_t4(pet, stats_data.device_records)
-            elif stats_data.device_type == T6 and stats_data.device_pet_graph_out:
+            elif (
+                stats_data.device_nfo.device_type == T6
+                and stats_data.device_pet_graph_out
+            ):
                 await self._process_t6(pet, stats_data.device_pet_graph_out)
 
     async def _process_t4(self, pet, device_records):
@@ -418,15 +421,15 @@ class PetKitClient:
 
         _LOGGER.debug(
             "Control API device=%s id=%s action=%s param=%s",
-            device.device_type,
+            device.device_nfo.device_type,
             device_id,
             action,
             setting,
         )
 
         # Check if the device type is supported
-        if device.device_type:
-            device_type = device.device_type.lower()
+        if device.device_nfo.device_type:
+            device_type = device.device_nfo.device_type.lower()
         else:
             raise PypetkitError(
                 "Device type is not available, and is mandatory for sending commands."
@@ -451,7 +454,7 @@ class PetKitClient:
         else:
             endpoint = action_info.endpoint
             _LOGGER.debug("Endpoint field")
-        url = f"{device.device_type.lower()}/{endpoint}"
+        url = f"{device.device_nfo.device_type.lower()}/{endpoint}"
 
         # Get the parameters
         if setting is not None:
