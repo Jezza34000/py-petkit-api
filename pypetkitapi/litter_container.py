@@ -235,7 +235,6 @@ class LitterRecord(BaseModel):
     toilet_detection: int | None = Field(None, alias="toiletDetection")
     upload: int | None = None
     user_id: str | None = Field(None, alias="userId")
-    device_type: str | None = Field(None, alias="deviceType")
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
@@ -295,7 +294,6 @@ class LitterStats(BaseModel):
     statistic_time: str | None = Field(None, alias="statisticTime")
     times: int | None = None
     total_time: int | None = Field(None, alias="totalTime")
-    device_type: str | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
@@ -359,7 +357,6 @@ class PetOutGraph(BaseModel):
     storage_space: int | None = Field(None, alias="storageSpace")
     time: int | None = None
     toilet_time: int | None = Field(None, alias="toiletTime")
-    device_type: str | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
@@ -382,6 +379,31 @@ class PetOutGraph(BaseModel):
         }
 
 
+class K3Device(BaseModel):
+    """Dataclass for K3 device data."""
+
+    battery: int | None = None
+    created_at: datetime | None = Field(None, alias="createdAt")
+    firmware: int | None = None
+    hardware: int | None = None
+    id: int | None = None
+    lighting: int | None = None
+    liquid: int | None = None
+    liquid_lack: int | None = Field(None, alias="liquidLack")
+    mac: str | None = None
+    name: str | None = None
+    refreshing: int | None = None
+    relate_t4: int | None = Field(None, alias="relateT4")
+    relation: dict | None = None
+    secret: str | None = None
+    settings: dict | None = None
+    sn: str | None = None
+    timezone: float | None = None
+    update_at: datetime | None = Field(None, alias="updateAt")
+    user_id: str | None = Field(None, alias="userId")
+    voltage: int | None = None
+
+
 class Litter(BaseModel):
     """Dataclass for Litter Data.
     Supported devices = T3, T4, T6
@@ -396,6 +418,7 @@ class Litter(BaseModel):
     firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
     hardware: int
     id: int
+    k3_device: K3Device | None = Field(None, alias="k3Device")
     is_pet_out_tips: int | None = Field(None, alias="isPetOutTips")
     locale: str | None = None
     mac: str | None = None
@@ -422,10 +445,10 @@ class Litter(BaseModel):
     service_status: int | None = Field(None, alias="serviceStatus")
     total_time: int | None = Field(None, alias="totalTime")
     with_k3: int | None = Field(None, alias="withK3")
-    device_type: str | None = Field(None, alias="deviceType")
     device_records: list[LitterRecord] | None = None
     device_stats: LitterStats | None = None
     device_pet_graph_out: list[PetOutGraph] | None = None
+    device_nfo: Device | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
