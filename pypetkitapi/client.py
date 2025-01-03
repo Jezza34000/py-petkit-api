@@ -153,7 +153,7 @@ class PetKitClient:
         )
         session_data = response["session"]
         self._session = SessionInfo(**session_data)
-        self._session.created_at = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
+        self._session.refreshed_at = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
 
     async def validate_session(self) -> None:
         """Check if the session is still valid and refresh or re-login if necessary."""

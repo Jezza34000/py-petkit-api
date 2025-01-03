@@ -43,6 +43,7 @@ class SessionInfo(BaseModel):
     expires_in: int = Field(alias="expiresIn")
     region: str | None = None
     created_at: str = Field(alias="createdAt")
+    refreshed_at: str | None = None
 
 
 class Device(BaseModel):
