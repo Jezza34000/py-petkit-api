@@ -50,14 +50,14 @@ class Device(BaseModel):
     Subclass of AccountData.
     """
 
-    created_at: int = Field(alias="createdAt")
-    device_id: int = Field(alias="deviceId")
-    device_name: str = Field(alias="deviceName")
-    device_type: str = Field(alias="deviceType")
-    group_id: int = Field(alias="groupId")
-    type: int
-    type_code: int = Field(alias="typeCode")
-    unique_id: str = Field(alias="uniqueId")
+    created_at: int | None = Field(None, alias="createdAt")
+    device_id: int | None = Field(None, alias="deviceId")
+    device_name: str | None = Field(None, alias="deviceName")
+    device_type: str | None = Field(None, alias="deviceType")
+    group_id: int | None = Field(None, alias="groupId")
+    type: int | None = None
+    type_code: int = Field(0, alias="typeCode")
+    unique_id: str | None = Field(None, alias="uniqueId")
 
 
 class Pet(BaseModel):
@@ -72,8 +72,8 @@ class Pet(BaseModel):
     id: int | None = None  # Fictive field copied from id (for HA compatibility)
     sn: str | None = None  # Fictive field copied from id (for HA compatibility)
     name: str | None = None  # Fictive field copied from pet_name (for HA compatibility)
-    device_type: str = "pet"  # Fictive fixed field (for HA compatibility)
     firmware: str | None = None  # Fictive fixed field (for HA compatibility)
+    device_nfo: Device = Field(default_factory=Device)
 
     # Litter stats
     last_litter_usage: int = 0
@@ -85,9 +85,7 @@ class Pet(BaseModel):
         """Initialize the Pet dataclass.
         This method is used to fill the fictive fields after the standard initialization.
         """
-        # Appeler l'initialisation standard de Pydantic
         super().__init__(**data)
-        # Remplir les champs fictifs après l'initialisation
         self.id = self.id or self.pet_id
         self.sn = self.sn or str(self.id)
         self.name = self.name or self.pet_name
