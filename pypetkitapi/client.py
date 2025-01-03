@@ -17,6 +17,7 @@ from pypetkitapi.const import (
     DEVICE_STATS,
     DEVICES_FEEDER,
     DEVICES_LITTER_BOX,
+    DEVICES_PURIFIER,
     DEVICES_WATER_FOUNTAIN,
     ERR_KEY,
     LOGIN_DATA,
@@ -40,6 +41,7 @@ from pypetkitapi.exceptions import (
 )
 from pypetkitapi.feeder_container import Feeder, FeederRecord
 from pypetkitapi.litter_container import Litter, LitterRecord, LitterStats, PetOutGraph
+from pypetkitapi.purifier_container import Purifier
 from pypetkitapi.water_fountain_container import WaterFountain, WaterFountainRecord
 
 _LOGGER = logging.getLogger(__name__)
@@ -50,7 +52,7 @@ class PetKitClient:
 
     _session: SessionInfo | None = None
     account_data: list[AccountData] = []
-    petkit_entities: dict[int, Feeder | Litter | WaterFountain | Pet] = {}
+    petkit_entities: dict[int, Feeder | Litter | WaterFountain | Purifier | Pet] = {}
 
     def __init__(
         self,
@@ -222,6 +224,7 @@ class PetKitClient:
             if device_type in DEVICES_FEEDER:
                 main_tasks.append(self._fetch_device_data(device, Feeder))
                 record_tasks.append(self._fetch_device_data(device, FeederRecord))
+
             elif device_type in DEVICES_LITTER_BOX:
                 main_tasks.append(
                     self._fetch_device_data(device, Litter),
@@ -238,6 +241,9 @@ class PetKitClient:
                 record_tasks.append(
                     self._fetch_device_data(device, WaterFountainRecord)
                 )
+
+            elif device_type in DEVICES_PURIFIER:
+                main_tasks.append(self._fetch_device_data(device, Purifier))
 
         # Execute main device tasks first
         await asyncio.gather(*main_tasks)
@@ -266,6 +272,7 @@ class PetKitClient:
             Feeder
             | Litter
             | WaterFountain
+            | Purifier
             | FeederRecord
             | LitterRecord
             | WaterFountainRecord

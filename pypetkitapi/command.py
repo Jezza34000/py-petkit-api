@@ -16,6 +16,8 @@ from pypetkitapi.const import (
     DEVICES_FEEDER,
     FEEDER,
     FEEDER_MINI,
+    K2,
+    K3,
     T3,
     T4,
     T5,
@@ -27,11 +29,13 @@ from pypetkitapi.const import (
 class DeviceCommand(StrEnum):
     """Device Command"""
 
+    POWER = "power_device"
+    CONTROL_DEVICE = "control_device"
     UPDATE_SETTING = "update_setting"
 
 
 class FeederCommand(StrEnum):
-    """Feeder Command"""
+    """Specific Feeder Command"""
 
     CALL_PET = "call_pet"
     CALIBRATION = "food_reset"
@@ -45,23 +49,15 @@ class FeederCommand(StrEnum):
 
 
 class LitterCommand(StrEnum):
-    """LitterCommand"""
+    """Specific LitterCommand"""
 
-    POWER = "power"
-    CONTROL_DEVICE = "control_device"
     RESET_DEODORIZER = "reset_deodorizer"
 
 
 class PetCommand(StrEnum):
-    """PetCommand"""
+    """Specific PetCommand"""
 
     PET_UPDATE_SETTING = "pet_update_setting"
-
-
-class FountainCommand(StrEnum):
-    """Fountain Command"""
-
-    CONTROL_DEVICE = "control_device"
 
 
 class LBCommand(IntEnum):
@@ -79,14 +75,27 @@ class LBCommand(IntEnum):
     MAINTENANCE = 9
 
 
-class LBAction(StrEnum):
-    """LitterBoxCommandKey"""
+class PurMode(IntEnum):
+    """Purifier working mode"""
 
+    AUTO_MODE = 0
+    SILENT_MODE = 1
+    STANDARD_MODE = 2
+    STRONG_MODE = 3
+
+
+class DeviceAction(StrEnum):
+    """Device action for LitterBox and Purifier"""
+
+    # LitterBox only
     CONTINUE = "continue_action"
     END = "end_action"
-    POWER = "power_action"
     START = "start_action"
     STOP = "stop_action"
+    # Purifier only
+    MODE = "mode_action"
+    # All devices
+    POWER = "power_action"
 
 
 class FountainAction(StrEnum):
@@ -161,6 +170,15 @@ ACTIONS_MAP = {
             "kv": json.dumps(setting),
         },
         supported_device=ALL_DEVICES,
+    ),
+    DeviceCommand.CONTROL_DEVICE: CmdData(
+        endpoint=PetkitEndpoint.CONTROL_DEVICE,
+        params=lambda device, command: {
+            "id": device.id,
+            "kv": json.dumps(command),
+            "type": list(command.keys())[0].split("_")[0],
+        },
+        supported_device=[K2, K3, T3, T4, T5, T6],
     ),
     FeederCommand.REMOVE_DAILY_FEED: CmdData(
         endpoint=PetkitEndpoint.REMOVE_DAILY_FEED,
@@ -254,15 +272,6 @@ ACTIONS_MAP = {
             "deviceId": device.id,
         },
         supported_device=[D3],
-    ),
-    LitterCommand.CONTROL_DEVICE: CmdData(
-        endpoint=PetkitEndpoint.CONTROL_DEVICE,
-        params=lambda device, command: {
-            "id": device.id,
-            "kv": json.dumps(command),
-            "type": list(command.keys())[0].split("_")[0],
-        },
-        supported_device=[T3, T4, T5, T6],
     ),
     PetCommand.PET_UPDATE_SETTING: CmdData(
         endpoint=PetkitEndpoint.CONTROL_DEVICE,

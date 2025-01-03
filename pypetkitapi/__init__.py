@@ -1,7 +1,14 @@
 """Pypetkit: A Python library for interfacing with PetKit"""
 
 from .client import PetKitClient
-from .command import FeederCommand, LBAction, LBCommand, LitterCommand, PetCommand
+from .command import (
+    DeviceAction,
+    FeederCommand,
+    LBCommand,
+    LitterCommand,
+    PetCommand,
+    PurMode,
+)
 from .const import (
     CTW3,
     D3,
@@ -10,6 +17,7 @@ from .const import (
     D4S,
     DEVICES_FEEDER,
     DEVICES_LITTER_BOX,
+    DEVICES_PURIFIER,
     DEVICES_WATER_FOUNTAIN,
     FEEDER,
     FEEDER_MINI,
@@ -46,11 +54,13 @@ __all__ = [
     "DEVICES_FEEDER",
     "DEVICES_LITTER_BOX",
     "DEVICES_WATER_FOUNTAIN",
+    "DEVICES_PURIFIER",
     "RecordType",
     "PetKitClient",
     "FeederCommand",
     "LitterCommand",
     "PetCommand",
     "LBCommand",
-    "LBAction",
+    "DeviceAction",
+    "PurMode",
 ]
