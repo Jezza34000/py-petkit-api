@@ -2,9 +2,6 @@
 
 from enum import StrEnum
 
-MIN_FEED_AMOUNT = 0
-MAX_FEED_AMOUNT = 10
-
 RES_KEY = "result"
 ERR_KEY = "error"
 SUCCESS_KEY = "success"
@@ -30,6 +27,7 @@ W5 = "w5"
 CTW3 = "ctw3"
 K2 = "k2"
 K3 = "k3"
+PET = "pet"
 
 DEVICES_LITTER_BOX = [T3, T4, T5, T6]
 DEVICES_FEEDER = [FEEDER, FEEDER_MINI, D3, D4, D4S, D4H, D4SH]
