@@ -75,6 +75,7 @@ class PetKitClient:
     async def _get_base_url(self) -> None:
         """Get the list of API servers, filter by region, and return the matching server."""
         _LOGGER.debug("Getting API server list")
+        self.req.base_url = PetkitDomain.PASSPORT_PETKIT
 
         if self.region.lower() == "china":
             self.req.base_url = PetkitDomain.CHINA_SRV
@@ -149,6 +150,7 @@ class PetKitClient:
         )
         session_data = response["session"]
         self._session = SessionInfo(**session_data)
+        self._session.created_at = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
 
     async def validate_session(self) -> None:
         """Check if the session is still valid and refresh or re-login if necessary."""
