@@ -81,7 +81,10 @@ async def main():
 
         ### Example 2 : Feed the pet
         ### Device_ID, Command, Payload
+        # simple hopper :
         await client.send_api_request(123456789, FeederCommand.MANUAL_FEED, {"amount": 1})
+        # dual hopper :
+        await client.send_api_request(123456789, FeederCommand.MANUAL_FEED_DUAL, {"amount1": 2})
 
         ### Example 3 : Start the cleaning process
         ### Device_ID, Command, Payload
@@ -91,6 +94,10 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## More example usage
+
+Check at the usage in the Home Assistant integration : [here](https://github.com/Jezza34000/homeassistant_petkit)
 
 ## Contributing
 
