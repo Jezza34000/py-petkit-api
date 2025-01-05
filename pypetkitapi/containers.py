@@ -1,6 +1,6 @@
 """Dataclasses container for petkit API."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class RegionInfo(BaseModel):
@@ -51,14 +51,21 @@ class Device(BaseModel):
     Subclass of AccountData.
     """
 
-    created_at: int | None = Field(None, alias="createdAt")
-    device_id: int | None = Field(None, alias="deviceId")
-    device_name: str | None = Field(None, alias="deviceName")
-    device_type: str | None = Field(None, alias="deviceType")
-    group_id: int | None = Field(None, alias="groupId")
-    type: int | None = None
+    created_at: int = Field(alias="createdAt")
+    device_id: int = Field(alias="deviceId")
+    device_name: str = Field(alias="deviceName")
+    device_type: str = Field(alias="deviceType")
+    group_id: int = Field(alias="groupId")
+    type: int
     type_code: int = Field(0, alias="typeCode")
-    unique_id: str | None = Field(None, alias="uniqueId")
+    unique_id: str = Field(alias="uniqueId")
+
+    @field_validator("device_name", "device_type", "unique_id", mode="before")
+    def convert_to_lower(cls, value):  # noqa: N805
+        """Convert device_name, device_type and unique_id to lowercase."""
+        if value is not None and isinstance(value, str):
+            return value.lower()
+        return value
 
 
 class Pet(BaseModel):
@@ -66,15 +73,15 @@ class Pet(BaseModel):
     Subclass of AccountData.
     """
 
-    avatar: str | None = None
+    avatar: str
     created_at: int = Field(alias="createdAt")
     pet_id: int = Field(alias="petId")
-    pet_name: str | None = Field(None, alias="petName")
+    pet_name: str = Field(alias="petName")
     id: int | None = None  # Fictive field copied from id (for HA compatibility)
     sn: str | None = None  # Fictive field copied from id (for HA compatibility)
     name: str | None = None  # Fictive field copied from pet_name (for HA compatibility)
     firmware: str | None = None  # Fictive fixed field (for HA compatibility)
-    device_nfo: Device = Field(default_factory=Device)
+    device_nfo: Device | None = None  # Device is now optional
 
     # Litter stats
     last_litter_usage: int = 0
