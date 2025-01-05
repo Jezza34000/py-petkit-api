@@ -164,6 +164,9 @@ class WaterFountain(BaseModel):
     water_pump_run_time: int | None = Field(None, alias="waterPumpRunTime")
     device_records: list[WaterFountainRecord] | None = None
     device_nfo: Device | None = None
+    is_connected: bool = False
+    ble_counter: int = 0
+    last_ble_poll: str | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
