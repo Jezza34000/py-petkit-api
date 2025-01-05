@@ -11,6 +11,11 @@ DEVICE_DATA = "deviceData"
 DEVICE_STATS = "deviceStats"
 PET_DATA = "petData"
 
+# Bluetooth
+BLE_CONNECT_ATTEMPT = 4
+BLE_START_TRAME = [250, 252, 253]
+BLE_END_TRAME = [251]
+
 # PetKit Models
 FEEDER = "feeder"
 FEEDER_MINI = "feedermini"
@@ -120,11 +125,12 @@ class PetkitEndpoint(StrEnum):
     GET_DEVICE_RECORD_RELEASE = "getDeviceRecordRelease"
     UPDATE_SETTING = "updateSettings"
 
-    # Bluetooth relay
+    # Bluetooth
     BLE_AS_RELAY = "ble/ownSupportBleDevices"
     BLE_CONNECT = "ble/connect"
     BLE_POLL = "ble/poll"
     BLE_CANCEL = "ble/cancel"
+    BLE_CONTROL_DEVICE = "ble/controlDevice"
 
     # Fountain & Litter Box
     CONTROL_DEVICE = "controlDevice"
