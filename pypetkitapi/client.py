@@ -1,17 +1,22 @@
 """Pypetkit Client: A Python library for interfacing with PetKit"""
 
 import asyncio
+import base64
 from datetime import datetime, timedelta
 from enum import StrEnum
 import hashlib
 from http import HTTPMethod
 import logging
+import urllib.parse
 
 import aiohttp
 from aiohttp import ContentTypeError
 
-from pypetkitapi.command import ACTIONS_MAP
+from pypetkitapi.command import ACTIONS_MAP, FOUNTAIN_COMMAND, FountainAction
 from pypetkitapi.const import (
+    BLE_CONNECT_ATTEMPT,
+    BLE_END_TRAME,
+    BLE_START_TRAME,
     DEVICE_DATA,
     DEVICE_RECORDS,
     DEVICE_STATS,
@@ -29,7 +34,14 @@ from pypetkitapi.const import (
     PetkitDomain,
     PetkitEndpoint,
 )
-from pypetkitapi.containers import AccountData, Device, Pet, RegionInfo, SessionInfo
+from pypetkitapi.containers import (
+    AccountData,
+    BleRelay,
+    Device,
+    Pet,
+    RegionInfo,
+    SessionInfo,
+)
 from pypetkitapi.exceptions import (
     PetkitAuthenticationError,
     PetkitAuthenticationUnregisteredEmailError,
@@ -201,7 +213,16 @@ class PetKitClient:
             if account.pet_list:
                 for pet in account.pet_list:
                     self.petkit_entities[pet.pet_id] = pet
-                    pet.device_nfo = Device(deviceType=PET, deviceId=pet.pet_id)
+                    pet.device_nfo = Device(
+                        deviceType=PET,
+                        deviceId=pet.pet_id,
+                        createdAt=pet.created_at,
+                        deviceName=pet.pet_name,
+                        groupId=0,
+                        type=0,
+                        typeCode=0,
+                        uniqueId=pet.sn,
+                    )
 
     async def get_devices_data(self) -> None:
         """Get the devices data from the PetKit servers."""
@@ -223,7 +244,7 @@ class PetKitClient:
                 _LOGGER.debug("Found %s devices", len(account.device_list))
 
         for device in device_list:
-            device_type = device.device_type.lower()
+            device_type = device.device_type
 
             if device_type in DEVICES_FEEDER:
                 main_tasks.append(self._fetch_device_data(device, Feeder))
@@ -259,7 +280,7 @@ class PetKitClient:
         stats_tasks = [
             self.populate_pet_stats(self.petkit_entities[device.device_id])
             for device in device_list
-            if device.device_type.lower() in DEVICES_LITTER_BOX
+            if device.device_type in DEVICES_LITTER_BOX
         ]
 
         # Execute stats tasks
@@ -285,7 +306,7 @@ class PetKitClient:
         ],
     ) -> None:
         """Fetch the device data from the PetKit servers."""
-        device_type = device.device_type.lower()
+        device_type = device.device_type
 
         _LOGGER.debug("Reading device type : %s (id=%s)", device_type, device.device_id)
 
@@ -404,6 +425,171 @@ class PetKitClient:
                 pet.last_duration_usage = self.get_safe_value(graph.toilet_time)
                 pet.last_device_used = "Purobot Ultra"
 
+    async def _get_fountain_instance(self, fountain_id: int) -> WaterFountain:
+        # Retrieve the water fountain object
+        water_fountain = self.petkit_entities.get(fountain_id)
+        if not water_fountain:
+            _LOGGER.error("Water fountain with ID %s not found.", fountain_id)
+            raise ValueError(f"Water fountain with ID {fountain_id} not found.")
+        return water_fountain
+
+    async def check_relay_availability(self, fountain_id: int) -> bool:
+        """Check if BLE relay is available for the account."""
+        fountain = None
+        for account in self.account_data:
+            fountain = next(
+                (
+                    device
+                    for device in account.device_list
+                    if device.device_id == fountain_id
+                ),
+                None,
+            )
+            if fountain:
+                break
+
+        if not fountain:
+            raise ValueError(
+                f"Fountain with device_id {fountain_id} not found for the current account"
+            )
+
+        group_id = fountain.group_id
+
+        response = await self.req.request(
+            method=HTTPMethod.POST,
+            url=f"{PetkitEndpoint.BLE_AS_RELAY}",
+            params={"groupId": group_id},
+            headers=await self.get_session_id(),
+        )
+        ble_relays = [BleRelay(**relay) for relay in response]
+
+        if len(ble_relays) == 0:
+            _LOGGER.warning("No BLE relay devices found.")
+            return False
+        return True
+
+    async def open_ble_connection(self, fountain_id: int) -> bool:
+        """Open a BLE connection to a PetKit device."""
+        _LOGGER.info("Opening BLE connection to fountain %s", fountain_id)
+        water_fountain = await self._get_fountain_instance(fountain_id)
+
+        if await self.check_relay_availability(fountain_id) is False:
+            _LOGGER.error("BLE relay not available.")
+            return False
+
+        if water_fountain.is_connected is True:
+            _LOGGER.error("BLE connection already established.")
+            return True
+
+        response = await self.req.request(
+            method=HTTPMethod.POST,
+            url=PetkitEndpoint.BLE_CONNECT,
+            data={
+                "bleId": fountain_id,
+                "type": 24,
+                "mac": water_fountain.mac,
+            },
+            headers=await self.get_session_id(),
+        )
+        if response != {"state": 1}:
+            _LOGGER.error("Failed to establish BLE connection.")
+            water_fountain.is_connected = False
+            return False
+
+        for attempt in range(BLE_CONNECT_ATTEMPT):
+            _LOGGER.warning("BLE connection attempt n%s", attempt)
+            response = await self.req.request(
+                method=HTTPMethod.POST,
+                url=PetkitEndpoint.BLE_POLL,
+                data={
+                    "bleId": fountain_id,
+                    "type": 24,
+                    "mac": water_fountain.mac,
+                },
+                headers=await self.get_session_id(),
+            )
+            if response == 1:
+                _LOGGER.info("BLE connection established successfully.")
+                water_fountain.is_connected = True
+                water_fountain.last_ble_poll = datetime.now().strftime(
+                    "%Y-%m-%dT%H:%M:%S.%f"
+                )
+                return True
+            await asyncio.sleep(4)
+        _LOGGER.error("Failed to establish BLE connection after multiple attempts.")
+        water_fountain.is_connected = False
+        return False
+
+    async def close_ble_connection(self, fountain_id: int) -> None:
+        """Close the BLE connection to a PetKit device."""
+        _LOGGER.info("Closing BLE connection to fountain %s", fountain_id)
+        water_fountain = await self._get_fountain_instance(fountain_id)
+
+        await self.req.request(
+            method=HTTPMethod.POST,
+            url=PetkitEndpoint.BLE_CANCEL,
+            data={
+                "bleId": fountain_id,
+                "type": 24,
+                "mac": water_fountain.mac,
+            },
+            headers=await self.get_session_id(),
+        )
+        _LOGGER.info("BLE connection closed successfully.")
+
+    async def get_ble_cmd_data(
+        self, fountain_command: list, counter: int
+    ) -> tuple[int, str]:
+        """Prepare BLE data by adding start and end trame to the command and extracting the first number."""
+        cmd_code = fountain_command[0]
+        modified_command = fountain_command[:2] + [counter] + fountain_command[2:]
+        ble_data = [*BLE_START_TRAME, *modified_command, *BLE_END_TRAME]
+        encoded_data = await self._encode_ble_data(ble_data)
+        return cmd_code, encoded_data
+
+    @staticmethod
+    async def _encode_ble_data(byte_list: list) -> str:
+        """Encode a list of bytes to a URL encoded base64 string."""
+        byte_array = bytearray(byte_list)
+        b64_encoded = base64.b64encode(byte_array)
+        return urllib.parse.quote(b64_encoded)
+
+    async def send_ble_command(self, fountain_id: int, command: FountainAction) -> bool:
+        """BLE command to a PetKit device."""
+        _LOGGER.info("Sending BLE command to fountain %s", fountain_id)
+        water_fountain = await self._get_fountain_instance(fountain_id)
+
+        if water_fountain.is_connected is False:
+            _LOGGER.error("BLE connection not established.")
+            return False
+
+        command = FOUNTAIN_COMMAND.get[command, None]
+        if command is None:
+            _LOGGER.error("Command not found.")
+            return False
+
+        cmd_code, cmd_data = await self.get_ble_cmd_data(
+            command, water_fountain.ble_counter
+        )
+
+        response = await self.req.request(
+            method=HTTPMethod.POST,
+            url=PetkitEndpoint.BLE_CONTROL_DEVICE,
+            data={
+                "bleId": water_fountain.id,
+                "cmd": cmd_code,
+                "data": cmd_data,
+                "mac": water_fountain.mac,
+                "type": 24,
+            },
+            headers=await self.get_session_id(),
+        )
+        if response != 1:
+            _LOGGER.error("Failed to send BLE command.")
+            return False
+        _LOGGER.info("BLE command sent successfully.")
+        return True
+
     async def send_api_request(
         self,
         device_id: int,
@@ -413,7 +599,7 @@ class PetKitClient:
         """Control the device using the PetKit API."""
         await self.validate_session()
 
-        device = self.petkit_entities.get(device_id)
+        device = self.petkit_entities.get(device_id, None)
         if not device:
             raise PypetkitError(f"Device with ID {device_id} not found.")
 
@@ -427,7 +613,7 @@ class PetKitClient:
 
         # Check if the device type is supported
         if device.device_nfo.device_type:
-            device_type = device.device_nfo.device_type.lower()
+            device_type = device.device_nfo.device_type
         else:
             raise PypetkitError(
                 "Device type is not available, and is mandatory for sending commands."
@@ -452,7 +638,7 @@ class PetKitClient:
         else:
             endpoint = action_info.endpoint
             _LOGGER.debug("Endpoint field")
-        url = f"{device.device_nfo.device_type.lower()}/{endpoint}"
+        url = f"{device.device_nfo.device_type}/{endpoint}"
 
         # Get the parameters
         if setting is not None:
