@@ -40,7 +40,7 @@ from .medias import MediaHandler, MediasFiles
 from .purifier_container import Purifier
 from .water_fountain_container import WaterFountain
 
-__version__ = "1.8.1"
+__version__ = "1.9.0"
 
 __all__ = [
     "CTW3",
