@@ -253,7 +253,7 @@ class LitterRecord(BaseModel):
         request_date: str | None = None,
     ) -> dict:
         """Generate query parameters including request_date."""
-        device_type = device.device_type.lower()
+        device_type = device.device_type
         if device_type == T4:
             if request_date is None:
                 request_date = datetime.now().strftime("%Y%m%d")

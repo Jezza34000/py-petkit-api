@@ -291,7 +291,7 @@ class FeederRecord(BaseModel):
         if request_date is None:
             request_date = datetime.now().strftime("%Y%m%d")
 
-        if device.device_type.lower() == D4:
+        if device.device_type == D4:
             return {"date": request_date, "type": 0, "deviceId": device.device_id}
         return {"days": request_date, "deviceId": device.device_id}
 
