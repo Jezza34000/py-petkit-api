@@ -34,6 +34,12 @@ class DeviceCommand(StrEnum):
     UPDATE_SETTING = "update_setting"
 
 
+class FountainCommand(StrEnum):
+    """Device Command"""
+
+    CONTROL_DEVICE = "control_device"
+
+
 class FeederCommand(StrEnum):
     """Specific Feeder Command"""
 
@@ -101,16 +107,17 @@ class DeviceAction(StrEnum):
 class FountainAction(StrEnum):
     """Fountain Action"""
 
+    MODE_NORMAL = "Normal"
+    MODE_SMART = "Smart"
+    MODE_STANDARD = "Standard"
+    MODE_INTERMITTENT = "Intermittent"
     PAUSE = "Pause"
-    NORMAL_TO_PAUSE = "Normal To Pause"
-    SMART_TO_PAUSE = "Smart To Pause"
-    NORMAL = "Normal"
-    SMART = "Smart"
+    CONTINUE = "Continue"
+    POWER_OFF = "Power Off"
+    POWER_ON = "Power On"
     RESET_FILTER = "Reset Filter"
     DO_NOT_DISTURB = "Do Not Disturb"
     DO_NOT_DISTURB_OFF = "Do Not Disturb Off"
-    FIRST_BLE_CMND = "First BLE Command"
-    SECOND_BLE_CMND = "Second BLE Command"
     LIGHT_LOW = "Light Low"
     LIGHT_MEDIUM = "Light Medium"
     LIGHT_HIGH = "Light High"
@@ -118,20 +125,12 @@ class FountainAction(StrEnum):
     LIGHT_OFF = "Light Off"
 
 
-FOUNTAIN_COMMAND_TO_CODE = {
-    FountainAction.DO_NOT_DISTURB: "221",
-    FountainAction.DO_NOT_DISTURB_OFF: "221",
-    FountainAction.LIGHT_ON: "221",
-    FountainAction.LIGHT_OFF: "221",
-    FountainAction.LIGHT_LOW: "221",
-    FountainAction.LIGHT_MEDIUM: "221",
-    FountainAction.LIGHT_HIGH: "221",
-    FountainAction.PAUSE: "220",
-    FountainAction.RESET_FILTER: "222",
-    FountainAction.NORMAL: "220",
-    FountainAction.NORMAL_TO_PAUSE: "220",
-    FountainAction.SMART: "220",
-    FountainAction.SMART_TO_PAUSE: "220",
+FOUNTAIN_COMMAND = {
+    FountainAction.PAUSE: [220, 1, 3, 0, 1, 0, 2],
+    FountainAction.CONTINUE: [220, 1, 3, 0, 1, 1, 2],
+    FountainAction.RESET_FILTER: [222, 1, 0, 0],
+    FountainAction.POWER_OFF: [220, 1, 3, 0, 0, 1, 1],
+    FountainAction.POWER_ON: [220, 1, 3, 0, 1, 1, 1],
 }
 
 
@@ -146,18 +145,18 @@ class CmdData:
 
 def get_endpoint_manual_feed(device):
     """Get the endpoint for the device"""
-    if device.device_type == FEEDER_MINI:
+    if device.device_nfo.device_type == FEEDER_MINI:
         return PetkitEndpoint.MANUAL_FEED_MINI
-    if device.device_type == FEEDER:
+    if device.device_nfo.device_type == FEEDER:
         return PetkitEndpoint.MANUAL_FEED_FRESH_ELEMENT
     return PetkitEndpoint.MANUAL_FEED_DUAL
 
 
 def get_endpoint_reset_desiccant(device):
     """Get the endpoint for the device"""
-    if device.device_type == FEEDER_MINI:
+    if device.device_nfo.device_type == FEEDER_MINI:
         return PetkitEndpoint.MINI_DESICCANT_RESET
-    if device.device_type == FEEDER:
+    if device.device_nfo.device_type == FEEDER:
         return PetkitEndpoint.FRESH_ELEMENT_DESICCANT_RESET
     return PetkitEndpoint.DESICCANT_RESET
 
@@ -222,7 +221,7 @@ ACTIONS_MAP = {
     FeederCommand.CANCEL_MANUAL_FEED: CmdData(
         endpoint=lambda device: (
             PetkitEndpoint.FRESH_ELEMENT_CANCEL_FEED
-            if device.device_type == FEEDER
+            if device.device_nfo.device_type == FEEDER
             else PetkitEndpoint.CANCEL_FEED
         ),
         params=lambda device: {
@@ -230,7 +229,7 @@ ACTIONS_MAP = {
             "deviceId": device.id,
             **(
                 {"id": device.manual_feed_id}
-                if device.device_type.lower() in [D4H, D4S, D4SH]
+                if device.device_nfo.device_type in [D4H, D4S, D4SH]
                 else {}
             ),
         },
@@ -281,15 +280,4 @@ ACTIONS_MAP = {
         },
         supported_device=ALL_DEVICES,
     ),
-    # FountainCommand.CONTROL_DEVICE: CmdData(
-    #     endpoint=PetkitEndpoint.CONTROL_DEVICE,
-    #     params=lambda device, setting: {
-    #         "bleId": device.id,
-    #         "cmd": cmnd_code,
-    #         "data": ble_data,
-    #         "mac": device.mac,
-    #         "type": water_fountain.ble_relay,
-    #     },
-    #     supported_device=[CTW3],
-    # ),
 }
