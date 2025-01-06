@@ -9,6 +9,7 @@ from pypetkitapi.const import (
     DEVICE_DATA,
     DEVICE_RECORDS,
     DEVICE_STATS,
+    T3,
     T4,
     T5,
     T6,
@@ -239,7 +240,7 @@ class LitterRecord(BaseModel):
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
         """Get the endpoint URL for the given device type."""
-        if device_type == T4:
+        if device_type in [T3, T4]:
             return PetkitEndpoint.GET_DEVICE_RECORD
         if device_type in [T5, T6]:
             return PetkitEndpoint.GET_DEVICE_RECORD_RELEASE
@@ -254,10 +255,10 @@ class LitterRecord(BaseModel):
     ) -> dict:
         """Generate query parameters including request_date."""
         device_type = device.device_type
-        if device_type == T4:
-            if request_date is None:
-                request_date = datetime.now().strftime("%Y%m%d")
-            return {"date": int(request_date), "deviceId": device.device_id}
+        if device_type in [T3, T4]:
+            request_date = request_date or datetime.now().strftime("%Y%m%d")
+            key = "day" if device_type == T3 else "date"
+            return {key: int(request_date), "deviceId": device.device_id}
         if device_type in [T5, T6]:
             return {
                 "timestamp": int(datetime.now().timestamp()),
