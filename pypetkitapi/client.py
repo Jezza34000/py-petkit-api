@@ -28,7 +28,9 @@ from pypetkitapi.const import (
     LOGIN_DATA,
     PET,
     RES_KEY,
+    T3,
     T4,
+    T5,
     T6,
     Header,
     PetkitDomain,
@@ -256,9 +258,9 @@ class PetKitClient:
                 )
                 record_tasks.append(self._fetch_device_data(device, LitterRecord))
 
-                if device_type == T4:
+                if device_type in [T3, T4]:
                     record_tasks.append(self._fetch_device_data(device, LitterStats))
-                if device_type == T6:
+                if device_type in [T5, T6]:
                     record_tasks.append(self._fetch_device_data(device, PetOutGraph))
 
             elif device_type in DEVICES_WATER_FOUNTAIN:
@@ -351,9 +353,9 @@ class PetKitClient:
             self.petkit_entities[device.device_id].device_records = device_data
             _LOGGER.debug("Device records fetched OK for %s", device_type)
         elif data_class.data_type == DEVICE_STATS:
-            if device_type == T4:
+            if device_type in [T3, T4]:
                 self.petkit_entities[device.device_id].device_stats = device_data
-            if device_type == T6:
+            if device_type in [T5, T6]:
                 self.petkit_entities[device.device_id].device_pet_graph_out = (
                     device_data
                 )
@@ -386,17 +388,20 @@ class PetKitClient:
 
         pets_list = await self.get_pets_list()
         for pet in pets_list:
-            if stats_data.device_nfo.device_type == T4 and stats_data.device_records:
-                await self._process_t4(pet, stats_data.device_records)
+            if (
+                stats_data.device_nfo.device_type in [T3, T4]
+                and stats_data.device_records
+            ):
+                await self._process_t3_t4(pet, stats_data)
             elif (
-                stats_data.device_nfo.device_type == T6
+                stats_data.device_nfo.device_type in [T5, T6]
                 and stats_data.device_pet_graph_out
             ):
-                await self._process_t6(pet, stats_data.device_pet_graph_out)
+                await self._process_t5_t6(pet, stats_data)
 
-    async def _process_t4(self, pet, device_records):
-        """Process T4 device records."""
-        for stat in device_records:
+    async def _process_t3_t4(self, pet, device_records):
+        """Process T3/T4 devices records."""
+        for stat in device_records.device_records:
             if stat.pet_id == pet.pet_id and (
                 pet.last_litter_usage is None
                 or self.get_safe_value(stat.timestamp) > pet.last_litter_usage
@@ -409,11 +414,11 @@ class PetKitClient:
                     stat.content.time_in if stat.content else None,
                     stat.content.time_out if stat.content else None,
                 )
-                pet.last_device_used = "Pura Max"
+                pet.last_device_used = device_records.device_nfo.device_name
 
-    async def _process_t6(self, pet, pet_graphs):
-        """Process T6 pet graphs."""
-        for graph in pet_graphs:
+    async def _process_t5_t6(self, pet, pet_graphs):
+        """Process T5/T6 pet graphs."""
+        for graph in pet_graphs.device_pet_graph_out:
             if graph.pet_id == pet.pet_id and (
                 pet.last_litter_usage is None
                 or self.get_safe_value(graph.time) > pet.last_litter_usage
@@ -423,7 +428,7 @@ class PetKitClient:
                     graph.content.pet_weight if graph.content else None
                 )
                 pet.last_duration_usage = self.get_safe_value(graph.toilet_time)
-                pet.last_device_used = "Purobot Ultra"
+                pet.last_device_used = pet_graphs.device_nfo.device_name
 
     async def _get_fountain_instance(self, fountain_id: int) -> WaterFountain:
         # Retrieve the water fountain object
@@ -748,7 +753,7 @@ class PrepReq:
                     )
                 case _:
                     raise PypetkitError(
-                        f"Request failed code : {error_code} details : {error_msg}"
+                        f"Request failed code : {error_code}, details : {error_msg} url : {url}"
                     )
 
         # Check for success in the response
