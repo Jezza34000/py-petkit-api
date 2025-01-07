@@ -234,16 +234,31 @@ class PetKitClient:
         if not self.account_data:
             await self._get_account_data()
 
-        main_tasks = []
-        record_tasks = []
-        device_list: list[Device] = []
+        device_list = self._collect_devices()
+        main_tasks, record_tasks = self._prepare_tasks(device_list)
 
+        await asyncio.gather(*main_tasks)
+        await asyncio.gather(*record_tasks)
+        await self._execute_stats_tasks(device_list)
+
+        end_time = datetime.now()
+        _LOGGER.debug("Petkit data fetched successfully in: %s", end_time - start_time)
+
+    def _collect_devices(self) -> list[Device]:
+        """Collect all devices from account data."""
+        device_list = []
         for account in self.account_data:
             _LOGGER.debug("List devices data for account: %s", account)
             if account.device_list:
                 _LOGGER.debug("Devices in account: %s", account.device_list)
                 device_list.extend(account.device_list)
                 _LOGGER.debug("Found %s devices", len(account.device_list))
+        return device_list
+
+    def _prepare_tasks(self, device_list: list[Device]) -> tuple[list, list]:
+        """Prepare main and record tasks based on device types."""
+        main_tasks = []
+        record_tasks = []
 
         for device in device_list:
             device_type = device.device_type
@@ -253,15 +268,9 @@ class PetKitClient:
                 record_tasks.append(self._fetch_device_data(device, FeederRecord))
 
             elif device_type in DEVICES_LITTER_BOX:
-                main_tasks.append(
-                    self._fetch_device_data(device, Litter),
-                )
+                main_tasks.append(self._fetch_device_data(device, Litter))
                 record_tasks.append(self._fetch_device_data(device, LitterRecord))
-
-                if device_type in [T3, T4]:
-                    record_tasks.append(self._fetch_device_data(device, LitterStats))
-                if device_type in [T5, T6]:
-                    record_tasks.append(self._fetch_device_data(device, PetOutGraph))
+                self._add_litter_box_tasks(record_tasks, device_type, device)
 
             elif device_type in DEVICES_WATER_FOUNTAIN:
                 main_tasks.append(self._fetch_device_data(device, WaterFountain))
@@ -272,25 +281,25 @@ class PetKitClient:
             elif device_type in DEVICES_PURIFIER:
                 main_tasks.append(self._fetch_device_data(device, Purifier))
 
-        # Execute main device tasks first
-        await asyncio.gather(*main_tasks)
+        return main_tasks, record_tasks
 
-        # Then execute record tasks
-        await asyncio.gather(*record_tasks)
+    def _add_litter_box_tasks(
+        self, record_tasks: list, device_type: str, device: Device
+    ):
+        """Add specific tasks for litter box devices."""
+        if device_type in [T3, T4]:
+            record_tasks.append(self._fetch_device_data(device, LitterStats))
+        if device_type in [T5, T6]:
+            record_tasks.append(self._fetch_device_data(device, PetOutGraph))
 
-        # Add populate_pet_stats tasks
+    async def _execute_stats_tasks(self, device_list: list[Device]) -> None:
+        """Execute tasks to populate pet stats."""
         stats_tasks = [
             self.populate_pet_stats(self.petkit_entities[device.device_id])
             for device in device_list
             if device.device_type in DEVICES_LITTER_BOX
         ]
-
-        # Execute stats tasks
         await asyncio.gather(*stats_tasks)
-
-        end_time = datetime.now()
-        total_time = end_time - start_time
-        _LOGGER.debug("Petkit data fetched successfully in: %s", total_time)
 
     async def _fetch_device_data(
         self,
