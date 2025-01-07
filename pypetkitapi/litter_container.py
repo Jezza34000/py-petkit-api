@@ -9,10 +9,9 @@ from pypetkitapi.const import (
     DEVICE_DATA,
     DEVICE_RECORDS,
     DEVICE_STATS,
+    LITTER_NO_CAMERA,
+    LITTER_WITH_CAMERA,
     T3,
-    T4,
-    T5,
-    T6,
     PetkitEndpoint,
 )
 from pypetkitapi.containers import CloudProduct, Device, FirmwareDetail, Wifi
@@ -240,9 +239,9 @@ class LitterRecord(BaseModel):
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
         """Get the endpoint URL for the given device type."""
-        if device_type in [T3, T4]:
+        if device_type in LITTER_NO_CAMERA:
             return PetkitEndpoint.GET_DEVICE_RECORD
-        if device_type in [T5, T6]:
+        if device_type in LITTER_WITH_CAMERA:
             return PetkitEndpoint.GET_DEVICE_RECORD_RELEASE
         raise ValueError(f"Invalid device type: {device_type}")
 
@@ -255,11 +254,11 @@ class LitterRecord(BaseModel):
     ) -> dict:
         """Generate query parameters including request_date."""
         device_type = device.device_type
-        if device_type in [T3, T4]:
+        if device_type in LITTER_NO_CAMERA:
             request_date = request_date or datetime.now().strftime("%Y%m%d")
             key = "day" if device_type == T3 else "date"
             return {key: int(request_date), "deviceId": device.device_id}
-        if device_type in [T5, T6]:
+        if device_type in LITTER_WITH_CAMERA:
             return {
                 "timestamp": int(datetime.now().timestamp()),
                 "deviceId": device.device_id,
@@ -407,7 +406,7 @@ class K3Device(BaseModel):
 
 class Litter(BaseModel):
     """Dataclass for Litter Data.
-    Supported devices = T3, T4, T6
+    Supported devices = T3, T4, T5, T6
     """
 
     data_type: ClassVar[str] = DEVICE_DATA

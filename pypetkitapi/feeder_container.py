@@ -49,7 +49,7 @@ class CameraMultiNew(BaseModel):
 
     enable: int | None = None
     rpt: str | None = None
-    time: list[tuple[int, int]] | None = None
+    time: list[list[int]] | None = None
 
 
 class SettingsFeeder(BaseModel):
@@ -85,9 +85,7 @@ class SettingsFeeder(BaseModel):
     highlight: int | None = None
     light_config: int | None = Field(None, alias="lightConfig")
     light_mode: int | None = Field(None, alias="lightMode")
-    light_multi_range: list[tuple[int, int]] | None = Field(
-        None, alias="lightMultiRange"
-    )
+    light_multi_range: list[list[int]] | None = Field(None, alias="lightMultiRange")
     live_encrypt: int | None = Field(None, alias="liveEncrypt")
     low_battery_notify: int | None = Field(None, alias="lowBatteryNotify")
     manual_lock: int | None = Field(None, alias="manualLock")
@@ -112,7 +110,7 @@ class SettingsFeeder(BaseModel):
     time_display: int | None = Field(None, alias="timeDisplay")
     tone_config: int | None = Field(None, alias="toneConfig")
     tone_mode: int | None = Field(None, alias="toneMode")
-    tone_multi_range: list[tuple[int, int]] | None = Field(None, alias="toneMultiRange")
+    tone_multi_range: list[list[int]] | None = Field(None, alias="toneMultiRange")
     upload: int | None = None
     volume: int | None = None
 
@@ -315,8 +313,9 @@ class Feeder(BaseModel):
     bt_mac: str | None = Field(None, alias="btMac")
     cloud_product: CloudProduct | None = Field(None, alias="cloudProduct")
     created_at: str | None = Field(None, alias="createdAt")
+    desc: str | None = None  # D3
     device_records: FeederRecord | None = None
-    firmware: float
+    firmware: str
     firmware_details: list[FirmwareDetail] | None = Field(None, alias="firmwareDetails")
     hardware: int
     id: int
