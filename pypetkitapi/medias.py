@@ -4,13 +4,14 @@ from dataclasses import dataclass
 import logging
 from pathlib import Path
 import re
+from typing import Any
 
 from aiofiles import open as aio_open
 import aiohttp
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 
-from pypetkitapi.feeder_container import Feeder, RecordsItems
+from pypetkitapi.feeder_container import Feeder, RecordsType
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,7 +69,7 @@ class MediaHandler:
         return self.media_files
 
     async def _process_records(
-        self, records: RecordsItems, record_type: str
+        self, records: RecordsType, record_type: str
     ) -> list[MediasFiles]:
         """Process individual records and return media info."""
         media_files = []
@@ -104,8 +105,8 @@ class MediaHandler:
                 )
 
         for record in records:
-            if record.items:
-                await process_item(record.items)
+            if hasattr(record, "items"):
+                await process_item(record.items)  # type: ignore[attr-defined]
 
         return media_files
 
@@ -170,9 +171,8 @@ class MediaDownloadDecode:
             )
         return file_path
 
-    async def _decrypt_image_from_file(
-        self, file_path: Path, aes_key: str
-    ) -> bytes | None:
+    @staticmethod
+    async def _decrypt_image_from_file(file_path: Path, aes_key: str) -> bytes | None:
         """Decrypt an image from a file using AES encryption.
         :param file_path: Path to the encrypted image file.
         :param aes_key: AES key used for decryption.
@@ -183,13 +183,13 @@ class MediaDownloadDecode:
                 aes_key = aes_key[:-1]
             key_bytes: bytes = aes_key.encode("utf-8")
             iv: bytes = b"\x61" * 16
-            cipher: AES = AES.new(key_bytes, AES.MODE_CBC, iv)
+            cipher: Any = AES.new(key_bytes, AES.MODE_CBC, iv)
 
             async with aio_open(file_path, "rb") as encrypted_file:
                 encrypted_data: bytes = await encrypted_file.read()
 
             decrypted_data: bytes = unpad(
-                cipher.decrypt(encrypted_data), AES.block_size
+                cipher.decrypt(encrypted_data), AES.block_size  # type: ignore[attr-defined]
             )
         except Exception as e:  # noqa: BLE001
             logging.error("Error decrypting image from file %s: %s", file_path, e)
