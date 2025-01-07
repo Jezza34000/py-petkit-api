@@ -25,6 +25,8 @@ from pypetkitapi.const import (
     DEVICES_PURIFIER,
     DEVICES_WATER_FOUNTAIN,
     ERR_KEY,
+    LITTER_NO_CAMERA,
+    LITTER_WITH_CAMERA,
     LOGIN_DATA,
     PET,
     RES_KEY,
@@ -58,6 +60,19 @@ from pypetkitapi.feeder_container import Feeder, FeederRecord
 from pypetkitapi.litter_container import Litter, LitterRecord, LitterStats, PetOutGraph
 from pypetkitapi.purifier_container import Purifier
 from pypetkitapi.water_fountain_container import WaterFountain, WaterFountainRecord
+
+data_handlers = {}
+
+
+def data_handler(data_type):
+    """Register a data handler for a specific data type."""
+
+    def wrapper(func):
+        data_handlers[data_type] = func
+        return func
+
+    return wrapper
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -223,7 +238,7 @@ class PetKitClient:
                         groupId=0,
                         type=0,
                         typeCode=0,
-                        uniqueId=pet.sn,
+                        uniqueId=str(pet.sn),
                     )
 
     async def get_devices_data(self) -> None:
@@ -295,9 +310,9 @@ class PetKitClient:
     async def _execute_stats_tasks(self, device_list: list[Device]) -> None:
         """Execute tasks to populate pet stats."""
         stats_tasks = [
-            self.populate_pet_stats(self.petkit_entities[device.device_id])
-            for device in device_list
-            if device.device_type in DEVICES_LITTER_BOX
+            self.populate_pet_stats(entity)
+            for device_id, entity in self.petkit_entities.items()
+            if isinstance(entity, Litter)
         ]
         await asyncio.gather(*stats_tasks)
 
@@ -354,23 +369,48 @@ class PetKitClient:
             _LOGGER.error("Unexpected response type: %s", type(response))
             return
 
-        if data_class.data_type == DEVICE_DATA:
-            self.petkit_entities[device.device_id] = device_data
-            self.petkit_entities[device.device_id].device_nfo = device
-            _LOGGER.debug("Device data fetched OK for %s", device_type)
-        elif data_class.data_type == DEVICE_RECORDS:
-            self.petkit_entities[device.device_id].device_records = device_data
-            _LOGGER.debug("Device records fetched OK for %s", device_type)
-        elif data_class.data_type == DEVICE_STATS:
-            if device_type in [T3, T4]:
-                self.petkit_entities[device.device_id].device_stats = device_data
-            if device_type in [T5, T6]:
-                self.petkit_entities[device.device_id].device_pet_graph_out = (
-                    device_data
-                )
-            _LOGGER.debug("Device stats fetched OK for %s", device_type)
+        # Dispatch to the appropriate handler
+        handler = data_handlers.get(data_class.data_type)
+        if handler:
+            await handler(self, device, device_data, device_type)
         else:
             _LOGGER.error("Unknown data type: %s", data_class.data_type)
+
+    @data_handler(DEVICE_DATA)
+    async def _handle_device_data(self, device, device_data, device_type):
+        """Handle device data."""
+        self.petkit_entities[device.device_id] = device_data
+        self.petkit_entities[device.device_id].device_nfo = device
+        _LOGGER.debug("Device data fetched OK for %s", device_type)
+
+    @data_handler(DEVICE_RECORDS)
+    async def _handle_device_records(self, device, device_data, device_type):
+        """Handle device records."""
+        entity = self.petkit_entities.get(device.device_id)
+        if entity and isinstance(entity, (Feeder, Litter, WaterFountain)):
+            entity.device_records = device_data
+            _LOGGER.debug("Device records fetched OK for %s", device_type)
+        else:
+            _LOGGER.warning(
+                "Cannot assign device_records to entity of type %s",
+                type(entity),
+            )
+
+    @data_handler(DEVICE_STATS)
+    async def _handle_device_stats(self, device, device_data, device_type):
+        """Handle device stats."""
+        entity = self.petkit_entities.get(device.device_id)
+        if isinstance(entity, Litter):
+            if device_type in LITTER_NO_CAMERA:
+                entity.device_stats = device_data
+            if device_type in LITTER_WITH_CAMERA:
+                entity.device_pet_graph_out = device_data
+            _LOGGER.debug("Device stats fetched OK for %s", device_type)
+        else:
+            _LOGGER.warning(
+                "Cannot assign device_stats or device_pet_graph_out to entity of type %s",
+                type(entity),
+            )
 
     async def get_pets_list(self) -> list[Pet]:
         """Extract and return the list of pets."""
@@ -394,6 +434,12 @@ class PetKitClient:
 
     async def populate_pet_stats(self, stats_data: Litter) -> None:
         """Collect data from litter data to populate pet stats."""
+
+        if not stats_data.device_nfo:
+            _LOGGER.warning(
+                "No device info for %s can't populate pet infos", stats_data
+            )
+            return
 
         pets_list = await self.get_pets_list()
         for pet in pets_list:
@@ -442,25 +488,27 @@ class PetKitClient:
     async def _get_fountain_instance(self, fountain_id: int) -> WaterFountain:
         # Retrieve the water fountain object
         water_fountain = self.petkit_entities.get(fountain_id)
-        if not water_fountain:
+        if not isinstance(water_fountain, WaterFountain):
             _LOGGER.error("Water fountain with ID %s not found.", fountain_id)
-            raise ValueError(f"Water fountain with ID {fountain_id} not found.")
+            raise TypeError(f"Water fountain with ID {fountain_id} not found.")
         return water_fountain
 
     async def check_relay_availability(self, fountain_id: int) -> bool:
         """Check if BLE relay is available for the account."""
         fountain = None
+
         for account in self.account_data:
-            fountain = next(
-                (
-                    device
-                    for device in account.device_list
-                    if device.device_id == fountain_id
-                ),
-                None,
-            )
-            if fountain:
-                break
+            if account.device_list:
+                fountain = next(
+                    (
+                        device
+                        for device in account.device_list
+                        if device.device_id == fountain_id
+                    ),
+                    None,
+                )
+                if fountain:
+                    break
 
         if not fountain:
             raise ValueError(
@@ -577,13 +625,13 @@ class PetKitClient:
             _LOGGER.error("BLE connection not established.")
             return False
 
-        command = FOUNTAIN_COMMAND.get[command, None]
-        if command is None:
+        command_data = FOUNTAIN_COMMAND.get(command)
+        if command_data is None:
             _LOGGER.error("Command not found.")
             return False
 
         cmd_code, cmd_data = await self.get_ble_cmd_data(
-            command, water_fountain.ble_counter
+            list(command_data), water_fountain.ble_counter
         )
 
         response = await self.req.request(
@@ -616,6 +664,8 @@ class PetKitClient:
         device = self.petkit_entities.get(device_id, None)
         if not device:
             raise PypetkitError(f"Device with ID {device_id} not found.")
+        if device.device_nfo is None:
+            raise PypetkitError(f"Device with ID {device_id} has no device_nfo.")
 
         _LOGGER.debug(
             "Control API device=%s id=%s action=%s param=%s",
