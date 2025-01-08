@@ -1,0 +1,290 @@
+{
+  "result": {
+    "autoUpgrade": 1,
+    "btMac": "a0b1c2d3e4a5",
+    "createdAt": "2024-10-30T09:52:23.492+0000",
+    "desc": "Next Dispense: 23:00",
+    "deviceShared": {
+      "ownerId": "200022222",
+      "ownerNick": "User",
+      "pets": []
+    },
+    "firmware": "1.462",
+    "firmwareDetails": [
+      {
+        "module": "userbin",
+        "version": 2344001
+      },
+      {
+        "module": "lans",
+        "version": 1001
+      }
+    ],
+    "hardware": 1,
+    "id": 600006666,
+    "locale": "Europe/Madrid",
+    "mac": "a0b1c2d3e4a5",
+    "multiConfig": true,
+    "multiFeed": true,
+    "multiFeedItem": {
+      "feedDailyList": [
+        {
+          "items": [
+            {
+              "amount": 30,
+              "id": "25200",
+              "name": "Desayuno",
+              "time": 25200
+            },
+            {
+              "amount": 30,
+              "id": "54000",
+              "name": "Comida",
+              "time": 54000
+            },
+            {
+              "amount": 30,
+              "id": "82800",
+              "name": "Cena",
+              "time": 82800
+            }
+          ],
+          "repeats": 1,
+          "suspended": 0
+        },
+        {
+          "items": [
+            {
+              "amount": 30,
+              "id": "25200",
+              "name": "Desayuno",
+              "time": 25200
+            },
+            {
+              "amount": 30,
+              "id": "54000",
+              "name": "Comida",
+              "time": 54000
+            },
+            {
+              "amount": 30,
+              "id": "82800",
+              "name": "Cena",
+              "time": 82800
+            }
+          ],
+          "repeats": 2,
+          "suspended": 0
+        },
+        {
+          "items": [
+            {
+              "amount": 30,
+              "id": "25200",
+              "name": "Desayuno",
+              "time": 25200
+            },
+            {
+              "amount": 30,
+              "id": "54000",
+              "name": "Comida",
+              "time": 54000
+            },
+            {
+              "amount": 30,
+              "id": "82800",
+              "name": "Cena",
+              "time": 82800
+            }
+          ],
+          "repeats": 3,
+          "suspended": 0
+        },
+        {
+          "items": [
+            {
+              "amount": 30,
+              "id": "25200",
+              "name": "Desayuno",
+              "time": 25200
+            },
+            {
+              "amount": 30,
+              "id": "54000",
+              "name": "Comida",
+              "time": 54000
+            },
+            {
+              "amount": 30,
+              "id": "82800",
+              "name": "Cena",
+              "time": 82800
+            }
+          ],
+          "repeats": 4,
+          "suspended": 0
+        },
+        {
+          "items": [
+            {
+              "amount": 30,
+              "id": "25200",
+              "name": "Desayuno",
+              "time": 25200
+            },
+            {
+              "amount": 30,
+              "id": "54000",
+              "name": "Comida",
+              "time": 54000
+            },
+            {
+              "amount": 30,
+              "id": "82800",
+              "name": "Cena",
+              "time": 82800
+            }
+          ],
+          "repeats": 5,
+          "suspended": 0
+        },
+        {
+          "items": [
+            {
+              "amount": 30,
+              "id": "25200",
+              "name": "Desayuno",
+              "time": 25200
+            },
+            {
+              "amount": 30,
+              "id": "54000",
+              "name": "Comida",
+              "time": 54000
+            },
+            {
+              "amount": 30,
+              "id": "82800",
+              "name": "Cena",
+              "time": 82800
+            }
+          ],
+          "repeats": 6,
+          "suspended": 0
+        },
+        {
+          "items": [
+            {
+              "amount": 30,
+              "id": "25200",
+              "name": "Desayuno",
+              "time": 25200
+            },
+            {
+              "amount": 30,
+              "id": "54000",
+              "name": "Comida",
+              "time": 54000
+            },
+            {
+              "amount": 30,
+              "id": "82800",
+              "name": "Cena",
+              "time": 82800
+            }
+          ],
+          "repeats": 7,
+          "suspended": 0
+        }
+      ],
+      "isExecuted": 1,
+      "userId": "1"
+    },
+    "name": "COMEDERO GATO",
+    "relation": {
+      "userId": "200022222"
+    },
+    "secret": "9999999999999999",
+    "settings": {
+      "controlSettings": 0,
+      "desiccantNotify": 1,
+      "distrubMultiRange": [[1320, 360]],
+      "disturbConfig": 2,
+      "disturbMode": 0,
+      "disturbRange": [1320, 360],
+      "eatNotify": 1,
+      "feedNotify": 1,
+      "foodNotify": 1,
+      "language": "en_US",
+      "lightConfig": 2,
+      "lightMode": 1,
+      "lightMultiRange": [[360, 1380]],
+      "lightRange": [0, 1440],
+      "lowBatteryNotify": 1,
+      "manualLock": 1,
+      "numLimit": 5,
+      "selectedSound": 2,
+      "soundEnable": 1,
+      "surplus": 20,
+      "surplusControl": 1,
+      "systemSoundEnable": 1,
+      "volume": 9
+    },
+    "shareOpen": 0,
+    "signupAt": "2024-01-12T12:12:12.873+0000",
+    "sn": "20252220DA0000",
+    "state": {
+      "batteryPower": 4,
+      "batteryStatus": 0,
+      "block": 0,
+      "broadcast": {
+        "duration": 5,
+        "start_time": 1734876203
+      },
+      "charge": 0,
+      "desiccantLeftDays": 9,
+      "desiccantTime": 0,
+      "door": 0,
+      "eating": 0,
+      "feedState": {
+        "eatAmountTotal": 46,
+        "eatTimes": [
+          3203, 4512, 17472, 27886, 28594, 30559, 33457, 34636, 35409, 39838,
+          48400
+        ],
+        "feedTimes": [25200, 54000, 82800],
+        "planAmountTotal": 90,
+        "planRealAmountTotal": 61,
+        "realAmountTotal": 61
+      },
+      "feeding": 0,
+      "food": 2,
+      "ota": 0,
+      "overall": 1,
+      "pim": 1,
+      "runtime": 0,
+      "weight": 44,
+      "wifi": {
+        "bssid": "a0b1c2d3e4a5",
+        "rsq": -75,
+        "ssid": "wifi-network"
+      }
+    },
+    "timezone": 1.0,
+    "user": {
+      "avatar": "https://sandbox-img5.petkit.cn/banner/0000/00/00/000000000000000000000000000000",
+      "gender": 3,
+      "id": "200022222",
+      "nick": "User",
+      "point": {
+        "endGrowth": 50,
+        "growth": 15,
+        "honour": "LV0",
+        "icon": "http://img5-us.petkit.cn/misc/point/n0",
+        "icon2": "http://img5-us.petkit.cn/misc/point/l0",
+        "rank": 0,
+        "startGrowth": 0
+      }
+    }
+  }
+}
