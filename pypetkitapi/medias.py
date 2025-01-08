@@ -11,7 +11,9 @@ import aiohttp
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 
-from pypetkitapi.feeder_container import Feeder, RecordsType
+from pypetkitapi import Litter, LitterRecord
+from pypetkitapi.const import RecordType, RecordTypeLST
+from pypetkitapi.feeder_container import Feeder
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,29 +49,35 @@ class MediaHandler:
         self.media_download_decode = MediaDownloadDecode(file_path)
         self.media_files: list[MediasFiles] = []
 
-    async def get_last_image(self, device: Feeder) -> list[MediasFiles]:
+    async def get_last_image(self, device: Feeder | Litter) -> list[MediasFiles]:
         """Process device records and extract media info."""
-        record_types = ["eat", "feed", "move", "pet"]
         self.media_files = []
 
-        if not isinstance(device, Feeder):
-            _LOGGER.error("Device is not a Feeder")
+        if not isinstance(device, (Feeder, Litter)):
+            _LOGGER.error("Device is not a Feeder or a Litter")
             return []
 
         if not device.device_records:
-            _LOGGER.error("No device records found for feeder")
+            _LOGGER.error("No device records found for this device")
             return []
 
-        for record_type in record_types:
-            records = getattr(device.device_records, record_type, None)
-            if records:
-                self.media_files.extend(
-                    await self._process_records(records, record_type)
-                )
+        if isinstance(device, Feeder):
+            for record_type in RecordTypeLST:
+                records = getattr(device.device_records, record_type, None)
+                if records:
+                    self.media_files.extend(
+                        await self._process_records_feeder(records, record_type)
+                    )
+        if isinstance(device, Litter):
+            records = device.device_records
+            self.media_files.extend(
+                await self._process_records_litter(records, RecordType.TOILETING)
+            )
+
         return self.media_files
 
-    async def _process_records(
-        self, records: RecordsType, record_type: str
+    async def _process_records_feeder(
+        self, records: list, record_type: str
     ) -> list[MediasFiles]:
         """Process individual records and return media info."""
         media_files = []
@@ -110,6 +118,41 @@ class MediaHandler:
 
         return media_files
 
+    async def _process_records_litter(
+        self, records: list[LitterRecord], record_type: str
+    ) -> list[MediasFiles]:
+        """Process individual records and return media info."""
+        media_files = []
+
+        async def process_item(record_items):
+            last_item = next(
+                (
+                    item
+                    for item in reversed(record_items)
+                    if item.preview and item.aes_key
+                ),
+                None,
+            )
+            if last_item:
+                filename = await extract_filename_from_url(last_item.preview)
+                await self.media_download_decode.get_file(
+                    last_item.preview, last_item.aes_key
+                )
+                timestamp = last_item.timestamp or None
+                media_files.append(
+                    MediasFiles(
+                        record_type=record_type,
+                        filename=filename,
+                        url=last_item.preview,
+                        aes_key=last_item.aes_key,
+                        timestamp=timestamp,
+                    )
+                )
+
+        await process_item(records)
+
+        return media_files
+
 
 class MediaDownloadDecode:
     """Class to download"""
@@ -139,9 +182,7 @@ class MediaDownloadDecode:
 
         encrypted_file_path = await self._save_file(content, f"{filename}.enc")
         # Decrypt the image
-        decrypted_data = await self._decrypt_image_from_file(
-            encrypted_file_path, aes_key
-        )
+        decrypted_data = await self._decrypt_file(encrypted_file_path, aes_key)
 
         if decrypted_data:
             _LOGGER.debug("Decrypt was successful")
@@ -172,8 +213,8 @@ class MediaDownloadDecode:
         return file_path
 
     @staticmethod
-    async def _decrypt_image_from_file(file_path: Path, aes_key: str) -> bytes | None:
-        """Decrypt an image from a file using AES encryption.
+    async def _decrypt_file(file_path: Path, aes_key: str) -> bytes | None:
+        """Decrypt a file using AES encryption.
         :param file_path: Path to the encrypted image file.
         :param aes_key: AES key used for decryption.
         :return: Decrypted image data.
