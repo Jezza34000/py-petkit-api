@@ -1,0 +1,5 @@
+[coverage:run]
+relative_files = True
+source = pypetkitapi
+omit = tests/*
+branch = True
