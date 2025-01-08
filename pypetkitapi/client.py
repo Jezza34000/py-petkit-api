@@ -17,6 +17,7 @@ from pypetkitapi.const import (
     BLE_CONNECT_ATTEMPT,
     BLE_END_TRAME,
     BLE_START_TRAME,
+    CLIENT_NFO,
     DEVICE_DATA,
     DEVICE_RECORDS,
     DEVICE_STATS,
@@ -59,6 +60,7 @@ from pypetkitapi.exceptions import (
 from pypetkitapi.feeder_container import Feeder, FeederRecord
 from pypetkitapi.litter_container import Litter, LitterRecord, LitterStats, PetOutGraph
 from pypetkitapi.purifier_container import Purifier
+from pypetkitapi.utils import get_timezone_offset
 from pypetkitapi.water_fountain_container import WaterFountain, WaterFountainRecord
 
 data_handlers = {}
@@ -101,7 +103,9 @@ class PetKitClient:
         self.petkit_entities = {}
         self.aiohttp_session = session or aiohttp.ClientSession()
         self.req = PrepReq(
-            base_url=PetkitDomain.PASSPORT_PETKIT, session=self.aiohttp_session
+            base_url=PetkitDomain.PASSPORT_PETKIT,
+            session=self.aiohttp_session,
+            timezone=self.timezone,
         )
 
     async def _get_base_url(self) -> None:
@@ -149,7 +153,12 @@ class PetKitClient:
         _LOGGER.info("Logging in to PetKit server")
 
         # Prepare the data to send
+        client_nfo = CLIENT_NFO.copy()
+        client_nfo["timezoneId"] = self.timezone
+        client_nfo["timezone"] = get_timezone_offset(self.timezone)
+
         data = LOGIN_DATA.copy()
+        data["client"] = str(client_nfo)
         data["encrypt"] = "1"
         data["region"] = self.region
         data["username"] = self.username
@@ -728,29 +737,30 @@ class PetKitClient:
 class PrepReq:
     """Prepare the request to the PetKit API."""
 
-    def __init__(self, base_url: str, session: aiohttp.ClientSession) -> None:
+    def __init__(
+        self, base_url: str, session: aiohttp.ClientSession, timezone: str
+    ) -> None:
         """Initialize the request."""
         self.base_url = base_url
         self.session = session
+        self.timezone = timezone
         self.base_headers = self._generate_header()
 
-    @staticmethod
-    def _generate_header() -> dict[str, str]:
+    def _generate_header(self) -> dict[str, str]:
         """Create header for interaction with API endpoint."""
-
         return {
             "Accept": Header.ACCEPT.value,
-            "Accept-Language": Header.ACCEPT_LANG,
-            "Accept-Encoding": Header.ENCODING,
-            "Content-Type": Header.CONTENT_TYPE,
-            "User-Agent": Header.AGENT,
-            "X-Img-Version": Header.IMG_VERSION,
-            "X-Locale": Header.LOCALE,
-            "X-Client": Header.CLIENT,
-            "X-Hour": Header.HOUR,
-            "X-TimezoneId": Header.TIMEZONE_ID,
-            "X-Api-Version": Header.API_VERSION,
-            "X-Timezone": Header.TIMEZONE,
+            "Accept-Language": Header.ACCEPT_LANG.value,
+            "Accept-Encoding": Header.ENCODING.value,
+            "Content-Type": Header.CONTENT_TYPE.value,
+            "User-Agent": Header.AGENT.value,
+            "X-Img-Version": Header.IMG_VERSION.value,
+            "X-Locale": Header.LOCALE.value,
+            "X-Client": Header.CLIENT.value,
+            "X-Hour": Header.HOUR.value,
+            "X-TimezoneId": self.timezone,
+            "X-Api-Version": Header.API_VERSION.value,
+            "X-Timezone": get_timezone_offset(self.timezone),
         }
 
     async def request(
