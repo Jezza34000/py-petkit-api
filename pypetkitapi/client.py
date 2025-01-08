@@ -254,7 +254,7 @@ class PetKitClient:
 
         await asyncio.gather(*main_tasks)
         await asyncio.gather(*record_tasks)
-        await self._execute_stats_tasks(device_list)
+        await self._execute_stats_tasks()
 
         end_time = datetime.now()
         _LOGGER.debug("Petkit data fetched successfully in: %s", end_time - start_time)
@@ -307,7 +307,7 @@ class PetKitClient:
         if device_type in [T5, T6]:
             record_tasks.append(self._fetch_device_data(device, PetOutGraph))
 
-    async def _execute_stats_tasks(self, device_list: list[Device]) -> None:
+    async def _execute_stats_tasks(self) -> None:
         """Execute tasks to populate pet stats."""
         stats_tasks = [
             self.populate_pet_stats(entity)
