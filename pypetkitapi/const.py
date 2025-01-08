@@ -100,9 +100,16 @@ class RecordType(StrEnum):
     FEED = "feed"
     MOVE = "move"
     PET = "pet"
+    TOILETING = "toileting"
 
 
-RecordTypeLST = [RecordType.EAT, RecordType.FEED, RecordType.MOVE, RecordType.PET]
+RecordTypeLST = [
+    RecordType.EAT,
+    RecordType.FEED,
+    RecordType.MOVE,
+    RecordType.PET,
+    RecordType.TOILETING,
+]
 
 
 class PetkitEndpoint(StrEnum):
@@ -162,3 +169,10 @@ class PetkitEndpoint(StrEnum):
     REMOVE_DAILY_FEED = "removeDailyFeed"
     RESTORE_DAILY_FEED = "restoreDailyFeed"
     SAVE_FEED = "saveFeed"  # For Feeding plan
+
+    # Schedule
+    SCHEDULE = "schedule/schedules"
+    SCHEDULE_SAVE = "schedule/save"
+    SCHEDULE_REMOVE = "schedule/remove"
+    SCHEDULE_COMPLETE = "schedule/complete"
+    SCHEDULE_HISTORY = "schedule/userHistorySchedules"
