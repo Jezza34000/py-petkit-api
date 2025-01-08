@@ -234,3 +234,6 @@ envlist = ["pre-commit"]
 [testenv.pre-commit]
 deps = ["pre-commit"]
 commands = ["pre-commit run --all-files"]
+
+[tool.gitleaks]
+allowlist = { files = ["sonar-project.properties"] }

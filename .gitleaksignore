@@ -1,2 +1,2 @@
 # .gitleaksignore
-sonar-project.properties
+sonar-project.properties:generic-api-key:1
