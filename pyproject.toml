@@ -229,7 +229,11 @@ push = true
 ]
 
 [tool.tox]
-envlist = ["pre-commit"]
+envlist = ["py312", "pre-commit", "pytest"]
+
+[testenv]
+deps = ["pytest"]
+commands = ["pytest"]
 
 [testenv.pre-commit]
 deps = ["pre-commit"]
