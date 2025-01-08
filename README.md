@@ -12,6 +12,12 @@
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=bugs)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
+
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
