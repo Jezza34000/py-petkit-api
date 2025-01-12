@@ -90,7 +90,9 @@ async def main():
         # simple hopper :
         await client.send_api_request(123456789, FeederCommand.MANUAL_FEED, {"amount": 1})
         # dual hopper :
-        await client.send_api_request(123456789, FeederCommand.MANUAL_FEED_DUAL, {"amount1": 2})
+        await client.send_api_request(123456789, FeederCommand.MANUAL_FEED, {"amount1": 2})
+        # or
+        await client.send_api_request(123456789, FeederCommand.MANUAL_FEED, {"amount2": 2})
 
         ### Example 3 : Start the cleaning process
         ### Device_ID, Command, Payload
