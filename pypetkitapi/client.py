@@ -55,6 +55,7 @@ from pypetkitapi.exceptions import (
     PetkitInvalidResponseFormat,
     PetkitRegionalServerNotFoundError,
     PetkitSessionError,
+    PetkitSessionExpiredError,
     PetkitTimeoutError,
     PypetkitError,
 )
@@ -207,7 +208,9 @@ class PetKitClient:
             return
 
         created = datetime.strptime(self._session.created_at, "%Y-%m-%dT%H:%M:%S.%f%z")
-        is_expired = datetime.now(tz=created.tzinfo) - created >= timedelta(seconds=self._session.expires_in)
+        is_expired = datetime.now(tz=created.tzinfo) - created >= timedelta(
+            seconds=self._session.expires_in
+        )
 
         if is_expired:
             _LOGGER.debug("Token expired, re-logging in")

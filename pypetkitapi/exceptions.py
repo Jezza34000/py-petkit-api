@@ -15,6 +15,10 @@ class PetkitSessionError(PypetkitError):
     """Class for PyPetkit connection exceptions."""
 
 
+class PetkitSessionExpiredError(PypetkitError):
+    """Class for PyPetkit connection exceptions."""
+
+
 class PetkitAuthenticationUnregisteredEmailError(PypetkitError):
     """Exception raised when the email is not registered with Petkit."""
 
