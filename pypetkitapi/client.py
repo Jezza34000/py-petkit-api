@@ -19,8 +19,6 @@ from pypetkitapi.const import (
     BLE_END_TRAME,
     BLE_START_TRAME,
     CLIENT_NFO,
-    D4H,
-    D4SH,
     DEVICE_DATA,
     DEVICE_RECORDS,
     DEVICE_STATS,
@@ -29,6 +27,7 @@ from pypetkitapi.const import (
     DEVICES_PURIFIER,
     DEVICES_WATER_FOUNTAIN,
     ERR_KEY,
+    FEEDER_WITH_CAMERA,
     LITTER_NO_CAMERA,
     LITTER_WITH_CAMERA,
     LOGIN_DATA,
@@ -317,9 +316,9 @@ class PetKitClient:
         self, record_tasks: list, media_tasks: list, device_type: str, device: Device
     ):
         """Add specific tasks for litter box devices."""
-        if device_type in [T3, T4]:
+        if device_type in LITTER_NO_CAMERA:
             record_tasks.append(self._fetch_device_data(device, LitterStats))
-        if device_type in [T5, T6]:
+        if device_type in LITTER_WITH_CAMERA:
             record_tasks.append(self._fetch_device_data(device, PetOutGraph))
             media_tasks.append(self._fetch_media(device))
 
@@ -327,7 +326,7 @@ class PetKitClient:
         self, media_tasks: list, device_type: str, device: Device
     ):
         """Add specific tasks for feeder box devices."""
-        if device_type in [D4SH, D4H]:
+        if device_type in FEEDER_WITH_CAMERA:
             media_tasks.append(self._fetch_media(device))
 
     async def _execute_stats_tasks(self) -> None:
