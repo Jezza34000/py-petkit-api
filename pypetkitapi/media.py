@@ -16,7 +16,7 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 
 from pypetkitapi import Feeder, Litter, PetKitClient, RecordType
-from pypetkitapi.const import D4H, D4SH, T5, T6, RecordTypeLST
+from pypetkitapi.const import FEEDER_WITH_CAMERA, LITTER_WITH_CAMERA, RecordTypeLST
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,10 +47,14 @@ class MediaManager:
     ) -> list[MediaFile]:
         """Get all media files from all devices and return a list of MediaFile."""
         media_files: list[MediaFile] = []
+        _LOGGER.debug("Processing media files for %s devices", len(devices))
 
         for device in devices:
             if isinstance(device, Feeder):
-                if device.device_nfo and device.device_nfo.device_type in [D4SH, D4H]:
+                if (
+                    device.device_nfo
+                    and device.device_nfo.device_type in FEEDER_WITH_CAMERA
+                ):
                     media_files.extend(self._process_feeder(device))
                 else:
                     _LOGGER.debug(
@@ -58,7 +62,10 @@ class MediaManager:
                         device.name,
                     )
             elif isinstance(device, Litter):
-                if device.device_nfo and device.device_nfo.device_type in [T5, T6]:
+                if (
+                    device.device_nfo
+                    and device.device_nfo.device_type in LITTER_WITH_CAMERA
+                ):
                     media_files.extend(self._process_litter(device))
                 else:
                     _LOGGER.debug(
