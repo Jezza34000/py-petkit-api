@@ -7,3 +7,5 @@
 /.vscode/
 /images/
 /api_responses/
+.idea
+*.pyc
