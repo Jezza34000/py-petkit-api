@@ -19,6 +19,8 @@ from pypetkitapi.const import (
     BLE_END_TRAME,
     BLE_START_TRAME,
     CLIENT_NFO,
+    D4H,
+    D4SH,
     DEVICE_DATA,
     DEVICE_RECORDS,
     DEVICE_STATS,
@@ -84,10 +86,6 @@ _LOGGER = logging.getLogger(__name__)
 class PetKitClient:
     """Petkit Client"""
 
-    _session: SessionInfo | None = None
-    account_data: list[AccountData] = []
-    petkit_entities: dict[int, Feeder | Litter | WaterFountain | Purifier | Pet] = {}
-
     def __init__(
         self,
         username: str,
@@ -101,8 +99,11 @@ class PetKitClient:
         self.password = password
         self.region = region.lower()
         self.timezone = timezone
-        self._session = None
-        self.petkit_entities = {}
+        self._session: SessionInfo | None = None
+        self.account_data: list[AccountData] = []
+        self.petkit_entities: dict[
+            int, Feeder | Litter | WaterFountain | Purifier | Pet
+        ] = {}
         self.aiohttp_session = session or aiohttp.ClientSession()
         self.req = PrepReq(
             base_url=PetkitDomain.PASSPORT_PETKIT,
@@ -259,10 +260,11 @@ class PetKitClient:
             await self._get_account_data()
 
         device_list = self._collect_devices()
-        main_tasks, record_tasks = self._prepare_tasks(device_list)
+        main_tasks, record_tasks, media_tasks = self._prepare_tasks(device_list)
 
         await asyncio.gather(*main_tasks)
         await asyncio.gather(*record_tasks)
+        await asyncio.gather(*media_tasks)
         await self._execute_stats_tasks()
 
         end_time = datetime.now()
@@ -279,10 +281,11 @@ class PetKitClient:
                 _LOGGER.debug("Found %s devices", len(account.device_list))
         return device_list
 
-    def _prepare_tasks(self, device_list: list[Device]) -> tuple[list, list]:
+    def _prepare_tasks(self, device_list: list[Device]) -> tuple[list, list, list]:
         """Prepare main and record tasks based on device types."""
-        main_tasks = []
-        record_tasks = []
+        main_tasks: list = []
+        record_tasks: list = []
+        media_tasks: list = []
 
         for device in device_list:
             device_type = device.device_type
@@ -290,11 +293,14 @@ class PetKitClient:
             if device_type in DEVICES_FEEDER:
                 main_tasks.append(self._fetch_device_data(device, Feeder))
                 record_tasks.append(self._fetch_device_data(device, FeederRecord))
+                self._add_feeder_task_by_type(media_tasks, device_type, device)
 
             elif device_type in DEVICES_LITTER_BOX:
                 main_tasks.append(self._fetch_device_data(device, Litter))
                 record_tasks.append(self._fetch_device_data(device, LitterRecord))
-                self._add_litter_box_tasks(record_tasks, device_type, device)
+                self._add_lb_task_by_type(
+                    record_tasks, media_tasks, device_type, device
+                )
 
             elif device_type in DEVICES_WATER_FOUNTAIN:
                 main_tasks.append(self._fetch_device_data(device, WaterFountain))
@@ -305,16 +311,24 @@ class PetKitClient:
             elif device_type in DEVICES_PURIFIER:
                 main_tasks.append(self._fetch_device_data(device, Purifier))
 
-        return main_tasks, record_tasks
+        return main_tasks, record_tasks, media_tasks
 
-    def _add_litter_box_tasks(
-        self, record_tasks: list, device_type: str, device: Device
+    def _add_lb_task_by_type(
+        self, record_tasks: list, media_tasks: list, device_type: str, device: Device
     ):
         """Add specific tasks for litter box devices."""
         if device_type in [T3, T4]:
             record_tasks.append(self._fetch_device_data(device, LitterStats))
         if device_type in [T5, T6]:
             record_tasks.append(self._fetch_device_data(device, PetOutGraph))
+            media_tasks.append(self._fetch_media(device))
+
+    def _add_feeder_task_by_type(
+        self, media_tasks: list, device_type: str, device: Device
+    ):
+        """Add specific tasks for feeder box devices."""
+        if device_type in [D4SH, D4H]:
+            media_tasks.append(self._fetch_media(device))
 
     async def _execute_stats_tasks(self) -> None:
         """Execute tasks to populate pet stats."""
@@ -324,6 +338,15 @@ class PetKitClient:
             if isinstance(entity, Litter)
         ]
         await asyncio.gather(*stats_tasks)
+
+    async def _fetch_media(self, device: Device) -> None:
+        """Fetch media data from the PetKit servers."""
+        _LOGGER.debug("Fetching media data for device: %s", device.device_id)
+        from pypetkitapi.media import MediaManager
+
+        media_manager = MediaManager()
+        device_entity = self.petkit_entities[device.device_id]
+        device_entity.medias = await media_manager.get_all_media_files([device_entity])
 
     async def _fetch_device_data(
         self,
