@@ -93,6 +93,20 @@ LOGIN_DATA = {
 }
 
 
+class MediaType(StrEnum):
+    """Record Type constants"""
+
+    VIDEO = "avi"
+    IMAGE = "jpg"
+
+
+class VideoType(StrEnum):
+    """Record Type constants"""
+
+    HIGHLIGHT = "highlight"
+    PLAYBACK = "playback"
+
+
 class RecordType(StrEnum):
     """Record Type constants"""
 
@@ -128,6 +142,7 @@ class PetkitEndpoint(StrEnum):
     GET_DEVICE_RECORD = "getDeviceRecord"
     GET_DEVICE_RECORD_RELEASE = "getDeviceRecordRelease"
     UPDATE_SETTING = "updateSettings"
+    UPDATE_SETTING_FEEDER_MINI = "update"
 
     # Bluetooth
     BLE_AS_RELAY = "ble/ownSupportBleDevices"
@@ -147,22 +162,20 @@ class PetkitEndpoint(StrEnum):
     GET_PET_OUT_GRAPH = "getPetOutGraph"
 
     # Video features
+    GET_M3U8 = "getM3u8"
     CLOUD_VIDEO = "cloud/video"
     GET_DOWNLOAD_M3U8 = "getDownloadM3u8"
-    GET_M3U8 = "getM3u8"
 
     # Feeders
     REPLENISHED_FOOD = "added"
     FRESH_ELEMENT_CALIBRATION = "food_reset"
     FRESH_ELEMENT_CANCEL_FEED = "cancel_realtime_feed"
-    DESICCANT_RESET = "desiccantReset"
-    MINI_DESICCANT_RESET = "feedermini/desiccant_reset"
-    FRESH_ELEMENT_DESICCANT_RESET = "feeder/desiccant_reset"
+    DESICCANT_RESET_OLD = "desiccant_reset"
+    DESICCANT_RESET_NEW = "desiccantReset"
     CALL_PET = "callPet"
     CANCEL_FEED = "cancelRealtimeFeed"
-    MANUAL_FEED_MINI = "feedermini/save_dailyfeed"
-    MANUAL_FEED_FRESH_ELEMENT = "feeder/save_dailyfeed"
-    MANUAL_FEED_DUAL = "saveDailyFeed"
+    MANUAL_FEED_OLD = "save_dailyfeed"  # For Feeder/FeederMini
+    MANUAL_FEED_NEW = "saveDailyFeed"  # For all other feeders
     DAILY_FEED_AND_EAT = "dailyFeedAndEat"  # D3
     FEED_STATISTIC = "feedStatistic"  # D4
     DAILY_FEED = "dailyFeeds"  # D4S

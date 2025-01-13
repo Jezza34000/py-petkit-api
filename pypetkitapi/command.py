@@ -9,7 +9,6 @@ import json
 from pypetkitapi.const import (
     ALL_DEVICES,
     D3,
-    D4,
     D4H,
     D4S,
     D4SH,
@@ -145,25 +144,28 @@ class CmdData:
 
 def get_endpoint_manual_feed(device):
     """Get the endpoint for the device"""
-    if device.device_nfo.device_type == FEEDER_MINI:
-        return PetkitEndpoint.MANUAL_FEED_MINI
-    if device.device_nfo.device_type == FEEDER:
-        return PetkitEndpoint.MANUAL_FEED_FRESH_ELEMENT
-    return PetkitEndpoint.MANUAL_FEED_DUAL
+    if device.device_nfo.device_type in [FEEDER_MINI, FEEDER]:
+        return PetkitEndpoint.MANUAL_FEED_OLD  # Old endpoint snakecase
+    return PetkitEndpoint.MANUAL_FEED_NEW  # New endpoint camelcase
 
 
 def get_endpoint_reset_desiccant(device):
     """Get the endpoint for the device"""
+    if device.device_nfo.device_type in [FEEDER_MINI, FEEDER]:
+        return PetkitEndpoint.DESICCANT_RESET_OLD  # Old endpoint snakecase
+    return PetkitEndpoint.DESICCANT_RESET_NEW  # New endpoint camelcase
+
+
+def get_endpoint_update_setting(device):
+    """Get the endpoint for the device"""
     if device.device_nfo.device_type == FEEDER_MINI:
-        return PetkitEndpoint.MINI_DESICCANT_RESET
-    if device.device_nfo.device_type == FEEDER:
-        return PetkitEndpoint.FRESH_ELEMENT_DESICCANT_RESET
-    return PetkitEndpoint.DESICCANT_RESET
+        return PetkitEndpoint.UPDATE_SETTING_FEEDER_MINI
+    return PetkitEndpoint.UPDATE_SETTING
 
 
 ACTIONS_MAP = {
     DeviceCommand.UPDATE_SETTING: CmdData(
-        endpoint=PetkitEndpoint.UPDATE_SETTING,
+        endpoint=lambda device: get_endpoint_update_setting(device),
         params=lambda device, setting: {
             "id": device.id,
             "kv": json.dumps(setting),
@@ -202,21 +204,11 @@ ACTIONS_MAP = {
         params=lambda device, setting: {
             "day": datetime.datetime.now().strftime("%Y%m%d"),
             "deviceId": device.id,
-            "time": "-1",
-            **setting,
-        },
-        supported_device=[FEEDER, FEEDER_MINI, D3, D4, D4H],
-    ),
-    FeederCommand.MANUAL_FEED_DUAL: CmdData(
-        endpoint=PetkitEndpoint.MANUAL_FEED_DUAL,
-        params=lambda device, setting: {
-            "day": datetime.datetime.now().strftime("%Y%m%d"),
-            "deviceId": device.id,
             "name": "",
             "time": "-1",
             **setting,
         },
-        supported_device=[D4S, D4SH],
+        supported_device=DEVICES_FEEDER,
     ),
     FeederCommand.CANCEL_MANUAL_FEED: CmdData(
         endpoint=lambda device: (
