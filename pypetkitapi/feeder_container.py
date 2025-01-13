@@ -336,6 +336,7 @@ class Feeder(BaseModel):
     state: StateFeeder | None = None
     timezone: float | None = None
     device_nfo: Device | None = None
+    medias: list | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:

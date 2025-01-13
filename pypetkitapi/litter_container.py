@@ -449,6 +449,7 @@ class Litter(BaseModel):
     device_stats: LitterStats | None = None
     device_pet_graph_out: list[PetOutGraph] | None = None
     device_nfo: Device | None = None
+    medias: list | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
