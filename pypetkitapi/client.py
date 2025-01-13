@@ -149,6 +149,7 @@ class PetKitClient:
     async def login(self, valid_code: str | None = None) -> None:
         """Login to the PetKit service and retrieve the appropriate server."""
         # Retrieve the list of servers
+        self._session = None
         await self._get_base_url()
 
         _LOGGER.info("Logging in to PetKit server")
@@ -181,6 +182,7 @@ class PetKitClient:
         )
         session_data = response["session"]
         self._session = SessionInfo(**session_data)
+        _LOGGER.debug("Login successful")
 
     async def refresh_session(self) -> None:
         """Refresh the session."""
@@ -194,6 +196,7 @@ class PetKitClient:
         session_data = response["session"]
         self._session = SessionInfo(**session_data)
         self._session.refreshed_at = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+        _LOGGER.debug("Session refreshed at %s", self._session.refreshed_at)
 
     async def validate_session(self) -> None:
         """Check if the session is still valid and refresh or re-login if necessary."""
