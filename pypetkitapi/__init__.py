@@ -36,7 +36,7 @@ from .containers import Pet
 from .exceptions import PetkitAuthenticationError, PypetkitError
 from .feeder_container import Feeder, RecordsItems
 from .litter_container import Litter, LitterRecord, WorkState
-from .medias import MediaHandler, MediasFiles
+from .media import DownloadDecryptMedia, MediaFile, MediaManager
 from .purifier_container import Purifier
 from .water_fountain_container import WaterFountain
 
@@ -65,8 +65,9 @@ __all__ = [
     "Litter",
     "LitterCommand",
     "LitterRecord",
-    "MediaHandler",
-    "MediasFiles",
+    "MediaManager",
+    "DownloadDecryptMedia",
+    "MediaFile",
     "Pet",
     "PetCommand",
     "PetKitClient",

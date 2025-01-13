@@ -11,6 +11,7 @@ import urllib.parse
 
 import aiohttp
 from aiohttp import ContentTypeError
+import m3u8
 
 from pypetkitapi.command import ACTIONS_MAP, FOUNTAIN_COMMAND, FountainAction
 from pypetkitapi.const import (
@@ -661,6 +662,51 @@ class PetKitClient:
         _LOGGER.info("BLE command sent successfully.")
         return True
 
+    async def get_cloud_video(self, video_url: str) -> dict[str, str | int]:
+        """Get the video m3u8 link from the cloud."""
+        await self.validate_session()
+
+        response = await self.req.request(
+            method=HTTPMethod.POST,
+            url=video_url,
+            headers=await self.get_session_id(),
+        )
+        return response[0]
+
+    async def extract_segments_m3u8(self, m3u8_url: str) -> tuple[str, str, list[str]]:
+        """Extract segments from the m3u8 file.
+        :param: m3u8_url: URL of the m3u8 file
+        :return: aes_key, key_iv, segment_lst
+        """
+
+        await self.validate_session()
+
+        # Extract segments from m3u8 file
+        response = await self.req.request(
+            method=HTTPMethod.GET,
+            url=m3u8_url,
+            headers=await self.get_session_id(),
+        )
+        m3u8_obj = m3u8.loads(response[RES_KEY])
+
+        if not m3u8_obj.segments or not m3u8_obj.keys:
+            raise PetkitInvalidResponseFormat("No segments or key found in m3u8 file.")
+
+        # Extract segments from m3u8 file
+        segment_lst = [segment.uri for segment in m3u8_obj.segments]
+        # Extract key_uri and key_iv from m3u8 file
+        key_uri = m3u8_obj.keys[0].uri
+        key_iv = str(m3u8_obj.keys[0].iv)
+
+        # Extract aes_key from video segments
+        response = await self.req.request(
+            method=HTTPMethod.GET,
+            url=key_uri,
+            full_url=True,
+            headers=await self.get_session_id(),
+        )
+        return response[RES_KEY], key_iv, segment_lst
+
     async def send_api_request(
         self,
         device_id: int,
@@ -767,12 +813,13 @@ class PrepReq:
         self,
         method: str,
         url: str,
+        full_url: bool = False,
         params=None,
         data=None,
         headers=None,
     ) -> dict:
         """Make a request to the PetKit API."""
-        _url = "/".join(s.strip("/") for s in [self.base_url, url])
+        _url = url if full_url else "/".join(s.strip("/") for s in [self.base_url, url])
         _headers = {**self.base_headers, **(headers or {})}
         _LOGGER.debug("Request: %s %s", method, _url)
         try:
@@ -798,12 +845,14 @@ class PrepReq:
             ) from e
 
         try:
-            response_json = await response.json()
+            if response.content_type == "application/json":
+                response_json = await response.json()
+            else:
+                return {RES_KEY: await response.text()}
         except ContentTypeError:
             raise PetkitInvalidResponseFormat(
                 "Response is not in JSON format"
             ) from None
-
         # Check for errors in the response
         if ERR_KEY in response_json:
             error_code = int(response_json[ERR_KEY].get("code", 0))
