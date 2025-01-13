@@ -11,7 +11,7 @@ class PetkitTimeoutError(PypetkitError):
     """Class for PyPetkit timeout exceptions."""
 
 
-class PetkitSessionExpiredError(PypetkitError):
+class PetkitSessionError(PypetkitError):
     """Class for PyPetkit connection exceptions."""
 
 

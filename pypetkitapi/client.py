@@ -54,7 +54,7 @@ from pypetkitapi.exceptions import (
     PetkitInvalidHTTPResponseCodeError,
     PetkitInvalidResponseFormat,
     PetkitRegionalServerNotFoundError,
-    PetkitSessionExpiredError,
+    PetkitSessionError,
     PetkitTimeoutError,
     PypetkitError,
 )
@@ -182,7 +182,8 @@ class PetKitClient:
         )
         session_data = response["session"]
         self._session = SessionInfo(**session_data)
-        _LOGGER.debug("Login successful")
+        expiration_date = datetime.now() + timedelta(seconds=self._session.expires_in)
+        _LOGGER.debug("Login successful (token expiration %s)", expiration_date)
 
     async def refresh_session(self) -> None:
         """Refresh the session."""
@@ -205,31 +206,25 @@ class PetKitClient:
             await self.login()
             return
 
-        created_at = datetime.strptime(
-            self._session.created_at,
-            "%Y-%m-%dT%H:%M:%S.%f%z",
-        )
-        current_time = datetime.now(tz=created_at.tzinfo)
-        token_age = current_time - created_at
-        max_age = timedelta(seconds=self._session.expires_in)
-        half_max_age = max_age / 2
+        created = datetime.strptime(self._session.created_at, "%Y-%m-%dT%H:%M:%S.%f%z")
+        is_expired = datetime.now(tz=created.tzinfo) - created >= timedelta(seconds=self._session.expires_in)
 
-        if token_age > max_age:
+        if is_expired:
             _LOGGER.debug("Token expired, re-logging in")
             await self.login()
-        elif half_max_age < token_age <= max_age:
-            _LOGGER.debug("Token still OK, but refreshing session")
-            await self.refresh_session()
+        # elif (max_age / 2) < token_age < max_age:
+        #     _LOGGER.debug("Token still OK, but refreshing session")
+        #     await self.refresh_session()
 
     async def get_session_id(self) -> dict:
         """Return the session ID."""
+        await self.validate_session()
         if self._session is None:
-            raise PypetkitError("Session is not initialized.")
+            raise PetkitSessionError("No session ID available")
         return {"F-Session": self._session.id, "X-Session": self._session.id}
 
     async def _get_account_data(self) -> None:
         """Get the account data from the PetKit service."""
-        await self.validate_session()
         _LOGGER.debug("Fetching account data")
         response = await self.req.request(
             method=HTTPMethod.GET,
@@ -256,8 +251,6 @@ class PetKitClient:
 
     async def get_devices_data(self) -> None:
         """Get the devices data from the PetKit servers."""
-        await self.validate_session()
-
         start_time = datetime.now()
         if not self.account_data:
             await self._get_account_data()
@@ -667,8 +660,6 @@ class PetKitClient:
 
     async def get_cloud_video(self, video_url: str) -> dict[str, str | int]:
         """Get the video m3u8 link from the cloud."""
-        await self.validate_session()
-
         response = await self.req.request(
             method=HTTPMethod.POST,
             url=video_url,
@@ -681,9 +672,6 @@ class PetKitClient:
         :param: m3u8_url: URL of the m3u8 file
         :return: aes_key, key_iv, segment_lst
         """
-
-        await self.validate_session()
-
         # Extract segments from m3u8 file
         response = await self.req.request(
             method=HTTPMethod.GET,
@@ -717,8 +705,6 @@ class PetKitClient:
         setting: dict | None = None,
     ) -> bool:
         """Control the device using the PetKit API."""
-        await self.validate_session()
-
         device = self.petkit_entities.get(device_id, None)
         if not device:
             raise PypetkitError(f"Device with ID {device_id} not found.")
