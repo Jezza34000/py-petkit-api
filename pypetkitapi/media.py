@@ -243,6 +243,7 @@ class DownloadDecryptMedia:
 
     async def download_file(self, file_data: MediaFile) -> None:
         """Get image and video file"""
+        _LOGGER.debug("Downloading media file %s", file_data.event_id)
         self.file_data = file_data
 
         if self.file_data.image:
@@ -271,11 +272,13 @@ class DownloadDecryptMedia:
                     await self.get_fpath(f"{index}_{self.file_data.event_id}.avi")
                 )
 
-        if len(segment_files) > 1:
-            _LOGGER.debug("Concatenating segments %s", len(segment_files))
-            await self._concat_segments(segment_files, f"{self.file_data.event_id}.avi")
+        if not segment_files:
+            _LOGGER.error("No segment files found")
         elif len(segment_files) == 1:
             _LOGGER.debug("Single file segment, no need to concatenate")
+        elif len(segment_files) > 1:
+            _LOGGER.debug("Concatenating segments %s", len(segment_files))
+            await self._concat_segments(segment_files, f"{self.file_data.event_id}.avi")
 
     async def _get_m3u8_segments(self) -> tuple[str, str, list[str]]:
         """Extract the segments from a m3u8 file.
@@ -378,6 +381,7 @@ class DownloadDecryptMedia:
             _LOGGER.debug(
                 "Output file already exists: %s, skipping concatenation.", output_file
             )
+            await self._delete_segments(ts_files)
             return
 
         # Build the argument for `ffmpeg` with the files formatted for the command line
