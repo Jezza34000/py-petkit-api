@@ -99,6 +99,9 @@ class PetKitClient:
             timezone=self.timezone,
         )
         self.bluetooth_manager = BluetoothManager(self)
+        from pypetkitapi import MediaManager
+
+        self.media_manager = MediaManager()
 
     async def _get_base_url(self) -> None:
         """Get the list of API servers, filter by region, and return the matching server."""
@@ -331,11 +334,11 @@ class PetKitClient:
     async def _fetch_media(self, device: Device) -> None:
         """Fetch media data from the PetKit servers."""
         _LOGGER.debug("Fetching media data for device: %s", device.device_id)
-        from pypetkitapi.media import MediaManager
 
-        media_manager = MediaManager()
         device_entity = self.petkit_entities[device.device_id]
-        device_entity.medias = await media_manager.get_all_media_files([device_entity])
+        device_entity.medias = await self.media_manager.get_all_media_files(
+            [device_entity]
+        )
 
     async def _fetch_device_data(
         self,
@@ -506,13 +509,18 @@ class PetKitClient:
                 pet.last_duration_usage = self.get_safe_value(graph.toilet_time)
                 pet.last_device_used = pet_graphs.device_nfo.device_name
 
-    async def get_cloud_video(self, video_url: str) -> dict[str, str | int]:
+    async def get_cloud_video(self, video_url: str) -> dict[str, str | int] | None:
         """Get the video m3u8 link from the cloud."""
         response = await self.req.request(
             method=HTTPMethod.POST,
             url=video_url,
             headers=await self.get_session_id(),
         )
+        if not isinstance(response, list) or not response:
+            _LOGGER.debug(
+                "No video data found from cloud, looks like you don't have a care+ subscription ?"
+            )
+            return None
         return response[0]
 
     async def extract_segments_m3u8(self, m3u8_url: str) -> tuple[str, str, list[str]]:
