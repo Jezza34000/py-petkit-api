@@ -14,7 +14,13 @@ from pypetkitapi.const import (
     FEEDER_MINI,
     PetkitEndpoint,
 )
-from pypetkitapi.containers import CloudProduct, Device, FirmwareDetail, Wifi
+from pypetkitapi.containers import (
+    CloudProduct,
+    Device,
+    FirmwareDetail,
+    UserDevice,
+    Wifi,
+)
 
 
 class FeedItem(BaseModel):
@@ -335,6 +341,7 @@ class Feeder(BaseModel):
     sn: str
     state: StateFeeder | None = None
     timezone: float | None = None
+    user: UserDevice | None = None
     device_nfo: Device | None = None
     medias: list | None = None
 
