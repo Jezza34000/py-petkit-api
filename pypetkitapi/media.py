@@ -7,22 +7,30 @@ from dataclasses import dataclass
 from datetime import datetime
 import logging
 from pathlib import Path
+import re
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
+import aiofiles
 from aiofiles import open as aio_open
+import aiofiles.os
 import aiohttp
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 
 from pypetkitapi import Feeder, Litter, PetKitClient, RecordType
-from pypetkitapi.const import FEEDER_WITH_CAMERA, LITTER_WITH_CAMERA, RecordTypeLST
+from pypetkitapi.const import (
+    FEEDER_WITH_CAMERA,
+    LITTER_WITH_CAMERA,
+    MediaType,
+    RecordTypeLST,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
-class MediaFile:
+class MediaCloud:
     """Dataclass MediaFile.
     Represents a media file from a PetKit device.
     """
@@ -30,23 +38,37 @@ class MediaFile:
     event_id: str
     event_type: RecordType
     device_id: int
-    user_id: str
+    user_id: int
     image: str | None
     video: str | None
     filepath: str
     aes_key: str
     timestamp: int
-    is_available: bool = False
+
+
+@dataclass
+class MediaFile:
+    """Dataclass MediaFile.
+    Represents a media file into disk.
+    """
+
+    event_id: str
+    timestamp: int
+    media_type: MediaType
+    event_type: RecordType
+    full_file_path: Path
 
 
 class MediaManager:
     """Class to manage media files from PetKit devices."""
 
+    media_table: list[MediaFile] = []
+
     async def get_all_media_files(
         self, devices: list[Feeder | Litter]
-    ) -> list[MediaFile]:
+    ) -> list[MediaCloud]:
         """Get all media files from all devices and return a list of MediaFile."""
-        media_files: list[MediaFile] = []
+        media_files: list[MediaCloud] = []
         _LOGGER.debug("Processing media files for %s devices", len(devices))
 
         for device in devices:
@@ -75,39 +97,120 @@ class MediaManager:
 
         return media_files
 
-    def _process_feeder(self, feeder: Feeder) -> list[MediaFile]:
+    async def get_all_media_files_disk(
+        self, storage_path: Path, device_id: int
+    ) -> None:
+        """Construct the media file table for disk storage."""
+
+        self.media_table.clear()
+
+        today_str = datetime.now().strftime("%Y%m%d")
+        base_path = storage_path / str(device_id) / today_str
+
+        for record_type in RecordType:
+            record_path = base_path / record_type
+            snapshot_path = record_path / "snapshot"
+            video_path = record_path / "video"
+
+            # Ensure the directories exist
+            if not await aiofiles.os.path.exists(snapshot_path):
+                _LOGGER.debug("No images found for: %s", record_type)
+                continue
+            if not await aiofiles.os.path.exists(video_path):
+                _LOGGER.debug("No video found for %s", record_type)
+                continue
+
+            # Regex pattern to match valid filenames
+            valid_pattern = re.compile(rf"^{device_id}_\d+\.(jpg|avi)$")
+
+            # Populate the media table with event_id from filenames
+            for subdir in [snapshot_path, video_path]:
+                _LOGGER.debug("Scanning directory %s", subdir)
+                entries = await aiofiles.os.scandir(subdir)
+                for entry in entries:
+                    if entry.is_file() and valid_pattern.match(entry.name):
+                        _LOGGER.debug("Entries found: %s", entry.name)
+                        event_id = Path(entry.name).stem
+                        timestamp = Path(entry.name).stem.split("_", 1)[1]
+                        media_type_str = Path(entry.name).suffix.lstrip(".")
+                        try:
+                            media_type = MediaType(media_type_str)
+                        except ValueError:
+                            _LOGGER.warning("Unknown media type: %s", media_type_str)
+                            continue
+                        self.media_table.append(
+                            MediaFile(
+                                event_id=event_id,
+                                timestamp=int(timestamp),
+                                event_type=RecordType(record_type),
+                                full_file_path=subdir / entry.name,
+                                media_type=MediaType(media_type),
+                            )
+                        )
+
+    async def download_missing_files(
+        self, media_cloud_list: list[MediaCloud]
+    ) -> list[MediaCloud]:
+        """Compare MediaCloud objects with MediaFile objects and return a list of missing MediaCloud objects."""
+        missing_media = []
+        existing_event_ids = {media_file.event_id for media_file in self.media_table}
+
+        for media_cloud in media_cloud_list:
+            if media_cloud.event_id not in existing_event_ids:
+                # Both are missing (image & video)
+                missing_media.append(media_cloud)
+            else:
+                if media_cloud.image and not any(
+                    media_file.event_id == media_cloud.event_id
+                    and media_file.media_type == MediaType.IMAGE
+                    for media_file in self.media_table
+                ):
+                    # Image is missing
+                    missing_media.append(media_cloud)
+                if media_cloud.video and not any(
+                    media_file.event_id == media_cloud.event_id
+                    and media_file.media_type == MediaType.VIDEO
+                    for media_file in self.media_table
+                ):
+                    # Video is missing
+                    missing_media.append(media_cloud)
+        return missing_media
+
+    def _process_feeder(self, feeder: Feeder) -> list[MediaCloud]:
         """Process media files for a Feeder device."""
-        media_files: list[MediaFile] = []
+        media_files: list[MediaCloud] = []
         records = feeder.device_records
 
-        device_id = (
-            feeder.device_nfo.device_id
-            if feeder.device_nfo and feeder.device_nfo.device_type
-            else None
-        )
-        if device_id is None:
-            raise ValueError("Missing device ID for feeder")
-
         if not records:
+            _LOGGER.debug("No records found for %s", feeder.name)
             return media_files
 
         for record_type in RecordTypeLST:
             record_list = getattr(records, record_type, [])
             for record in record_list:
                 media_files.extend(
-                    self._process_feeder_record(
-                        record, RecordType(record_type), device_id
-                    )
+                    self._process_feeder_record(record, RecordType(record_type), feeder)
                 )
 
         return media_files
 
     def _process_feeder_record(
-        self, record, record_type: RecordType, device_id: int
-    ) -> list[MediaFile]:
+        self, record, record_type: RecordType, device_obj: Feeder
+    ) -> list[MediaCloud]:
         """Process individual feeder records."""
-        media_files: list[MediaFile] = []
-        user_id = record.user_id
+        media_files: list[MediaCloud] = []
+        user_id = device_obj.user.id if device_obj.user else None
+        feeder_id = device_obj.device_nfo.device_id if device_obj.device_nfo else None
+        device_type = (
+            device_obj.device_nfo.device_type if device_obj.device_nfo else None
+        )
+        cp_sub = (
+            device_obj.cloud_product.subscribe if device_obj.cloud_product else None
+        )
+
+        if not feeder_id:
+            _LOGGER.error("Missing feeder_id for record")
+            return media_files
 
         if not record.items:
             return media_files
@@ -132,15 +235,17 @@ class MediaManager:
                 _LOGGER.error("Missing timestamp for record item")
                 continue
 
-            filepath = f"{device_id}/{date_str}/{record_type.name.lower()}"
+            filepath = f"{feeder_id}/{date_str}/{record_type.name.lower()}"
             media_files.append(
-                MediaFile(
+                MediaCloud(
                     event_id=item.event_id,
                     event_type=record_type,
-                    device_id=device_id,
+                    device_id=feeder_id,
                     user_id=user_id,
                     image=item.preview,
-                    video=self.construct_video_url(item.media_api, user_id),
+                    video=self.construct_video_url(
+                        device_type, item.media_api, user_id, cp_sub
+                    ),
                     filepath=filepath,
                     aes_key=item.aes_key,
                     timestamp=self._get_timestamp(item),
@@ -148,10 +253,26 @@ class MediaManager:
             )
         return media_files
 
-    def _process_litter(self, litter: Litter) -> list[MediaFile]:
+    def _process_litter(self, litter: Litter) -> list[MediaCloud]:
         """Process media files for a Litter device."""
-        media_files: list[MediaFile] = []
+        media_files: list[MediaCloud] = []
         records = litter.device_records
+        litter_id = litter.device_nfo.device_id if litter.device_nfo else None
+        device_type = litter.device_nfo.device_type if litter.device_nfo else None
+        user_id = litter.user.id if litter.user else None
+        cp_sub = litter.cloud_product.subscribe if litter.cloud_product else None
+
+        if not litter_id:
+            _LOGGER.error("Missing litter_id for record")
+            return media_files
+
+        if not device_type:
+            _LOGGER.error("Missing device_type for record")
+            return media_files
+
+        if not user_id:
+            _LOGGER.error("Missing user_id for record")
+            return media_files
 
         if not records:
             return media_files
@@ -166,12 +287,6 @@ class MediaManager:
             if not record.event_id:
                 _LOGGER.error("Missing event_id for record item")
                 continue
-            if not record.device_id:
-                _LOGGER.error("Missing event_id for record item")
-                continue
-            if not record.user_id:
-                _LOGGER.error("Missing user_id for record item")
-                continue
             if not record.aes_key:
                 _LOGGER.error("Missing aes_key for record item")
                 continue
@@ -179,15 +294,17 @@ class MediaManager:
                 _LOGGER.error("Missing timestamp for record item")
                 continue
 
-            filepath = f"{record.device_id}/{date_str}/toileting"
+            filepath = f"{litter_id}/{date_str}/toileting"
             media_files.append(
-                MediaFile(
+                MediaCloud(
                     event_id=record.event_id,
                     event_type=RecordType.TOILETING,
-                    device_id=record.device_id,
-                    user_id=record.user_id,
+                    device_id=litter_id,
+                    user_id=user_id,
                     image=record.preview,
-                    video=self.construct_video_url(record.media_api, record.user_id),
+                    video=self.construct_video_url(
+                        device_type, record.media_api, user_id, cp_sub
+                    ),
                     filepath=filepath,
                     aes_key=record.aes_key,
                     timestamp=record.timestamp,
@@ -196,13 +313,15 @@ class MediaManager:
         return media_files
 
     @staticmethod
-    def construct_video_url(media_url: str | None, user_id: str | None) -> str | None:
+    def construct_video_url(
+        device_type: str | None, media_url: str | None, user_id: int, cp_sub: int | None
+    ) -> str | None:
         """Construct the video URL."""
-        if not media_url or not user_id:
+        if not media_url or not user_id or cp_sub != 1:
             return None
         params = parse_qs(urlparse(media_url).query)
         param_dict = {k: v[0] for k, v in params.items()}
-        return f"/d4sh/cloud/video?startTime={param_dict.get("startTime")}&deviceId={param_dict.get("deviceId")}&userId={user_id}&mark={param_dict.get("mark")}"
+        return f"/{device_type}/cloud/video?startTime={param_dict.get("startTime")}&deviceId={param_dict.get("deviceId")}&userId={user_id}&mark={param_dict.get("mark")}"
 
     @staticmethod
     def _get_timestamp(item) -> int:
@@ -225,7 +344,7 @@ class MediaManager:
 class DownloadDecryptMedia:
     """Class to download and decrypt media files from PetKit devices."""
 
-    file_data: MediaFile
+    file_data: MediaCloud
 
     def __init__(self, download_path: Path, client: PetKitClient):
         """Initialize the class."""
@@ -241,7 +360,7 @@ class DownloadDecryptMedia:
             subdir = "video"
         return Path(self.download_path / self.file_data.filepath / subdir / file_name)
 
-    async def download_file(self, file_data: MediaFile) -> None:
+    async def download_file(self, file_data: MediaCloud) -> None:
         """Get image and video file"""
         _LOGGER.debug("Downloading media file %s", file_data.event_id)
         self.file_data = file_data
@@ -262,7 +381,18 @@ class DownloadDecryptMedia:
         """Iterate through m3u8 file and return all the ts file urls"""
         aes_key, iv_key, segments_lst = await self._get_m3u8_segments()
 
+        if aes_key is None or iv_key is None or not segments_lst:
+            _LOGGER.debug("Can't download video file %s", self.file_data.event_id)
+            return
+
         segment_files = []
+
+        if len(segments_lst) == 1:
+            await self._get_file(
+                segments_lst[0], aes_key, f"{self.file_data.event_id}.avi"
+            )
+            return
+
         for index, segment in enumerate(segments_lst, start=1):
             segment_file = await self._get_file(
                 segment, aes_key, f"{index}_{self.file_data.event_id}.avi"
@@ -280,13 +410,16 @@ class DownloadDecryptMedia:
             _LOGGER.debug("Concatenating segments %s", len(segment_files))
             await self._concat_segments(segment_files, f"{self.file_data.event_id}.avi")
 
-    async def _get_m3u8_segments(self) -> tuple[str, str, list[str]]:
+    async def _get_m3u8_segments(self) -> tuple[str | None, str | None, list[str]]:
         """Extract the segments from a m3u8 file.
         :return: Tuple of AES key, IV key, and list of segment URLs
         """
         if not self.file_data.video:
             raise ValueError("Missing video URL")
         video_data = await self.client.get_cloud_video(self.file_data.video)
+
+        if not video_data:
+            return None, None, []
 
         media_api = video_data.get("mediaApi", None)
         if not media_api:
