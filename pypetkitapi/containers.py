@@ -99,6 +99,15 @@ class Pet(BaseModel):
         self.name = self.name or self.pet_name
 
 
+class UserDevice(BaseModel):
+    """Dataclass for user data.
+    Subclass of Devices.
+    """
+
+    id: int | None = None
+    nick: str | None = None
+
+
 class User(BaseModel):
     """Dataclass for user data.
     Subclass of AccountData.
