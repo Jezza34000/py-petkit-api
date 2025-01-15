@@ -113,19 +113,17 @@ class MediaManager:
             snapshot_path = record_path / "snapshot"
             video_path = record_path / "video"
 
-            # Ensure the directories exist
-            if not await aiofiles.os.path.exists(snapshot_path):
-                _LOGGER.debug("No images found for: %s", record_type)
-                continue
-            if not await aiofiles.os.path.exists(video_path):
-                _LOGGER.debug("No video found for %s", record_type)
-                continue
-
             # Regex pattern to match valid filenames
             valid_pattern = re.compile(rf"^{device_id}_\d+\.(jpg|avi)$")
 
             # Populate the media table with event_id from filenames
             for subdir in [snapshot_path, video_path]:
+
+                # Ensure the directories exist
+                if not await aiofiles.os.path.exists(subdir):
+                    _LOGGER.debug("Skip, path does not exist, %s", subdir)
+                    continue
+
                 _LOGGER.debug("Scanning directory %s", subdir)
                 entries = await aiofiles.os.scandir(subdir)
                 for entry in entries:
@@ -150,32 +148,54 @@ class MediaManager:
                             )
                         )
 
-    async def download_missing_files(
-        self, media_cloud_list: list[MediaCloud]
+    async def prepare_missing_files(
+        self,
+        media_cloud_list: list[MediaCloud],
+        dl_type: list[MediaType] | None = None,
+        event_type: list[RecordType] | None = None,
     ) -> list[MediaCloud]:
         """Compare MediaCloud objects with MediaFile objects and return a list of missing MediaCloud objects."""
         missing_media = []
         existing_event_ids = {media_file.event_id for media_file in self.media_table}
 
         for media_cloud in media_cloud_list:
+            # Skip if event type is not in the filter
+            if event_type and media_cloud.event_type not in event_type:
+                continue
+
+            # Check if the media file is missing
+            is_missing = False
             if media_cloud.event_id not in existing_event_ids:
-                # Both are missing (image & video)
-                missing_media.append(media_cloud)
+                is_missing = True  # Both image and video are missing
             else:
-                if media_cloud.image and not any(
-                    media_file.event_id == media_cloud.event_id
-                    and media_file.media_type == MediaType.IMAGE
-                    for media_file in self.media_table
+                # Check for missing image
+                if (
+                    media_cloud.image
+                    and MediaType.IMAGE
+                    in (dl_type or [MediaType.IMAGE, MediaType.VIDEO])
+                    and not any(
+                        media_file.event_id == media_cloud.event_id
+                        and media_file.media_type == MediaType.IMAGE
+                        for media_file in self.media_table
+                    )
                 ):
-                    # Image is missing
-                    missing_media.append(media_cloud)
-                if media_cloud.video and not any(
-                    media_file.event_id == media_cloud.event_id
-                    and media_file.media_type == MediaType.VIDEO
-                    for media_file in self.media_table
+                    is_missing = True
+                # Check for missing video
+                if (
+                    media_cloud.video
+                    and MediaType.VIDEO
+                    in (dl_type or [MediaType.IMAGE, MediaType.VIDEO])
+                    and not any(
+                        media_file.event_id == media_cloud.event_id
+                        and media_file.media_type == MediaType.VIDEO
+                        for media_file in self.media_table
+                    )
                 ):
-                    # Video is missing
-                    missing_media.append(media_cloud)
+                    is_missing = True
+
+            if is_missing:
+                missing_media.append(media_cloud)
+
         return missing_media
 
     def _process_feeder(self, feeder: Feeder) -> list[MediaCloud]:
@@ -363,12 +383,14 @@ class DownloadDecryptMedia:
             subdir = "video"
         return Path(self.download_path / self.file_data.filepath / subdir / file_name)
 
-    async def download_file(self, file_data: MediaCloud) -> None:
+    async def download_file(
+        self, file_data: MediaCloud, file_type: MediaType | None
+    ) -> None:
         """Get image and video file"""
         _LOGGER.debug("Downloading media file %s", file_data.event_id)
         self.file_data = file_data
 
-        if self.file_data.image:
+        if self.file_data.image and (file_type is None or file_type == MediaType.IMAGE):
             # Download image file
             await self._get_file(
                 self.file_data.image,
@@ -376,7 +398,7 @@ class DownloadDecryptMedia:
                 f"{self.file_data.event_id}.jpg",
             )
 
-        if self.file_data.video:
+        if self.file_data.video and (file_type is None or file_type == MediaType.VIDEO):
             # Download video file
             await self._get_video_m3u8()
 
