@@ -72,7 +72,7 @@ class TestCommandModule(unittest.TestCase):
             },
         )
         self.assertEqual(
-            get_endpoint_manual_feed(device), PetkitEndpoint.MANUAL_FEED_MINI
+            get_endpoint_manual_feed(device), PetkitEndpoint.MANUAL_FEED_OLD
         )
 
     def test_get_endpoint_reset_desiccant(self):
@@ -83,7 +83,7 @@ class TestCommandModule(unittest.TestCase):
         )
         self.assertEqual(
             get_endpoint_reset_desiccant(device),
-            PetkitEndpoint.FRESH_ELEMENT_DESICCANT_RESET,
+            PetkitEndpoint.DESICCANT_RESET_OLD,
         )
 
     def test_actions_map(self):

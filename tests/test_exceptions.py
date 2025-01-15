@@ -27,7 +27,7 @@ class TestPypetkitExceptions(unittest.TestCase):
 
     def test_petkit_authentication_unregistered_email_error(self):
         with self.assertRaises(PetkitAuthenticationUnregisteredEmailError):
-            raise PetkitAuthenticationUnregisteredEmailError("Unregistered email")
+            raise PetkitAuthenticationUnregisteredEmailError
 
     def test_petkit_regional_server_not_found_error(self):
         with self.assertRaises(PetkitRegionalServerNotFoundError) as context:
