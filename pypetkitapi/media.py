@@ -102,7 +102,6 @@ class MediaManager:
         self, storage_path: Path, device_id: int
     ) -> None:
         """Construct the media file table for disk storage."""
-
         self.media_table.clear()
 
         today_str = datetime.now().strftime("%Y%m%d")
@@ -114,7 +113,7 @@ class MediaManager:
             video_path = record_path / "video"
 
             # Regex pattern to match valid filenames
-            valid_pattern = re.compile(rf"^{device_id}_\d+\.(jpg|avi)$")
+            valid_pattern = re.compile(rf"^(?:\d+_)?{device_id}_\d+\.(jpg|avi)$")
 
             # Populate the media table with event_id from filenames
             for subdir in [snapshot_path, video_path]:
@@ -130,7 +129,7 @@ class MediaManager:
                     if entry.is_file() and valid_pattern.match(entry.name):
                         _LOGGER.debug("Entries found: %s", entry.name)
                         event_id = Path(entry.name).stem
-                        timestamp = Path(entry.name).stem.split("_", 1)[1]
+                        timestamp = self._extraire_timestamp(str(entry.name))
                         media_type_str = Path(entry.name).suffix.lstrip(".")
                         try:
                             media_type = MediaType(media_type_str)
@@ -147,6 +146,13 @@ class MediaManager:
                                 media_type=MediaType(media_type),
                             )
                         )
+
+    @staticmethod
+    def _extraire_timestamp(nom_fichier: str) -> int:
+        match = re.search(r"_(\d+)\.[a-zA-Z0-9]+$", nom_fichier)
+        if match:
+            return int(match.group(1))
+        return 0
 
     async def prepare_missing_files(
         self,

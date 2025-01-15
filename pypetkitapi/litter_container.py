@@ -451,7 +451,7 @@ class Litter(BaseModel):
     service_status: int | None = Field(None, alias="serviceStatus")
     total_time: int | None = Field(None, alias="totalTime")
     with_k3: int | None = Field(None, alias="withK3")
-    User: UserDevice | None = None
+    user: UserDevice | None = None
     device_records: list[LitterRecord] | None = None
     device_stats: LitterStats | None = None
     device_pet_graph_out: list[PetOutGraph] | None = None
