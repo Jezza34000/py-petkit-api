@@ -36,7 +36,14 @@ from .const import (
     RecordType,
 )
 from .containers import Pet
-from .exceptions import PetkitAuthenticationError, PypetkitError
+from .exceptions import (
+    PetkitAuthenticationUnregisteredEmailError,
+    PetkitRegionalServerNotFoundError,
+    PetkitSessionError,
+    PetkitSessionExpiredError,
+    PetkitTimeoutError,
+    PypetkitError,
+)
 from .feeder_container import Feeder, RecordsItems
 from .litter_container import Litter, LitterRecord, WorkState
 from .media import DownloadDecryptMedia, MediaCloud, MediaFile, MediaManager
@@ -78,7 +85,11 @@ __all__ = [
     "Pet",
     "PetCommand",
     "PetKitClient",
-    "PetkitAuthenticationError",
+    "PetkitAuthenticationUnregisteredEmailError",
+    "PetkitRegionalServerNotFoundError",
+    "PetkitSessionError",
+    "PetkitSessionExpiredError",
+    "PetkitTimeoutError",
     "PurMode",
     "Purifier",
     "PypetkitError",
