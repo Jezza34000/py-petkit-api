@@ -33,6 +33,7 @@ from .const import (
     T5,
     T6,
     W5,
+    MediaType,
     RecordType,
 )
 from .containers import Pet
@@ -82,6 +83,7 @@ __all__ = [
     "DownloadDecryptMedia",
     "MediaCloud",
     "MediaFile",
+    "MediaType",
     "Pet",
     "PetCommand",
     "PetKitClient",
