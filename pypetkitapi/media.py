@@ -53,6 +53,7 @@ class MediaFile:
     """
 
     event_id: str
+    device_id: int
     timestamp: int
     media_type: MediaType
     event_type: RecordType
@@ -141,6 +142,7 @@ class MediaManager:
                         self.media_table.append(
                             MediaFile(
                                 event_id=event_id,
+                                device_id=device_id,
                                 timestamp=int(timestamp),
                                 event_type=RecordType(record_type),
                                 full_file_path=subdir / entry.name,
