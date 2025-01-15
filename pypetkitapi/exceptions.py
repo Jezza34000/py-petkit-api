@@ -22,7 +22,7 @@ class PetkitSessionExpiredError(PypetkitError):
 class PetkitAuthenticationUnregisteredEmailError(PypetkitError):
     """Exception raised when the email is not registered with Petkit."""
 
-    def __init__(self, region: str):
+    def __init__(self):
         """Initialize the exception."""
         self.message = "The email you provided is not registered on Petkit's servers. Please check your email, or you are using the correct region."
         super().__init__(self.message)

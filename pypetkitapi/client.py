@@ -711,9 +711,7 @@ class PrepReq:
                         f"Authentication failed: {error_msg}"
                     )
                 case 125:
-                    raise PetkitAuthenticationUnregisteredEmailError(
-                        f"Authentication failed: {error_msg}"
-                    )
+                    raise PetkitAuthenticationUnregisteredEmailError
                 case _:
                     raise PypetkitError(
                         f"Request failed code : {error_code}, details : {error_msg} url : {url}"
