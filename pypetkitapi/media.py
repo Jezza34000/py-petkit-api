@@ -225,7 +225,8 @@ class MediaManager:
                 else "unknown"
             )
             if not item.event_id:
-                _LOGGER.error("Missing event_id for record item")
+                # Skip feed event in the future
+                _LOGGER.debug("Missing event_id for record item")
                 continue
             if not user_id:
                 _LOGGER.error("Missing user_id for record item")
