@@ -31,8 +31,8 @@ _LOGGER = logging.getLogger(__name__)
 
 @dataclass
 class MediaCloud:
-    """Dataclass MediaFile.
-    Represents a media file from a PetKit device.
+    """Dataclass MediaCloud.
+    Represents a media file from Petkit API.
     """
 
     event_id: str
@@ -68,7 +68,10 @@ class MediaManager:
     async def get_all_media_files(
         self, devices: list[Feeder | Litter]
     ) -> list[MediaCloud]:
-        """Get all media files from all devices and return a list of MediaFile."""
+        """Get all media files from all devices and return a list of MediaCloud.
+        :param devices: List of devices
+        :return: List of MediaCloud objects
+        """
         media_files: list[MediaCloud] = []
         _LOGGER.debug("Processing media files for %s devices", len(devices))
 
@@ -101,7 +104,10 @@ class MediaManager:
     async def get_all_media_files_disk(
         self, storage_path: Path, device_id: int
     ) -> None:
-        """Construct the media file table for disk storage."""
+        """Construct the media file table for disk storage.
+        :param storage_path: Path to the storage directory
+        :param device_id: Device ID
+        """
         self.media_table.clear()
 
         today_str = datetime.now().strftime("%Y%m%d")
@@ -129,7 +135,7 @@ class MediaManager:
                     if entry.is_file() and valid_pattern.match(entry.name):
                         _LOGGER.debug("Entries found: %s", entry.name)
                         event_id = Path(entry.name).stem
-                        timestamp = self._extraire_timestamp(str(entry.name))
+                        timestamp = self._extract_timestamp(str(entry.name))
                         media_type_str = Path(entry.name).suffix.lstrip(".")
                         try:
                             media_type = MediaType(media_type_str)
@@ -148,8 +154,12 @@ class MediaManager:
                         )
 
     @staticmethod
-    def _extraire_timestamp(nom_fichier: str) -> int:
-        match = re.search(r"_(\d+)\.[a-zA-Z0-9]+$", nom_fichier)
+    def _extract_timestamp(file_name: str) -> int:
+        """Extract timestamp from a filename.
+        :param file_name: Filename
+        :return: Timestamp
+        """
+        match = re.search(r"_(\d+)\.[a-zA-Z0-9]+$", file_name)
         if match:
             return int(match.group(1))
         return 0
@@ -160,7 +170,12 @@ class MediaManager:
         dl_type: list[MediaType] | None = None,
         event_type: list[RecordType] | None = None,
     ) -> list[MediaCloud]:
-        """Compare MediaCloud objects with MediaFile objects and return a list of missing MediaCloud objects."""
+        """Compare MediaCloud objects with MediaFile objects and return a list of missing MediaCloud objects.
+        :param media_cloud_list: List of MediaCloud objects
+        :param dl_type: List of media types to download
+        :param event_type: List of event types to filter
+        :return: List of missing MediaCloud objects
+        """
         missing_media = []
         existing_event_ids = {media_file.event_id for media_file in self.media_table}
 
@@ -205,7 +220,10 @@ class MediaManager:
         return missing_media
 
     def _process_feeder(self, feeder: Feeder) -> list[MediaCloud]:
-        """Process media files for a Feeder device."""
+        """Process media files for a Feeder device.
+        :param feeder: Feeder device object
+        :return: List of MediaCloud objects for the device
+        """
         media_files: list[MediaCloud] = []
         records = feeder.device_records
 
@@ -225,7 +243,12 @@ class MediaManager:
     def _process_feeder_record(
         self, record, record_type: RecordType, device_obj: Feeder
     ) -> list[MediaCloud]:
-        """Process individual feeder records."""
+        """Process individual feeder records.
+        :param record: Record object
+        :param record_type: Record type
+        :param device_obj: Feeder device object
+        :return: List of MediaCloud objects for the record
+        """
         media_files: list[MediaCloud] = []
         user_id = device_obj.user.id if device_obj.user else None
         feeder_id = device_obj.device_nfo.device_id if device_obj.device_nfo else None
@@ -283,7 +306,10 @@ class MediaManager:
         return media_files
 
     def _process_litter(self, litter: Litter) -> list[MediaCloud]:
-        """Process media files for a Litter device."""
+        """Process media files for a Litter device.
+        :param litter: Litter device object
+        :return: List of MediaCloud objects for the device
+        """
         media_files: list[MediaCloud] = []
         records = litter.device_records
         litter_id = litter.device_nfo.device_id if litter.device_nfo else None
@@ -345,7 +371,13 @@ class MediaManager:
     def construct_video_url(
         device_type: str | None, media_url: str | None, user_id: int, cp_sub: int | None
     ) -> str | None:
-        """Construct the video URL."""
+        """Construct the video URL.
+        :param device_type: Device type
+        :param media_url: Media URL
+        :param user_id: User ID
+        :param cp_sub: Cpsub value
+        :return: Constructed video URL
+        """
         if not media_url or not user_id or cp_sub != 1:
             return None
         params = parse_qs(urlparse(media_url).query)
@@ -354,7 +386,10 @@ class MediaManager:
 
     @staticmethod
     def _get_timestamp(item) -> int:
-        """Extract timestamp from a record item and raise an exception if it is None."""
+        """Extract timestamp from a record item and raise an exception if it is None.
+        :param item: Record item
+        :return: Timestamp
+        """
         timestamp = (
             item.timestamp
             or item.completed_at
@@ -381,7 +416,10 @@ class DownloadDecryptMedia:
         self.client = client
 
     async def get_fpath(self, file_name: str) -> Path:
-        """Return the full path of the file."""
+        """Return the full path of the file.
+        :param file_name: Name of the file.
+        :return: Full path of the file.
+        """
         subdir = ""
         if file_name.endswith(".jpg"):
             subdir = "snapshot"
@@ -392,7 +430,10 @@ class DownloadDecryptMedia:
     async def download_file(
         self, file_data: MediaCloud, file_type: MediaType | None
     ) -> None:
-        """Get image and video file"""
+        """Get image and video file
+        :param file_data: MediaCloud object
+        :param file_type: MediaType object
+        """
         _LOGGER.debug("Downloading media file %s", file_data.event_id)
         self.file_data = file_data
 
@@ -459,7 +500,12 @@ class DownloadDecryptMedia:
         return await self.client.extract_segments_m3u8(str(media_api))
 
     async def _get_file(self, url: str, aes_key: str, full_filename: str) -> bool:
-        """Download a file from a URL and decrypt it."""
+        """Download a file from a URL and decrypt it.
+        :param url: URL of the file to download.
+        :param aes_key: AES key used for decryption.
+        :param full_filename: Name of the file to save.
+        :return: True if the file was downloaded successfully, False otherwise.
+        """
 
         full_file_path = await self.get_fpath(full_filename)
         if full_file_path.exists():
@@ -487,7 +533,11 @@ class DownloadDecryptMedia:
         return False
 
     async def _save_file(self, content: bytes, filename: str) -> Path:
-        """Save content to a file asynchronously and return the file path."""
+        """Save content to a file asynchronously and return the file path.
+        :param content: Bytes data to save.
+        :param filename: Name of the file to save.
+        :return: Path of the saved file.
+        """
         file_path = await self.get_fpath(filename)
         try:
             # Ensure the directory exists
@@ -534,11 +584,11 @@ class DownloadDecryptMedia:
             Path(file_path).unlink()
         return decrypted_data
 
-    async def _concat_segments(self, ts_files: list[Path], output_file):
-        """Concatenate a list of .ts segments into a single output file without using a temporary file.
+    async def _concat_segments(self, ts_files: list[Path], output_file) -> None:
+        """Concatenate a list of .avi segments into a single output file without using a temporary file.
 
-        :param ts_files: List of absolute paths of .ts files
-        :param output_file: Path of the output file (e.g., "output.mp4")
+        :param ts_files: List of absolute paths of .avi files
+        :param output_file: Path of the output file (e.g., "output.avi")
         """
         full_output_file = await self.get_fpath(output_file)
         if full_output_file.exists():
@@ -586,7 +636,9 @@ class DownloadDecryptMedia:
             _LOGGER.error("OS error during concatenation: %s", e)
 
     async def _delete_segments(self, ts_files: list[Path]) -> None:
-        """Delete all segment files after concatenation."""
+        """Delete all segment files after concatenation.
+        :param ts_files: List of absolute paths of .avi files
+        """
         for file in ts_files:
             if file.exists():
                 try:
