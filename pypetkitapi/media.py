@@ -176,11 +176,14 @@ class MediaManager:
         :param event_type: List of event types to filter
         :return: List of missing MediaCloud objects
         """
-        missing_media = []
+        missing_media: list[MediaCloud] = []
         existing_event_ids = {media_file.event_id for media_file in self.media_table}
 
+        if dl_type is None or event_type is None or not dl_type or not event_type:
+            return missing_media
+
         for media_cloud in media_cloud_list:
-            # Skip if event type is not in the filter
+            # Skip if event type is not in the event filter
             if event_type and media_cloud.event_type not in event_type:
                 continue
 
@@ -190,28 +193,10 @@ class MediaManager:
                 is_missing = True  # Both image and video are missing
             else:
                 # Check for missing image
-                if (
-                    media_cloud.image
-                    and MediaType.IMAGE
-                    in (dl_type or [MediaType.IMAGE, MediaType.VIDEO])
-                    and not any(
-                        media_file.event_id == media_cloud.event_id
-                        and media_file.media_type == MediaType.IMAGE
-                        for media_file in self.media_table
-                    )
-                ):
+                if media_cloud.image and MediaType.IMAGE in dl_type:
                     is_missing = True
                 # Check for missing video
-                if (
-                    media_cloud.video
-                    and MediaType.VIDEO
-                    in (dl_type or [MediaType.IMAGE, MediaType.VIDEO])
-                    and not any(
-                        media_file.event_id == media_cloud.event_id
-                        and media_file.media_type == MediaType.VIDEO
-                        for media_file in self.media_table
-                    )
-                ):
+                if media_cloud.video and MediaType.VIDEO in dl_type:
                     is_missing = True
 
             if is_missing:
