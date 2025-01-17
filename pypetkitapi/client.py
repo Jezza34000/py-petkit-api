@@ -108,8 +108,9 @@ class PetKitClient:
         _LOGGER.debug("Getting API server list")
         self.req.base_url = PetkitDomain.PASSPORT_PETKIT
 
-        if self.region.lower() == "china":
+        if self.region.lower() == "china" or self.region.lower() == "cn":
             self.req.base_url = PetkitDomain.CHINA_SRV
+            _LOGGER.debug("Using specific China server: %s", PetkitDomain.CHINA_SRV)
             return
 
         response = await self.req.request(
