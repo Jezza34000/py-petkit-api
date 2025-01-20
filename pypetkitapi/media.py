@@ -81,7 +81,7 @@ class MediaManager:
                     device.device_nfo
                     and device.device_nfo.device_type in FEEDER_WITH_CAMERA
                 ):
-                    media_files.extend(self._process_feeder(device))
+                    media_files.extend(await self._process_feeder(device))
                 else:
                     _LOGGER.debug(
                         "Feeder %s does not support media file extraction",
@@ -92,7 +92,7 @@ class MediaManager:
                     device.device_nfo
                     and device.device_nfo.device_type in LITTER_WITH_CAMERA
                 ):
-                    media_files.extend(self._process_litter(device))
+                    media_files.extend(await self._process_litter(device))
                 else:
                     _LOGGER.debug(
                         "Litter %s does not support media file extraction",
@@ -113,6 +113,8 @@ class MediaManager:
         today_str = datetime.now().strftime("%Y%m%d")
         base_path = storage_path / str(device_id) / today_str
 
+        _LOGGER.debug("Populating files from directory %s", base_path)
+
         for record_type in RecordType:
             record_path = base_path / record_type
             snapshot_path = record_path / "snapshot"
@@ -126,16 +128,16 @@ class MediaManager:
 
                 # Ensure the directories exist
                 if not await aiofiles.os.path.exists(subdir):
-                    _LOGGER.debug("Skip, path does not exist, %s", subdir)
+                    _LOGGER.debug("Path does not exist, skip : %s", subdir)
                     continue
 
-                _LOGGER.debug("Scanning directory %s", subdir)
+                _LOGGER.debug("Scanning files into : %s", subdir)
                 entries = await aiofiles.os.scandir(subdir)
                 for entry in entries:
                     if entry.is_file() and valid_pattern.match(entry.name):
-                        _LOGGER.debug("Entries found: %s", entry.name)
+                        _LOGGER.debug("Media found: %s", entry.name)
                         event_id = Path(entry.name).stem
-                        timestamp = self._extract_timestamp(str(entry.name))
+                        timestamp = await self._extract_timestamp(str(entry.name))
                         media_type_str = Path(entry.name).suffix.lstrip(".")
                         try:
                             media_type = MediaType(media_type_str)
@@ -152,9 +154,10 @@ class MediaManager:
                                 media_type=MediaType(media_type),
                             )
                         )
+        _LOGGER.debug("OK, Media table populated with %s files", len(self.media_table))
 
     @staticmethod
-    def _extract_timestamp(file_name: str) -> int:
+    async def _extract_timestamp(file_name: str) -> int:
         """Extract timestamp from a filename.
         :param file_name: Filename
         :return: Timestamp
@@ -180,23 +183,56 @@ class MediaManager:
         existing_event_ids = {media_file.event_id for media_file in self.media_table}
 
         if dl_type is None or event_type is None or not dl_type or not event_type:
+            _LOGGER.debug(
+                "Missing dl_type or event_type parameters, no media file will be downloaded"
+            )
             return missing_media
 
         for media_cloud in media_cloud_list:
             # Skip if event type is not in the event filter
             if event_type and media_cloud.event_type not in event_type:
+                _LOGGER.debug(
+                    "Skipping event type %s, is filtered", media_cloud.event_type
+                )
                 continue
 
             # Check if the media file is missing
             is_missing = False
             if media_cloud.event_id not in existing_event_ids:
+                _LOGGER.debug(
+                    "Media file IMG/VIDEO id : %s are missing", media_cloud.event_id
+                )
                 is_missing = True  # Both image and video are missing
             else:
                 # Check for missing image
-                if media_cloud.image and MediaType.IMAGE in dl_type:
+                if (
+                    media_cloud.image
+                    and MediaType.IMAGE
+                    in (dl_type or [MediaType.IMAGE, MediaType.VIDEO])
+                    and not any(
+                        media_file.event_id == media_cloud.event_id
+                        and media_file.media_type == MediaType.IMAGE
+                        for media_file in self.media_table
+                    )
+                ):
+                    _LOGGER.debug(
+                        "Media file IMG id : %s is missing", media_cloud.event_id
+                    )
                     is_missing = True
                 # Check for missing video
-                if media_cloud.video and MediaType.VIDEO in dl_type:
+                if (
+                    media_cloud.video
+                    and MediaType.VIDEO
+                    in (dl_type or [MediaType.IMAGE, MediaType.VIDEO])
+                    and not any(
+                        media_file.event_id == media_cloud.event_id
+                        and media_file.media_type == MediaType.VIDEO
+                        for media_file in self.media_table
+                    )
+                ):
+                    _LOGGER.debug(
+                        "Media file VIDEO id : %s is missing", media_cloud.event_id
+                    )
                     is_missing = True
 
             if is_missing:
@@ -204,7 +240,7 @@ class MediaManager:
 
         return missing_media
 
-    def _process_feeder(self, feeder: Feeder) -> list[MediaCloud]:
+    async def _process_feeder(self, feeder: Feeder) -> list[MediaCloud]:
         """Process media files for a Feeder device.
         :param feeder: Feeder device object
         :return: List of MediaCloud objects for the device
@@ -220,12 +256,14 @@ class MediaManager:
             record_list = getattr(records, record_type, [])
             for record in record_list:
                 media_files.extend(
-                    self._process_feeder_record(record, RecordType(record_type), feeder)
+                    await self._process_feeder_record(
+                        record, RecordType(record_type), feeder
+                    )
                 )
 
         return media_files
 
-    def _process_feeder_record(
+    async def _process_feeder_record(
         self, record, record_type: RecordType, device_obj: Feeder
     ) -> list[MediaCloud]:
         """Process individual feeder records.
@@ -252,15 +290,15 @@ class MediaManager:
             return media_files
 
         for item in record.items:
-            timestamp = self._get_timestamp(item)
-            date_str = (
-                datetime.fromtimestamp(timestamp).strftime("%Y%m%d")
-                if timestamp
-                else "unknown"
-            )
+            timestamp = await self._get_timestamp(item)
+            if timestamp is None:
+                _LOGGER.error("Missing timestamp for record item")
+                continue
             if not item.event_id:
                 # Skip feed event in the future
-                _LOGGER.debug("Missing event_id for record item")
+                _LOGGER.debug(
+                    "Missing event_id for record item (probably a feed event not yet completed)"
+                )
                 continue
             if not user_id:
                 _LOGGER.error("Missing user_id for record item")
@@ -268,10 +306,8 @@ class MediaManager:
             if not item.aes_key:
                 _LOGGER.error("Missing aes_key for record item")
                 continue
-            if timestamp is None:
-                _LOGGER.error("Missing timestamp for record item")
-                continue
 
+            date_str = await self.get_date_from_ts(timestamp)
             filepath = f"{feeder_id}/{date_str}/{record_type.name.lower()}"
             media_files.append(
                 MediaCloud(
@@ -280,17 +316,17 @@ class MediaManager:
                     device_id=feeder_id,
                     user_id=user_id,
                     image=item.preview,
-                    video=self.construct_video_url(
+                    video=await self.construct_video_url(
                         device_type, item.media_api, user_id, cp_sub
                     ),
                     filepath=filepath,
                     aes_key=item.aes_key,
-                    timestamp=self._get_timestamp(item),
+                    timestamp=timestamp,
                 )
             )
         return media_files
 
-    def _process_litter(self, litter: Litter) -> list[MediaCloud]:
+    async def _process_litter(self, litter: Litter) -> list[MediaCloud]:
         """Process media files for a Litter device.
         :param litter: Litter device object
         :return: List of MediaCloud objects for the device
@@ -318,21 +354,18 @@ class MediaManager:
             return media_files
 
         for record in records:
-            timestamp = record.timestamp or None
-            date_str = (
-                datetime.fromtimestamp(timestamp).strftime("%Y%m%d")
-                if timestamp
-                else "unknown"
-            )
             if not record.event_id:
-                _LOGGER.error("Missing event_id for record item")
+                _LOGGER.debug("Missing event_id for record item")
                 continue
             if not record.aes_key:
-                _LOGGER.error("Missing aes_key for record item")
+                _LOGGER.debug("Missing aes_key for record item")
                 continue
             if record.timestamp is None:
-                _LOGGER.error("Missing timestamp for record item")
+                _LOGGER.debug("Missing timestamp for record item")
                 continue
+
+            timestamp = record.timestamp or None
+            date_str = await self.get_date_from_ts(timestamp)
 
             filepath = f"{litter_id}/{date_str}/toileting"
             media_files.append(
@@ -342,7 +375,7 @@ class MediaManager:
                     device_id=litter_id,
                     user_id=user_id,
                     image=record.preview,
-                    video=self.construct_video_url(
+                    video=await self.construct_video_url(
                         device_type, record.media_api, user_id, cp_sub
                     ),
                     filepath=filepath,
@@ -353,7 +386,17 @@ class MediaManager:
         return media_files
 
     @staticmethod
-    def construct_video_url(
+    async def get_date_from_ts(timestamp: int | None) -> str:
+        """Get date from timestamp.
+        :param timestamp: Timestamp
+        :return: Date string
+        """
+        if not timestamp:
+            return "unknown"
+        return datetime.fromtimestamp(timestamp).strftime("%Y%m%d")
+
+    @staticmethod
+    async def construct_video_url(
         device_type: str | None, media_url: str | None, user_id: int, cp_sub: int | None
     ) -> str | None:
         """Construct the video URL.
@@ -370,7 +413,7 @@ class MediaManager:
         return f"/{device_type}/cloud/video?startTime={param_dict.get("startTime")}&deviceId={param_dict.get("deviceId")}&userId={user_id}&mark={param_dict.get("mark")}"
 
     @staticmethod
-    def _get_timestamp(item) -> int:
+    async def _get_timestamp(item) -> int:
         """Extract timestamp from a record item and raise an exception if it is None.
         :param item: Record item
         :return: Timestamp
@@ -413,25 +456,29 @@ class DownloadDecryptMedia:
         return Path(self.download_path / self.file_data.filepath / subdir / file_name)
 
     async def download_file(
-        self, file_data: MediaCloud, file_type: MediaType | None
+        self, file_data: MediaCloud, file_type: list[MediaType] | None
     ) -> None:
         """Get image and video file
         :param file_data: MediaCloud object
         :param file_type: MediaType object
         """
-        _LOGGER.debug("Downloading media file %s", file_data.event_id)
         self.file_data = file_data
 
-        if self.file_data.image and (file_type is None or file_type == MediaType.IMAGE):
+        if not file_type:
+            file_type = []
+
+        if self.file_data.image and MediaType.IMAGE in file_type:
             # Download image file
+            _LOGGER.debug("Downloading image file (event id: %s)", file_data.event_id)
             await self._get_file(
                 self.file_data.image,
                 self.file_data.aes_key,
                 f"{self.file_data.event_id}.jpg",
             )
 
-        if self.file_data.video and (file_type is None or file_type == MediaType.VIDEO):
+        if self.file_data.video and MediaType.VIDEO in file_type:
             # Download video file
+            _LOGGER.debug("Downloading video file (event id: %s)", file_data.event_id)
             await self._get_video_m3u8()
 
     async def _get_video_m3u8(self) -> None:
@@ -620,7 +667,8 @@ class DownloadDecryptMedia:
         except OSError as e:
             _LOGGER.error("OS error during concatenation: %s", e)
 
-    async def _delete_segments(self, ts_files: list[Path]) -> None:
+    @staticmethod
+    async def _delete_segments(ts_files: list[Path]) -> None:
         """Delete all segment files after concatenation.
         :param ts_files: List of absolute paths of .avi files
         """
