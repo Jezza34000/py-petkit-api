@@ -518,8 +518,8 @@ class PetKitClient:
             headers=await self.get_session_id(),
         )
         if not isinstance(response, list) or not response:
-            _LOGGER.debug(
-                "No video data found from cloud, looks like you don't have a care+ subscription ?"
+            _LOGGER.warning(
+                "No video data found from cloud, looks like you don't have a care+ subscription ? or video is not uploaded yet."
             )
             return None
         return response[0]
