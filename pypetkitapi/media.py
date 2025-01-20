@@ -103,7 +103,7 @@ class MediaManager:
 
     async def gather_all_media_from_disk(
         self, storage_path: Path, device_id: int
-    ) -> None:
+    ) -> list[MediaFile]:
         """Construct the media file table for disk storage.
         :param storage_path: Path to the storage directory
         :param device_id: Device ID
@@ -155,6 +155,7 @@ class MediaManager:
                             )
                         )
         _LOGGER.debug("OK, Media table populated with %s files", len(self.media_table))
+        return self.media_table
 
     async def list_missing_files(
         self,
@@ -226,7 +227,6 @@ class MediaManager:
 
             if is_missing:
                 missing_media.append(media_cloud)
-
         return missing_media
 
     async def _process_feeder(self, feeder: Feeder) -> list[MediaCloud]:
