@@ -65,7 +65,7 @@ class MediaManager:
 
     media_table: list[MediaFile] = []
 
-    async def get_all_media_files(
+    async def gather_all_media_from_cloud(
         self, devices: list[Feeder | Litter]
     ) -> list[MediaCloud]:
         """Get all media files from all devices and return a list of MediaCloud.
@@ -101,7 +101,7 @@ class MediaManager:
 
         return media_files
 
-    async def get_all_media_files_disk(
+    async def gather_all_media_from_disk(
         self, storage_path: Path, device_id: int
     ) -> None:
         """Construct the media file table for disk storage.
@@ -121,7 +121,7 @@ class MediaManager:
             video_path = record_path / "video"
 
             # Regex pattern to match valid filenames
-            valid_pattern = re.compile(rf"^(?:\d+_)?{device_id}_\d+\.(jpg|avi)$")
+            valid_pattern = re.compile(rf"^{device_id}_\d+\.(jpg|avi)$")
 
             # Populate the media table with event_id from filenames
             for subdir in [snapshot_path, video_path]:
@@ -137,7 +137,7 @@ class MediaManager:
                     if entry.is_file() and valid_pattern.match(entry.name):
                         _LOGGER.debug("Media found: %s", entry.name)
                         event_id = Path(entry.name).stem
-                        timestamp = await self._extract_timestamp(str(entry.name))
+                        timestamp = Path(entry.name).stem.split("_")[1]
                         media_type_str = Path(entry.name).suffix.lstrip(".")
                         try:
                             media_type = MediaType(media_type_str)
@@ -156,18 +156,7 @@ class MediaManager:
                         )
         _LOGGER.debug("OK, Media table populated with %s files", len(self.media_table))
 
-    @staticmethod
-    async def _extract_timestamp(file_name: str) -> int:
-        """Extract timestamp from a filename.
-        :param file_name: Filename
-        :return: Timestamp
-        """
-        match = re.search(r"_(\d+)\.[a-zA-Z0-9]+$", file_name)
-        if match:
-            return int(match.group(1))
-        return 0
-
-    async def prepare_missing_files(
+    async def list_missing_files(
         self,
         media_cloud_list: list[MediaCloud],
         dl_type: list[MediaType] | None = None,
@@ -458,53 +447,62 @@ class DownloadDecryptMedia:
     async def download_file(
         self, file_data: MediaCloud, file_type: list[MediaType] | None
     ) -> None:
-        """Get image and video file
-        :param file_data: MediaCloud object
-        :param file_type: MediaType object
-        """
+        """Get image and video files."""
         self.file_data = file_data
-
         if not file_type:
             file_type = []
 
+        tasks = []
+
         if self.file_data.image and MediaType.IMAGE in file_type:
-            # Download image file
-            _LOGGER.debug("Downloading image file (event id: %s)", file_data.event_id)
-            await self._get_file(
-                self.file_data.image,
-                self.file_data.aes_key,
-                f"{self.file_data.event_id}.jpg",
+            # Schedule image download
+            _LOGGER.debug(
+                "Scheduling download for image file (event id: %s)", file_data.event_id
+            )
+            tasks.append(
+                self._get_file(
+                    self.file_data.image,
+                    self.file_data.aes_key,
+                    f"{self.file_data.device_id}_{self.file_data.timestamp}.jpg",
+                )
             )
 
         if self.file_data.video and MediaType.VIDEO in file_type:
-            # Download video file
-            _LOGGER.debug("Downloading video file (event id: %s)", file_data.event_id)
+            # Schedule video download
+            _LOGGER.debug(
+                "Scheduling download for video file (event id: %s)", file_data.event_id
+            )
             await self._get_video_m3u8()
 
+        # Run all tasks in parallel
+        await asyncio.gather(*tasks)
+
     async def _get_video_m3u8(self) -> None:
-        """Iterate through m3u8 file and return all the ts file urls"""
+        """Iterate through m3u8 file and return all the ts file URLs."""
         aes_key, iv_key, segments_lst = await self._get_m3u8_segments()
+        file_name = f"{self.file_data.device_id}_{self.file_data.timestamp}.avi"
 
         if aes_key is None or iv_key is None or not segments_lst:
-            _LOGGER.debug("Can't download video file %s", self.file_data.event_id)
+            _LOGGER.debug("Can't download video file %s", file_name)
             return
-
-        segment_files = []
 
         if len(segments_lst) == 1:
-            await self._get_file(
-                segments_lst[0], aes_key, f"{self.file_data.event_id}.avi"
-            )
+            await self._get_file(segments_lst[0], aes_key, file_name)
             return
 
-        for index, segment in enumerate(segments_lst, start=1):
-            segment_file = await self._get_file(
-                segment, aes_key, f"{index}_{self.file_data.event_id}.avi"
-            )
-            if segment_file:
-                segment_files.append(
-                    await self.get_fpath(f"{index}_{self.file_data.event_id}.avi")
-                )
+        # Download segments in parallel
+        tasks = [
+            self._get_file(segment, aes_key, f"{index}_{file_name}")
+            for index, segment in enumerate(segments_lst, start=1)
+        ]
+        results = await asyncio.gather(*tasks)
+
+        # Collect successful downloads
+        segment_files = [
+            await self.get_fpath(f"{index + 1}_{file_name}")
+            for index, success in enumerate(results)
+            if success
+        ]
 
         if not segment_files:
             _LOGGER.error("No segment files found")
@@ -512,7 +510,7 @@ class DownloadDecryptMedia:
             _LOGGER.debug("Single file segment, no need to concatenate")
         elif len(segment_files) > 1:
             _LOGGER.debug("Concatenating segments %s", len(segment_files))
-            await self._concat_segments(segment_files, f"{self.file_data.event_id}.avi")
+            await self._concat_segments(segment_files, file_name)
 
     async def _get_m3u8_segments(self) -> tuple[str | None, str | None, list[str]]:
         """Extract the segments from a m3u8 file.

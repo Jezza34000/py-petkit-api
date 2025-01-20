@@ -337,7 +337,7 @@ class PetKitClient:
         _LOGGER.debug("Fetching media data for device: %s", device.device_id)
 
         device_entity = self.petkit_entities[device.device_id]
-        device_entity.medias = await self.media_manager.get_all_media_files(
+        device_entity.medias = await self.media_manager.gather_all_media_from_cloud(
             [device_entity]
         )
 
