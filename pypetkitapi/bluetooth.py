@@ -89,11 +89,11 @@ class BluetoothManager:
             headers=await self.client.get_session_id(),
         )
         if response != {"state": 1}:
-            _LOGGER.error("Failed to establish BLE connection.")
+            _LOGGER.error("Unable to open a BLE connection.")
             water_fountain.is_connected = False
             return False
         for attempt in range(BLE_CONNECT_ATTEMPT):
-            _LOGGER.warning("BLE connection attempt n%s", attempt)
+            _LOGGER.debug("BLE connection... (attempt n°%s)", attempt)
             response = await self.client.req.request(
                 method=HTTPMethod.POST,
                 url=PetkitEndpoint.BLE_POLL,
@@ -116,6 +116,11 @@ class BluetoothManager:
         """Close the BLE connection to the given fountain_id."""
         _LOGGER.info("Closing BLE connection to fountain %s", fountain_id)
         water_fountain = await self._get_fountain_instance(fountain_id)
+
+        if water_fountain.is_connected is False:
+            _LOGGER.error("BLE connection not established. Cannot close.")
+            return
+
         await self.client.req.request(
             method=HTTPMethod.POST,
             url=PetkitEndpoint.BLE_CANCEL,
