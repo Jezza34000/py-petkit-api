@@ -101,7 +101,11 @@ class PetKitClient:
         self.bluetooth_manager = BluetoothManager(self)
         from pypetkitapi import MediaManager
 
+        from . import __version__
+
         self.media_manager = MediaManager()
+
+        _LOGGER.debug("PetKit Client initialized (version %s)", __version__)
 
     async def _get_base_url(self) -> None:
         """Get the list of API servers, filter by region, and return the matching server."""
