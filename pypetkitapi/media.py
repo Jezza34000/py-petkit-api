@@ -440,7 +440,7 @@ class DownloadDecryptMedia:
         subdir = ""
         if file_name.endswith(".jpg"):
             subdir = "snapshot"
-        elif file_name.endswith(".avi"):
+        elif file_name.endswith(".mp4"):
             subdir = "video"
         return Path(self.download_path / self.file_data.filepath / subdir / file_name)
 
@@ -452,35 +452,24 @@ class DownloadDecryptMedia:
         if not file_type:
             file_type = []
 
-        tasks = []
-
         if self.file_data.image and MediaType.IMAGE in file_type:
-            # Schedule image download
-            _LOGGER.debug(
-                "Scheduling download for image file (event id: %s)", file_data.event_id
-            )
-            tasks.append(
-                self._get_file(
-                    self.file_data.image,
-                    self.file_data.aes_key,
-                    f"{self.file_data.device_id}_{self.file_data.timestamp}.jpg",
-                )
+            # Image download
+            _LOGGER.debug("Download image file (event id: %s)", file_data.event_id)
+            await self._get_file(
+                self.file_data.image,
+                self.file_data.aes_key,
+                f"{self.file_data.device_id}_{self.file_data.timestamp}.jpg",
             )
 
         if self.file_data.video and MediaType.VIDEO in file_type:
-            # Schedule video download
-            _LOGGER.debug(
-                "Scheduling download for video file (event id: %s)", file_data.event_id
-            )
+            # Video download
+            _LOGGER.debug("Download video file (event id: %s)", file_data.event_id)
             await self._get_video_m3u8()
-
-        # Run all tasks in parallel
-        await asyncio.gather(*tasks)
 
     async def _get_video_m3u8(self) -> None:
         """Iterate through m3u8 file and return all the ts file URLs."""
         aes_key, iv_key, segments_lst = await self._get_m3u8_segments()
-        file_name = f"{self.file_data.device_id}_{self.file_data.timestamp}.avi"
+        file_name = f"{self.file_data.device_id}_{self.file_data.timestamp}.mp4"
 
         if aes_key is None or iv_key is None or not segments_lst:
             _LOGGER.debug("Can't download video file %s", file_name)
@@ -550,11 +539,8 @@ class DownloadDecryptMedia:
                 )
                 return False
 
-            content = await response.read()
-
-        encrypted_file_path = await self._save_file(content, f"{full_filename}.enc")
-        # Decrypt the image
-        decrypted_data = await self._decrypt_file(encrypted_file_path, aes_key)
+            encrypted_data = await response.read()
+        decrypted_data = await self._decrypt_data(encrypted_data, aes_key)
 
         if decrypted_data:
             _LOGGER.debug("Decrypt was successful")
@@ -589,9 +575,9 @@ class DownloadDecryptMedia:
         return file_path
 
     @staticmethod
-    async def _decrypt_file(file_path: Path, aes_key: str) -> bytes | None:
+    async def _decrypt_data(encrypted_data: bytes, aes_key: str) -> bytes | None:
         """Decrypt a file using AES encryption.
-        :param file_path: Path to the encrypted file.
+        :param encrypted_data: Encrypted bytes data.
         :param aes_key: AES key used for decryption.
         :return: Decrypted bytes data.
         """
@@ -599,40 +585,19 @@ class DownloadDecryptMedia:
         key_bytes: bytes = aes_key.encode("utf-8")
         iv: bytes = b"\x61" * 16
         cipher: Any = AES.new(key_bytes, AES.MODE_CBC, iv)
-
-        try:
-            async with aio_open(file_path, "rb") as encrypted_file:
-                encrypted_data: bytes = await encrypted_file.read()
-                return encrypted_data
-        except FileNotFoundError:
-            _LOGGER.debug("Error: The file '%s' was not found.", file_path)
-        except PermissionError:
-            _LOGGER.error(
-                "Error: Insufficient permissions to access the file '%s'.", file_path
-            )
-        except OSError as e:
-            _LOGGER.error(
-                "System error while accessing the file '%s': %s", file_path, e
-            )
-        except Exception as e:  # noqa: BLE001
-            _LOGGER.error("An unexpected error occurred: %s", e)
-
         decrypted_data: bytes = cipher.decrypt(encrypted_data)
 
         try:
             decrypted_data = unpad(decrypted_data, AES.block_size)
         except ValueError as e:
             _LOGGER.debug("Warning: Padding error occurred, ignoring error: %s", e)
-
-        if Path(file_path).exists():
-            Path(file_path).unlink()
         return decrypted_data
 
     async def _concat_segments(self, ts_files: list[Path], output_file) -> None:
-        """Concatenate a list of .avi segments into a single output file without using a temporary file.
+        """Concatenate a list of .mp4 segments into a single output file without using a temporary file.
 
-        :param ts_files: List of absolute paths of .avi files
-        :param output_file: Path of the output file (e.g., "output.avi")
+        :param ts_files: List of absolute paths of .mp4 files
+        :param output_file: Path of the output file (e.g., "output.mp4")
         """
         full_output_file = await self.get_fpath(output_file)
         if full_output_file.exists():
@@ -682,7 +647,7 @@ class DownloadDecryptMedia:
     @staticmethod
     async def _delete_segments(ts_files: list[Path]) -> None:
         """Delete all segment files after concatenation.
-        :param ts_files: List of absolute paths of .avi files
+        :param ts_files: List of absolute paths of .mp4 files
         """
         for file in ts_files:
             if file.exists():
