@@ -600,8 +600,22 @@ class DownloadDecryptMedia:
         iv: bytes = b"\x61" * 16
         cipher: Any = AES.new(key_bytes, AES.MODE_CBC, iv)
 
-        async with aio_open(file_path, "rb") as encrypted_file:
-            encrypted_data: bytes = await encrypted_file.read()
+        try:
+            async with aio_open(file_path, "rb") as encrypted_file:
+                encrypted_data: bytes = await encrypted_file.read()
+                return encrypted_data
+        except FileNotFoundError:
+            _LOGGER.debug("Error: The file '%s' was not found.", file_path)
+        except PermissionError:
+            _LOGGER.error(
+                "Error: Insufficient permissions to access the file '%s'.", file_path
+            )
+        except OSError as e:
+            _LOGGER.error(
+                "System error while accessing the file '%s': %s", file_path, e
+            )
+        except Exception as e:  # noqa: BLE001
+            _LOGGER.error("An unexpected error occurred: %s", e)
 
         decrypted_data: bytes = cipher.decrypt(encrypted_data)
 
