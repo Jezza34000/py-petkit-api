@@ -102,7 +102,7 @@ LOGIN_DATA = {
 class MediaType(StrEnum):
     """Record Type constants"""
 
-    VIDEO = "avi"
+    VIDEO = "mp4"
     IMAGE = "jpg"
 
 
