@@ -77,10 +77,10 @@ class BluetoothManager:
         _LOGGER.info("Opening BLE connection to fountain %s", fountain_id)
         water_fountain = await self._get_fountain_instance(fountain_id)
         if await self.check_relay_availability(fountain_id) is False:
-            _LOGGER.error("BLE relay not available.")
+            _LOGGER.error("BLE relay not available (id: %s).", fountain_id)
             return False
         if water_fountain.is_connected is True:
-            _LOGGER.error("BLE connection already established.")
+            _LOGGER.error("BLE connection already established (id %s)", fountain_id)
             return True
         response = await self.client.req.request(
             method=HTTPMethod.POST,
@@ -89,11 +89,16 @@ class BluetoothManager:
             headers=await self.client.get_session_id(),
         )
         if response != {"state": 1}:
-            _LOGGER.error("Unable to open a BLE connection.")
+            _LOGGER.error("Unable to open a BLE connection (id %s)", fountain_id)
             water_fountain.is_connected = False
             return False
         for attempt in range(BLE_CONNECT_ATTEMPT):
-            _LOGGER.debug("BLE connection... (attempt n°%s)", attempt)
+            _LOGGER.debug(
+                "BLE connection... %s/%s (id %s)",
+                attempt,
+                BLE_CONNECT_ATTEMPT,
+                fountain_id,
+            )
             response = await self.client.req.request(
                 method=HTTPMethod.POST,
                 url=PetkitEndpoint.BLE_POLL,
@@ -101,14 +106,20 @@ class BluetoothManager:
                 headers=await self.client.get_session_id(),
             )
             if response == 1:
-                _LOGGER.info("BLE connection established successfully.")
+                _LOGGER.info(
+                    "BLE connection established successfully (id %s)", fountain_id
+                )
                 water_fountain.is_connected = True
                 water_fountain.last_ble_poll = datetime.now().strftime(
                     "%Y-%m-%dT%H:%M:%S.%f"
                 )
                 return True
             await asyncio.sleep(4)
-        _LOGGER.error("Failed to establish BLE connection after multiple attempts.")
+        _LOGGER.error(
+            "Failed to establish BLE connection after %s attempts (id %s)",
+            BLE_CONNECT_ATTEMPT,
+            fountain_id,
+        )
         water_fountain.is_connected = False
         return False
 
@@ -118,7 +129,9 @@ class BluetoothManager:
         water_fountain = await self._get_fountain_instance(fountain_id)
 
         if water_fountain.is_connected is False:
-            _LOGGER.error("BLE connection not established. Cannot close.")
+            _LOGGER.error(
+                "BLE connection not established. Cannot close (id %s)", fountain_id
+            )
             return
 
         await self.client.req.request(
@@ -127,7 +140,7 @@ class BluetoothManager:
             data={"bleId": fountain_id, "type": 24, "mac": water_fountain.mac},
             headers=await self.client.get_session_id(),
         )
-        _LOGGER.info("BLE connection closed successfully.")
+        _LOGGER.info("BLE connection closed successfully (id %s)", fountain_id)
 
     async def get_ble_cmd_data(
         self, fountain_command: list, counter: int
@@ -151,11 +164,13 @@ class BluetoothManager:
         _LOGGER.info("Sending BLE command to fountain %s", fountain_id)
         water_fountain = await self._get_fountain_instance(fountain_id)
         if water_fountain.is_connected is False:
-            _LOGGER.error("BLE connection not established.")
+            _LOGGER.error("BLE connection not established (id %s)", fountain_id)
             return False
         command_data = FOUNTAIN_COMMAND.get(command)
         if command_data is None:
-            _LOGGER.error("Command not found.")
+            _LOGGER.error(
+                "BLE fountain command '%s' not found (id %s)", command, fountain_id
+            )
             return False
         cmd_code, cmd_data = await self.get_ble_cmd_data(
             list(command_data), water_fountain.ble_counter
@@ -173,7 +188,7 @@ class BluetoothManager:
             headers=await self.client.get_session_id(),
         )
         if response != 1:
-            _LOGGER.error("Failed to send BLE command.")
+            _LOGGER.error("Failed to send BLE command (id %s)", fountain_id)
             return False
-        _LOGGER.info("BLE command sent successfully.")
+        _LOGGER.info("BLE command sent successfully (id %s)", fountain_id)
         return True
