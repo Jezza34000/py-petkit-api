@@ -121,7 +121,9 @@ class MediaManager:
             video_path = record_path / "video"
 
             # Regex pattern to match valid filenames
-            valid_pattern = re.compile(rf"^{device_id}_\d+\.(jpg|avi)$")
+            valid_pattern = re.compile(
+                rf"^{device_id}_\d+\.({MediaType.IMAGE}|{MediaType.VIDEO})$"
+            )
 
             # Populate the media table with event_id from filenames
             for subdir in [snapshot_path, video_path]:
@@ -438,9 +440,9 @@ class DownloadDecryptMedia:
         :return: Full path of the file.
         """
         subdir = ""
-        if file_name.endswith(".jpg"):
+        if file_name.endswith(MediaType.IMAGE):
             subdir = "snapshot"
-        elif file_name.endswith(".mp4"):
+        elif file_name.endswith(MediaType.VIDEO):
             subdir = "video"
         return Path(self.download_path / self.file_data.filepath / subdir / file_name)
 
@@ -451,25 +453,44 @@ class DownloadDecryptMedia:
         self.file_data = file_data
         if not file_type:
             file_type = []
+        filename = f"{self.file_data.device_id}_{self.file_data.timestamp}"
 
         if self.file_data.image and MediaType.IMAGE in file_type:
-            # Image download
-            _LOGGER.debug("Download image file (event id: %s)", file_data.event_id)
-            await self._get_file(
-                self.file_data.image,
-                self.file_data.aes_key,
-                f"{self.file_data.device_id}_{self.file_data.timestamp}.jpg",
-            )
+            full_filename = f"{filename}.{MediaType.IMAGE}"
+            if await self.not_existing_file(full_filename):
+                # Image download
+                _LOGGER.debug("Download image file (event id: %s)", file_data.event_id)
+                await self._get_file(
+                    self.file_data.image,
+                    self.file_data.aes_key,
+                    f"{self.file_data.device_id}_{self.file_data.timestamp}.{MediaType.IMAGE}",
+                )
 
         if self.file_data.video and MediaType.VIDEO in file_type:
-            # Video download
-            _LOGGER.debug("Download video file (event id: %s)", file_data.event_id)
-            await self._get_video_m3u8()
+            if await self.not_existing_file(f"{filename}.{MediaType.VIDEO}"):
+                # Video download
+                _LOGGER.debug("Download video file (event id: %s)", file_data.event_id)
+                await self._get_video_m3u8()
+
+    async def not_existing_file(self, file_name: str) -> bool:
+        """Check if the file already exists.
+        :param file_name: Filename
+        :return: True if the file exists, False otherwise.
+        """
+        full_file_path = await self.get_fpath(file_name)
+        if full_file_path.exists():
+            _LOGGER.debug(
+                "File already exist : %s don't re-download it", full_file_path
+            )
+            return False
+        return True
 
     async def _get_video_m3u8(self) -> None:
         """Iterate through m3u8 file and return all the ts file URLs."""
         aes_key, iv_key, segments_lst = await self._get_m3u8_segments()
-        file_name = f"{self.file_data.device_id}_{self.file_data.timestamp}.mp4"
+        file_name = (
+            f"{self.file_data.device_id}_{self.file_data.timestamp}.{MediaType.VIDEO}"
+        )
 
         if aes_key is None or iv_key is None or not segments_lst:
             _LOGGER.debug("Can't download video file %s", file_name)
@@ -525,12 +546,6 @@ class DownloadDecryptMedia:
         :param full_filename: Name of the file to save.
         :return: True if the file was downloaded successfully, False otherwise.
         """
-
-        full_file_path = await self.get_fpath(full_filename)
-        if full_file_path.exists():
-            _LOGGER.debug("File already exist : %s don't re-download it", full_filename)
-            return True
-
         # Download the file
         async with aiohttp.ClientSession() as session, session.get(url) as response:
             if response.status != 200:
