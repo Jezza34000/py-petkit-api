@@ -56,7 +56,7 @@ import asyncio
 import logging
 import aiohttp
 from pypetkitapi.client import PetKitClient
-from pypetkitapi.command import DeviceCommand, FeederCommand, LBCommand, LBAction, LitterCommand
+from pypetkitapi.command import DeviceCommand, FeederCommand, LBCommand, DeviceAction, LitterCommand
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -65,8 +65,8 @@ async def main():
         client = PetKitClient(
             username="username",  # Your PetKit account username or id
             password="password",  # Your PetKit account password
-            region="FR",  # Your region or country code (e.g. FR, US, etc.)
-            timezone="Europe/Paris",  # Your timezone
+            region="FR",  # Your region or country code (e.g. FR, US,CN etc.)
+            timezone="Europe/Paris",  # Your timezone(e.g. "Asia/Shanghai")
             session=session,
         )
 
@@ -77,26 +77,28 @@ async def main():
         for key, value in client.petkit_entities.items():
             print(f"{key}: {type(value).__name__} - {value.name}")
 
+        # Select a device
+        device_id = key
         # Read devices or pet information
-        print(client.petkit_entities[123456789])
+        print(client.petkit_entities[device_id])
 
         # Send command to the devices
         ### Example 1 : Turn on the indicator light
         ### Device_ID, Command, Payload
-        await client.send_api_request(123456789, DeviceCommand.UPDATE_SETTING, {"lightMode": 1})
+        await client.send_api_request(device_id, DeviceCommand.UPDATE_SETTING, {"lightMode": 1})
 
         ### Example 2 : Feed the pet
         ### Device_ID, Command, Payload
         # simple hopper :
-        await client.send_api_request(123456789, FeederCommand.MANUAL_FEED, {"amount": 1})
+        await client.send_api_request(device_id, FeederCommand.MANUAL_FEED, {"amount": 1})
         # dual hopper :
-        await client.send_api_request(123456789, FeederCommand.MANUAL_FEED, {"amount1": 2})
+        await client.send_api_request(device_id, FeederCommand.MANUAL_FEED, {"amount1": 2})
         # or
-        await client.send_api_request(123456789, FeederCommand.MANUAL_FEED, {"amount2": 2})
+        await client.send_api_request(device_id, FeederCommand.MANUAL_FEED, {"amount2": 2})
 
         ### Example 3 : Start the cleaning process
         ### Device_ID, Command, Payload
-        await client.send_api_request(123456789, LitterCommand.CONTROL_DEVICE, {LBAction.START: LBCommand.CLEANING})
+        await client.send_api_request(device_id, LitterCommand.CONTROL_DEVICE, {DeviceAction.START: LBCommand.CLEANING})
 
 
 if __name__ == "__main__":
