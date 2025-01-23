@@ -274,7 +274,7 @@ class MediaManager:
         )
 
         if not feeder_id:
-            _LOGGER.error("Missing feeder_id for record")
+            _LOGGER.warning("Missing feeder_id for record")
             return media_files
 
         if not record.items:
@@ -283,7 +283,7 @@ class MediaManager:
         for item in record.items:
             timestamp = await self._get_timestamp(item)
             if timestamp is None:
-                _LOGGER.error("Missing timestamp for record item")
+                _LOGGER.warning("Missing timestamp for record item")
                 continue
             if not item.event_id:
                 # Skip feed event in the future
@@ -292,10 +292,10 @@ class MediaManager:
                 )
                 continue
             if not user_id:
-                _LOGGER.error("Missing user_id for record item")
+                _LOGGER.warning("Missing user_id for record item")
                 continue
             if not item.aes_key:
-                _LOGGER.error("Missing aes_key for record item")
+                _LOGGER.warning("Missing aes_key for record item")
                 continue
 
             date_str = await self.get_date_from_ts(timestamp)
@@ -330,15 +330,15 @@ class MediaManager:
         cp_sub = litter.cloud_product.subscribe if litter.cloud_product else None
 
         if not litter_id:
-            _LOGGER.error("Missing litter_id for record")
+            _LOGGER.warning("Missing litter_id for record")
             return media_files
 
         if not device_type:
-            _LOGGER.error("Missing device_type for record")
+            _LOGGER.warning("Missing device_type for record")
             return media_files
 
         if not user_id:
-            _LOGGER.error("Missing user_id for record")
+            _LOGGER.warning("Missing user_id for record")
             return media_files
 
         if not records:
@@ -515,7 +515,7 @@ class DownloadDecryptMedia:
         ]
 
         if not segment_files:
-            _LOGGER.error("No segment files found")
+            _LOGGER.warning("No segment files found")
         elif len(segment_files) == 1:
             _LOGGER.debug("Single file segment, no need to concatenate")
         elif len(segment_files) > 1:
@@ -535,7 +535,7 @@ class DownloadDecryptMedia:
 
         media_api = video_data.get("mediaApi", None)
         if not media_api:
-            _LOGGER.error("Missing mediaApi in video data")
+            _LOGGER.warning("Missing mediaApi in video data")
             raise ValueError("Missing mediaApi in video data")
         return await self.client.extract_segments_m3u8(str(media_api))
 
