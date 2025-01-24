@@ -18,13 +18,14 @@ import aiohttp
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 
-from pypetkitapi import Feeder, Litter, PetKitClient, RecordType
+from pypetkitapi import Feeder, Litter, PetKitClient, RecordsItems, RecordType
 from pypetkitapi.const import (
     FEEDER_WITH_CAMERA,
     LITTER_WITH_CAMERA,
     MediaType,
     RecordTypeLST,
 )
+from pypetkitapi.litter_container import LitterRecord
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -281,6 +282,9 @@ class MediaManager:
             return media_files
 
         for item in record.items:
+            if not isinstance(item, RecordsItems):
+                _LOGGER.debug("Record is empty")
+                continue
             timestamp = await self._get_timestamp(item)
             if timestamp is None:
                 _LOGGER.warning("Missing timestamp for record item")
@@ -345,6 +349,9 @@ class MediaManager:
             return media_files
 
         for record in records:
+            if not isinstance(record, LitterRecord):
+                _LOGGER.debug("Record is empty")
+                continue
             if not record.event_id:
                 _LOGGER.debug("Missing event_id for record item")
                 continue
@@ -404,12 +411,12 @@ class MediaManager:
         return f"/{device_type}/cloud/video?startTime={param_dict.get("startTime")}&deviceId={param_dict.get("deviceId")}&userId={user_id}&mark={param_dict.get("mark")}"
 
     @staticmethod
-    async def _get_timestamp(item) -> int:
+    async def _get_timestamp(item) -> int | None:
         """Extract timestamp from a record item and raise an exception if it is None.
         :param item: Record item
         :return: Timestamp
         """
-        timestamp = (
+        return (
             item.timestamp
             or item.completed_at
             or item.eat_start_time
@@ -419,9 +426,6 @@ class MediaManager:
             or item.time
             or None
         )
-        if timestamp is None:
-            raise ValueError("Can't find timestamp in record item")
-        return timestamp
 
 
 class DownloadDecryptMedia:
