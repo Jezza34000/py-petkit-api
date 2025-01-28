@@ -270,9 +270,7 @@ class MediaManager:
         device_type = (
             device_obj.device_nfo.device_type if device_obj.device_nfo else None
         )
-        cp_sub = (
-            device_obj.cloud_product.subscribe if device_obj.cloud_product else None
-        )
+        cp_sub = self.is_subscription_active(device_obj)
 
         if not feeder_id:
             _LOGGER.warning("Missing feeder_id for record")
@@ -299,7 +297,7 @@ class MediaManager:
                 _LOGGER.warning("Missing user_id for record item")
                 continue
             if not item.aes_key:
-                _LOGGER.warning("Missing aes_key for record item")
+                _LOGGER.debug("Missing aes_key for record item")
                 continue
 
             date_str = await self.get_date_from_ts(timestamp)
@@ -331,7 +329,7 @@ class MediaManager:
         litter_id = litter.device_nfo.device_id if litter.device_nfo else None
         device_type = litter.device_nfo.device_type if litter.device_nfo else None
         user_id = litter.user.id if litter.user else None
-        cp_sub = litter.cloud_product.subscribe if litter.cloud_product else None
+        cp_sub = self.is_subscription_active(litter)
 
         if not litter_id:
             _LOGGER.warning("Missing litter_id for record")
@@ -384,6 +382,19 @@ class MediaManager:
         return media_files
 
     @staticmethod
+    def is_subscription_active(device: Feeder | Litter) -> bool:
+        """Check if the subscription is active based on the work_indate timestamp.
+        :param device: Device object
+        :return: True if the subscription is active, False otherwise
+        """
+        if device.cloud_product and device.cloud_product.work_indate:
+            return (
+                datetime.fromtimestamp(device.cloud_product.work_indate)
+                > datetime.now()
+            )
+        return False
+
+    @staticmethod
     async def get_date_from_ts(timestamp: int | None) -> str:
         """Get date from timestamp.
         :param timestamp: Timestamp
@@ -395,7 +406,10 @@ class MediaManager:
 
     @staticmethod
     async def construct_video_url(
-        device_type: str | None, media_url: str | None, user_id: int, cp_sub: int | None
+        device_type: str | None,
+        media_url: str | None,
+        user_id: int,
+        cp_sub: bool | None,
     ) -> str | None:
         """Construct the video URL.
         :param device_type: Device type
@@ -404,7 +418,7 @@ class MediaManager:
         :param cp_sub: Cpsub value
         :return: Constructed video URL
         """
-        if not media_url or not user_id or cp_sub != 1:
+        if not media_url or not user_id or not cp_sub:
             return None
         params = parse_qs(urlparse(media_url).query)
         param_dict = {k: v[0] for k, v in params.items()}
@@ -539,7 +553,7 @@ class DownloadDecryptMedia:
 
         media_api = video_data.get("mediaApi", None)
         if not media_api:
-            _LOGGER.warning("Missing mediaApi in video data")
+            _LOGGER.debug("Missing mediaApi in video data")
             raise ValueError("Missing mediaApi in video data")
         return await self.client.extract_segments_m3u8(str(media_api))
 
