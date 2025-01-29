@@ -2,12 +2,13 @@
 
 ---
 
+[![Lifecycle:Maturing](https://img.shields.io/badge/Lifecycle-Maturing-007EC6)](https://github.com/Jezza34000/py-petkit-api/)
 [![PyPI](https://img.shields.io/pypi/v/pypetkitapi.svg)][pypi_]
 [![Python Version](https://img.shields.io/pypi/pyversions/pypetkitapi)][python version] [![Actions status](https://github.com/Jezza34000/py-petkit-api/workflows/CI/badge.svg)](https://github.com/Jezza34000/py-petkit-api/actions)
 
 ---
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api) [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api) [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
 
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
@@ -16,8 +17,6 @@
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
 [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
-
-[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=Jezza34000_py-petkit-api&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=Jezza34000_py-petkit-api)
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
@@ -37,9 +36,10 @@ PetKit Client is a Python library for interacting with the PetKit API. It allows
 
 ## Features
 
-Login and session management
-Fetch account and device data
-Control PetKit devices (Feeder, Litter Box, Water Fountain)
+- Login and session management
+- Fetch account and device data
+- Control PetKit devices (Feeder, Litter Box, Water Fountain, Purifiers)
+- Fetch images & videos produced by devices
 
 ## Installation
 
@@ -50,6 +50,9 @@ pip install pypetkitapi
 ```
 
 ## Usage Example:
+
+Here is a simple example of how to use the library to interact with the PetKit API \
+This example is not an exhaustive list of all the features available in the library.
 
 ```python
 import asyncio
@@ -109,9 +112,14 @@ if __name__ == "__main__":
 
 Check at the usage in the Home Assistant integration : [here](https://github.com/Jezza34000/homeassistant_petkit)
 
+## Help and Support
+
+A discord server is available for support and help, check here: [here](https://github.com/Jezza34000/homeassistant_petkit)
+
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request.
+Contributions are welcome!\
+Please open an issue or submit a pull request.
 
 ## License
 
