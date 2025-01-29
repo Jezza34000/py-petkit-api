@@ -30,7 +30,7 @@ repos:
         exclude: ^tests/fixtures/|homeassistant/generated/|tests/components/.*/snapshots/|.github
 
   - repo: https://github.com/psf/black
-    rev: 24.10.0
+    rev: 25.1.0
     hooks:
       - id: black
 
@@ -43,7 +43,7 @@ repos:
     #      - id: ruff-format
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.23.2
+    rev: v8.23.3
     hooks:
       - id: gitleaks
 
