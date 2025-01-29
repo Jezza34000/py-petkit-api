@@ -283,7 +283,7 @@ class TestMediaManager(unittest.IsolatedAsyncioTestCase):
         file_name = "test_video.mp4"
         expected_path = self.download_path / "123/test_video.mp4"
         result = await self.dl_decrypt_media.get_fpath(file_name)
-        self.assertFalse(result == expected_path)
+        self.assertNotEqual(result, expected_path)
 
 
 if __name__ == "__main__":
