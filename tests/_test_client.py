@@ -6,18 +6,6 @@ from pypetkitapi.containers import SessionInfo, Device, AccountData, Pet, Region
 
 class TestPetKitClient(unittest.IsolatedAsyncioTestCase):
 
-    async def asyncSetUp(self):
-        self.username = "test_user"
-        self.password = "test_password"
-        self.region = "FR"
-        self.timezone = "UTC"
-        self.client = PetKitClient(
-            self.username, self.password, self.region, self.timezone
-        )
-
-    async def asyncTearDown(self):
-        await self.client.aiohttp_session.close()
-
     @patch("pypetkitapi.client.PrepReq.request", new_callable=AsyncMock)
     async def test_login(self, mock_request):
         mock_response = {
