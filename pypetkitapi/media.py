@@ -262,10 +262,10 @@ class MediaManager:
         self, event_id: str, media_type: MediaType, existing_ids: set[str]
     ) -> bool:
         """Check if media exists in local storage."""
-        return any(
-            existing_ids == event_id and mf.media_type == media_type
-            for mf in self.media_table
-        )
+        for mf in self.media_table:
+            if event_id in existing_ids and mf.media_type == media_type:
+                return True
+        return False
 
     @staticmethod
     def _log_missing_details(
