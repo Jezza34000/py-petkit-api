@@ -6,6 +6,7 @@ import asyncio
 from dataclasses import dataclass
 from datetime import datetime
 import logging
+import os
 from pathlib import Path
 import re
 from typing import Any
@@ -105,10 +106,7 @@ class MediaManager:
     async def gather_all_media_from_disk(
         self, storage_path: Path, device_id: int
     ) -> list[MediaFile]:
-        """Construct the media file table for disk storage.
-        :param storage_path: Path to the storage directory
-        :param device_id: Device ID
-        """
+        """Construct the media file table for disk storage."""
         self.media_table.clear()
 
         today_str = datetime.now().strftime("%Y%m%d")
@@ -116,49 +114,72 @@ class MediaManager:
 
         _LOGGER.debug("Populating files from directory %s", base_path)
 
+        valid_pattern = re.compile(
+            rf"^{device_id}_\d+\.({MediaType.IMAGE}|{MediaType.VIDEO})$"
+        )
+
         for record_type in RecordType:
             record_path = base_path / record_type
-            snapshot_path = record_path / "snapshot"
-            video_path = record_path / "video"
+            subdirs = [record_path / "snapshot", record_path / "video"]
+            for subdir in subdirs:
+                await self._process_subdir(
+                    subdir, device_id, record_type, valid_pattern
+                )
 
-            # Regex pattern to match valid filenames
-            valid_pattern = re.compile(
-                rf"^{device_id}_\d+\.({MediaType.IMAGE}|{MediaType.VIDEO})$"
-            )
-
-            # Populate the media table with event_id from filenames
-            for subdir in [snapshot_path, video_path]:
-
-                # Ensure the directories exist
-                if not await aiofiles.os.path.exists(subdir):
-                    _LOGGER.debug("Path does not exist, skip : %s", subdir)
-                    continue
-
-                _LOGGER.debug("Scanning files into : %s", subdir)
-                entries = await aiofiles.os.scandir(subdir)
-                for entry in entries:
-                    if entry.is_file() and valid_pattern.match(entry.name):
-                        _LOGGER.debug("Media found: %s", entry.name)
-                        event_id = Path(entry.name).stem
-                        timestamp = Path(entry.name).stem.split("_")[1]
-                        media_type_str = Path(entry.name).suffix.lstrip(".")
-                        try:
-                            media_type = MediaType(media_type_str)
-                        except ValueError:
-                            _LOGGER.warning("Unknown media type: %s", media_type_str)
-                            continue
-                        self.media_table.append(
-                            MediaFile(
-                                event_id=event_id,
-                                device_id=device_id,
-                                timestamp=int(timestamp),
-                                event_type=RecordType(record_type),
-                                full_file_path=subdir / entry.name,
-                                media_type=MediaType(media_type),
-                            )
-                        )
         _LOGGER.debug("OK, Media table populated with %s files", len(self.media_table))
         return self.media_table
+
+    async def _process_subdir(
+        self,
+        subdir: Path,
+        device_id: int,
+        record_type: RecordType,
+        valid_pattern: re.Pattern,
+    ) -> None:
+        """Process a subdirectory to collect media files."""
+        if not await aiofiles.os.path.exists(subdir):
+            _LOGGER.debug("Path does not exist, skip: %s", subdir)
+            return
+
+        _LOGGER.debug("Scanning files into: %s", subdir)
+        entries = await aiofiles.os.scandir(subdir)
+        for entry in entries:
+            media_file = await self._create_media_file(
+                entry, device_id, record_type, subdir, valid_pattern
+            )
+            if media_file:
+                self.media_table.append(media_file)
+
+    @staticmethod
+    async def _create_media_file(
+        entry: os.DirEntry,
+        device_id: int,
+        record_type: RecordType,
+        subdir: Path,
+        valid_pattern: re.Pattern,
+    ) -> MediaFile | None:
+        """Create a MediaFile from a directory entry if valid."""
+        if not entry.is_file() or not valid_pattern.match(entry.name):
+            return None
+
+        try:
+            stem = Path(entry.name).stem
+            parts = stem.split("_")
+            timestamp = int(parts[1])
+            media_type_str = Path(entry.name).suffix.lstrip(".")
+            media_type = MediaType(media_type_str)
+        except (ValueError, IndexError) as e:
+            _LOGGER.warning("Invalid file %s: %s", entry.name, str(e))
+            return None
+
+        return MediaFile(
+            event_id=stem,
+            device_id=device_id,
+            timestamp=timestamp,
+            media_type=media_type,
+            event_type=record_type,
+            full_file_path=subdir / entry.name,
+        )
 
     async def list_missing_files(
         self,
@@ -166,71 +187,98 @@ class MediaManager:
         dl_type: list[MediaType] | None = None,
         event_type: list[RecordType] | None = None,
     ) -> list[MediaCloud]:
-        """Compare MediaCloud objects with MediaFile objects and return a list of missing MediaCloud objects.
-        :param media_cloud_list: List of MediaCloud objects
-        :param dl_type: List of media types to download
-        :param event_type: List of event types to filter
-        :return: List of missing MediaCloud objects
-        """
-        missing_media: list[MediaCloud] = []
+        """Compare MediaCloud objects with MediaFile objects and return missing ones."""
+        if not dl_type or not event_type:
+            _LOGGER.debug("Missing dl_type or event_type, no downloads")
+            return []
+
         existing_event_ids = {media_file.event_id for media_file in self.media_table}
+        return [
+            mc
+            for mc in media_cloud_list
+            if self._should_process_media(mc, event_type, dl_type, existing_event_ids)
+        ]
 
-        if dl_type is None or event_type is None or not dl_type or not event_type:
-            _LOGGER.debug(
-                "Missing dl_type or event_type parameters, no media file will be downloaded"
+    def _should_process_media(
+        self,
+        media_cloud: MediaCloud,
+        event_filter: list[RecordType],
+        dl_types: list[MediaType],
+        existing_ids: set[str],
+    ) -> bool:
+        """Determine if a media should be processed as missing."""
+        if self._should_skip_event_type(media_cloud.event_type, event_filter):
+            return False
+
+        return self._is_media_missing(media_cloud, dl_types, existing_ids)
+
+    @staticmethod
+    def _should_skip_event_type(
+        event_type: RecordType, event_filter: list[RecordType]
+    ) -> bool:
+        """Check if event type should be skipped."""
+        if event_type not in event_filter:
+            _LOGGER.debug("Skipping filtered event type: %s", event_type)
+            return True
+        return False
+
+    def _is_media_missing(
+        self, media_cloud: MediaCloud, dl_types: list[MediaType], existing_ids: set[str]
+    ) -> bool:
+        """Check if any media type is missing."""
+        missing_image = self._is_image_missing(media_cloud, dl_types, existing_ids)
+        missing_video = self._is_video_missing(media_cloud, dl_types, existing_ids)
+
+        if missing_image or missing_video:
+            self._log_missing_details(media_cloud, missing_image, missing_video)
+            return True
+        return False
+
+    def _is_image_missing(
+        self, media_cloud: MediaCloud, dl_types: list[MediaType], existing_ids: set[str]
+    ) -> bool:
+        """Check if image is missing."""
+        return bool(
+            media_cloud.image
+            and MediaType.IMAGE in dl_types
+            and not self._media_exists(
+                media_cloud.event_id, MediaType.IMAGE, existing_ids
             )
-            return missing_media
+        )
 
-        for media_cloud in media_cloud_list:
-            # Skip if event type is not in the event filter
-            if event_type and media_cloud.event_type not in event_type:
-                _LOGGER.debug(
-                    "Skipping event type %s, is filtered", media_cloud.event_type
-                )
-                continue
+    def _is_video_missing(
+        self, media_cloud: MediaCloud, dl_types: list[MediaType], existing_ids: set[str]
+    ) -> bool:
+        """Check if video is missing."""
+        return bool(
+            media_cloud.video
+            and MediaType.VIDEO in dl_types
+            and not self._media_exists(
+                media_cloud.event_id, MediaType.VIDEO, existing_ids
+            )
+        )
 
-            # Check if the media file is missing
-            is_missing = False
-            if media_cloud.event_id not in existing_event_ids:
-                _LOGGER.debug(
-                    "Media file IMG/VIDEO id : %s are missing", media_cloud.event_id
-                )
-                is_missing = True  # Both image and video are missing
-            else:
-                # Check for missing image
-                if (
-                    media_cloud.image
-                    and MediaType.IMAGE
-                    in (dl_type or [MediaType.IMAGE, MediaType.VIDEO])
-                    and not any(
-                        media_file.event_id == media_cloud.event_id
-                        and media_file.media_type == MediaType.IMAGE
-                        for media_file in self.media_table
-                    )
-                ):
-                    _LOGGER.debug(
-                        "Media file IMG id : %s is missing", media_cloud.event_id
-                    )
-                    is_missing = True
-                # Check for missing video
-                if (
-                    media_cloud.video
-                    and MediaType.VIDEO
-                    in (dl_type or [MediaType.IMAGE, MediaType.VIDEO])
-                    and not any(
-                        media_file.event_id == media_cloud.event_id
-                        and media_file.media_type == MediaType.VIDEO
-                        for media_file in self.media_table
-                    )
-                ):
-                    _LOGGER.debug(
-                        "Media file VIDEO id : %s is missing", media_cloud.event_id
-                    )
-                    is_missing = True
+    def _media_exists(
+        self, event_id: str, media_type: MediaType, existing_ids: set[str]
+    ) -> bool:
+        """Check if media exists in local storage."""
+        return any(
+            existing_ids == event_id and mf.media_type == media_type
+            for mf in self.media_table
+        )
 
-            if is_missing:
-                missing_media.append(media_cloud)
-        return missing_media
+    @staticmethod
+    def _log_missing_details(
+        media_cloud: MediaCloud, missing_image: bool, missing_video: bool
+    ) -> None:
+        """Log details about missing media."""
+        log_msg = "Media missing for event %s: "
+        details = []
+        if missing_image:
+            details.append("IMAGE")
+        if missing_video:
+            details.append("VIDEO")
+        _LOGGER.debug("%s %s %s", log_msg, media_cloud.event_id, " + ".join(details))
 
     async def _process_feeder(self, feeder: Feeder) -> list[MediaCloud]:
         """Process media files for a Feeder device.
@@ -272,11 +320,8 @@ class MediaManager:
         )
         cp_sub = self.is_subscription_active(device_obj)
 
-        if not feeder_id:
-            _LOGGER.warning("Missing feeder_id for record")
-            return media_files
-
-        if not record.items:
+        if not feeder_id or not record.items:
+            _LOGGER.warning("Missing feeder_id or items for record")
             return media_files
 
         for item in record.items:
@@ -287,17 +332,14 @@ class MediaManager:
             if timestamp is None:
                 _LOGGER.warning("Missing timestamp for record item")
                 continue
-            if not item.event_id:
+            if not item.event_id or not item.aes_key:
                 # Skip feed event in the future
                 _LOGGER.debug(
-                    "Missing event_id for record item (probably a feed event not yet completed)"
+                    "Missing event_id or aes_key for record item (probably a feed event not yet completed, or uploaded)"
                 )
                 continue
             if not user_id:
                 _LOGGER.warning("Missing user_id for record item")
-                continue
-            if not item.aes_key:
-                _LOGGER.debug("Missing aes_key for record item")
                 continue
 
             date_str = await self.get_date_from_ts(timestamp)
@@ -331,30 +373,22 @@ class MediaManager:
         user_id = litter.user.id if litter.user else None
         cp_sub = self.is_subscription_active(litter)
 
-        if not litter_id:
-            _LOGGER.warning("Missing litter_id for record")
-            return media_files
-
-        if not device_type:
-            _LOGGER.warning("Missing device_type for record")
-            return media_files
-
-        if not user_id:
-            _LOGGER.warning("Missing user_id for record")
+        if not litter_id or not device_type or not user_id:
+            _LOGGER.warning(
+                "Missing one or more of mandatory information : litter_id/device_id/user_id for record"
+            )
             return media_files
 
         if not records:
+            _LOGGER.debug("No records found for %s", litter.name)
             return media_files
 
         for record in records:
             if not isinstance(record, LitterRecord):
                 _LOGGER.debug("Record is empty")
                 continue
-            if not record.event_id:
-                _LOGGER.debug("Missing event_id for record item")
-                continue
-            if not record.aes_key:
-                _LOGGER.debug("Missing aes_key for record item")
+            if not record.event_id or not record.aes_key:
+                _LOGGER.debug("Missing event_id or aes_key for record item")
                 continue
             if record.timestamp is None:
                 _LOGGER.debug("Missing timestamp for record item")
