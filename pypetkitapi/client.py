@@ -6,6 +6,7 @@ from enum import StrEnum
 import hashlib
 from http import HTTPMethod
 import logging
+from typing import Any
 
 import aiohttp
 from aiohttp import ContentTypeError
@@ -146,7 +147,9 @@ class PetKitClient:
         return False
 
     async def login(self, valid_code: str | None = None) -> None:
-        """Login to the PetKit service and retrieve the appropriate server."""
+        """Login to the PetKit service and retrieve the appropriate server.
+        :param valid_code: The valid code sent to the user's email.
+        """
         # Retrieve the list of servers
         self._session = None
         await self._get_base_url()
@@ -268,7 +271,9 @@ class PetKitClient:
         _LOGGER.debug("Petkit data fetched successfully in: %s", end_time - start_time)
 
     def _collect_devices(self) -> list[Device]:
-        """Collect all devices from account data."""
+        """Collect all devices from account data.
+        :return: List of devices.
+        """
         device_list = []
         for account in self.account_data:
             _LOGGER.debug("List devices data for account: %s", account)
@@ -279,7 +284,10 @@ class PetKitClient:
         return device_list
 
     def _prepare_tasks(self, device_list: list[Device]) -> tuple[list, list, list]:
-        """Prepare main and record tasks based on device types."""
+        """Prepare main and record tasks based on device types.
+        :param device_list: List of devices.
+        :return: Tuple of main tasks, record tasks and media tasks.
+        """
         main_tasks: list = []
         record_tasks: list = []
         media_tasks: list = []
@@ -312,8 +320,13 @@ class PetKitClient:
 
     def _add_lb_task_by_type(
         self, record_tasks: list, media_tasks: list, device_type: str, device: Device
-    ):
-        """Add specific tasks for litter box devices."""
+    ) -> None:
+        """Add specific tasks for litter box devices.
+        :param record_tasks: List of record tasks.
+        :param media_tasks: List of media tasks.
+        :param device_type: Device type.
+        :param device: Device data.
+        """
         if device_type in LITTER_NO_CAMERA:
             record_tasks.append(self._fetch_device_data(device, LitterStats))
         if device_type in LITTER_WITH_CAMERA:
@@ -322,8 +335,12 @@ class PetKitClient:
 
     def _add_feeder_task_by_type(
         self, media_tasks: list, device_type: str, device: Device
-    ):
-        """Add specific tasks for feeder box devices."""
+    ) -> None:
+        """Add specific tasks for feeder box devices.
+        :param media_tasks: List of media tasks.
+        :param device_type: Device type.
+        :param device: Device data.
+        """
         if device_type in FEEDER_WITH_CAMERA:
             media_tasks.append(self._fetch_media(device))
 
@@ -337,7 +354,9 @@ class PetKitClient:
         await asyncio.gather(*stats_tasks)
 
     async def _fetch_media(self, device: Device) -> None:
-        """Fetch media data from the PetKit servers."""
+        """Fetch media data from the PetKit servers.
+        :param device: Device data.
+        """
         _LOGGER.debug("Fetching media data for device: %s", device.device_id)
 
         device_entity = self.petkit_entities[device.device_id]
@@ -360,7 +379,10 @@ class PetKitClient:
             | LitterStats
         ],
     ) -> None:
-        """Fetch the device data from the PetKit servers."""
+        """Fetch the device data from the PetKit servers.
+        :param device: Device data.
+        :param data_class: Data class
+        """
         device_type = device.device_type
 
         _LOGGER.debug("Reading device type : %s (id=%s)", device_type, device.device_id)
@@ -398,7 +420,7 @@ class PetKitClient:
             _LOGGER.error("Unexpected response type: %s", type(response))
             return
 
-        # Dispatch to the appropriate handler
+        # Dispatch to the appropriate data handler
         handler = data_handlers.get(data_class.data_type)
         if handler:
             await handler(self, device, device_data, device_type)
@@ -406,14 +428,21 @@ class PetKitClient:
             _LOGGER.error("Unknown data type: %s", data_class.data_type)
 
     @data_handler(DEVICE_DATA)
-    async def _handle_device_data(self, device, device_data, device_type):
+    async def _handle_device_data(
+        self,
+        device: Device,
+        device_data: Feeder | Litter | WaterFountain | Purifier,
+        device_type: str,
+    ):
         """Handle device data."""
         self.petkit_entities[device.device_id] = device_data
         self.petkit_entities[device.device_id].device_nfo = device
         _LOGGER.debug("Device data fetched OK for %s", device_type)
 
     @data_handler(DEVICE_RECORDS)
-    async def _handle_device_records(self, device, device_data, device_type):
+    async def _handle_device_records(
+        self, device: Device, device_data, device_type: str
+    ):
         """Handle device records."""
         entity = self.petkit_entities.get(device.device_id)
         if entity and isinstance(entity, (Feeder, Litter, WaterFountain)):
@@ -426,7 +455,7 @@ class PetKitClient:
             )
 
     @data_handler(DEVICE_STATS)
-    async def _handle_device_stats(self, device, device_data, device_type):
+    async def _handle_device_stats(self, device: Device, device_data, device_type: str):
         """Handle device stats."""
         entity = self.petkit_entities.get(device.device_id)
         if isinstance(entity, Litter):
@@ -442,7 +471,9 @@ class PetKitClient:
             )
 
     async def get_pets_list(self) -> list[Pet]:
-        """Extract and return the list of pets."""
+        """Extract and return the list of pets.
+        :return: List of pets.
+        """
         return [
             entity
             for entity in self.petkit_entities.values()
@@ -451,18 +482,28 @@ class PetKitClient:
 
     @staticmethod
     def get_safe_value(value: int | None, default: int = 0) -> int:
-        """Return the value if not None, otherwise return the default."""
+        """Return the value if not None, otherwise return the default.
+        :param value: Value to check.
+        :param default: Default value.
+        :return: Value or default.
+        """
         return value if value is not None else default
 
     @staticmethod
     def calculate_duration(start: int | None, end: int | None) -> int:
-        """Calculate the duration, ensuring both start and end are not None."""
+        """Calculate the duration, ensuring both start and end are not None.
+        :param start: Start time.
+        :param end: End time.
+        :return: Duration.
+        """
         if start is None or end is None:
             return 0
         return end - start
 
     async def populate_pet_stats(self, stats_data: Litter) -> None:
-        """Collect data from litter data to populate pet stats."""
+        """Collect data from litter data to populate pet stats.
+        :param stats_data: Litter data.
+        """
 
         if not stats_data.device_nfo:
             _LOGGER.warning(
@@ -476,16 +517,21 @@ class PetKitClient:
                 stats_data.device_nfo.device_type in [T3, T4]
                 and stats_data.device_records
             ):
-                await self._process_t3_t4(pet, stats_data)
+                await self._process_litter_no_camera(pet, stats_data)
             elif (
                 stats_data.device_nfo.device_type in [T5, T6]
                 and stats_data.device_pet_graph_out
             ):
-                await self._process_t5_t6(pet, stats_data)
+                await self._process_litter_camera(pet, stats_data)
 
-    async def _process_t3_t4(self, pet, device_records):
-        """Process T3/T4 devices records."""
-        for stat in device_records.device_records:
+    async def _process_litter_no_camera(self, pet: Pet, device_records: Litter) -> None:
+        """Process litter T3/T4 records (litter without camera).
+        :param pet: Pet data.
+        :param device_records: Litter data.
+        """
+        for stat in (
+            s for s in device_records.device_records or [] if isinstance(s, LitterStats)
+        ):
             if stat.pet_id == pet.pet_id and (
                 pet.last_litter_usage is None
                 or self.get_safe_value(stat.timestamp) > pet.last_litter_usage
@@ -498,24 +544,34 @@ class PetKitClient:
                     stat.content.time_in if stat.content else None,
                     stat.content.time_out if stat.content else None,
                 )
-                pet.last_device_used = device_records.device_nfo.device_name
+                pet.last_device_used = getattr(
+                    device_records.device_nfo, "device_name", "Unknown"
+                ).capitalize()
 
-    async def _process_t5_t6(self, pet, pet_graphs):
-        """Process T5/T6 pet graphs."""
-        for graph in pet_graphs.device_pet_graph_out:
+    async def _process_litter_camera(self, pet: Pet, pet_graphs: Litter) -> None:
+        """Process litter T5/T6 records (litter WITH camera).
+        :param pet: Pet data.
+        :param pet_graphs: Litter data.
+        """
+        for graph in pet_graphs.device_pet_graph_out or []:
             if graph.pet_id == pet.pet_id and (
                 pet.last_litter_usage is None
                 or self.get_safe_value(graph.time) > pet.last_litter_usage
             ):
-                pet.last_litter_usage = graph.time
+                pet.last_litter_usage = graph.time or 0
                 pet.last_measured_weight = self.get_safe_value(
                     graph.content.pet_weight if graph.content else None
                 )
-                pet.last_duration_usage = self.get_safe_value(graph.toilet_time)
-                pet.last_device_used = pet_graphs.device_nfo.device_name
+                pet.last_duration_usage = self.get_safe_value(graph.toilet_time) or 0
+                pet.last_device_used = getattr(
+                    pet_graphs.device_nfo, "device_name", "Unknown"
+                ).capitalize()
 
     async def get_cloud_video(self, video_url: str) -> dict[str, str | int] | None:
-        """Get the video m3u8 link from the cloud."""
+        """Get the video m3u8 link from the cloud.
+        :param video_url: URL of the video.
+        :return: Video data.
+        """
         response = await self.req.request(
             method=HTTPMethod.POST,
             url=video_url,
@@ -528,7 +584,9 @@ class PetKitClient:
             return None
         return response[0]
 
-    async def extract_segments_m3u8(self, m3u8_url: str) -> tuple[str, str, list[str]]:
+    async def extract_segments_m3u8(
+        self, m3u8_url: str
+    ) -> tuple[Any, str | None, list[str | None]]:
         """Extract segments from the m3u8 file.
         :param: m3u8_url: URL of the m3u8 file
         :return: aes_key, key_iv, segment_lst
@@ -542,13 +600,16 @@ class PetKitClient:
         m3u8_obj = m3u8.loads(response[RES_KEY])
 
         if not m3u8_obj.segments or not m3u8_obj.keys:
-            raise PetkitInvalidResponseFormat("No segments or key found in m3u8 file.")
+            return None, None, []
 
         # Extract segments from m3u8 file
         segment_lst = [segment.uri for segment in m3u8_obj.segments]
         # Extract key_uri and key_iv from m3u8 file
         key_uri = m3u8_obj.keys[0].uri
         key_iv = str(m3u8_obj.keys[0].iv)
+
+        if not key_uri or not key_iv:
+            return None, None, []
 
         # Extract aes_key from video segments
         response = await self.req.request(
@@ -565,7 +626,12 @@ class PetKitClient:
         action: StrEnum,
         setting: dict | None = None,
     ) -> bool:
-        """Control the device using the PetKit API."""
+        """Control the device using the PetKit API.
+        :param device_id: ID of the device.
+        :param action: Action to perform.
+        :param setting: Setting to apply.
+        :return: True if the command was successful, False otherwise.
+        """
         device = self.petkit_entities.get(device_id, None)
         if not device:
             raise PypetkitError(f"Device with ID {device_id} not found.")
@@ -668,7 +734,15 @@ class PrepReq:
         data=None,
         headers=None,
     ) -> dict:
-        """Make a request to the PetKit API."""
+        """Make a request to the PetKit API.
+        :param method: HTTP method.
+        :param url: URL of the API endpoint.
+        :param full_url: Use full URL.
+        :param params: Parameters to send.
+        :param data: Data to send.
+        :param headers: Headers to send.
+        :return: Response from the API.
+        """
         _url = url if full_url else "/".join(s.strip("/") for s in [self.base_url, url])
         _headers = {**self.base_headers, **(headers or {})}
         _LOGGER.debug("Request: %s %s", method, _url)
@@ -686,7 +760,11 @@ class PrepReq:
 
     @staticmethod
     async def _handle_response(response: aiohttp.ClientResponse, url: str) -> dict:
-        """Handle the response from the PetKit API."""
+        """Handle the response from the PetKit API.
+        :param response: Response from the API.
+        :param url: URL of the API endpoint.
+        :return: Data from the API.
+        """
         try:
             response.raise_for_status()
         except aiohttp.ClientResponseError as e:

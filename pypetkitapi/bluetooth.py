@@ -31,7 +31,10 @@ class BluetoothManager:
         self.client = client
 
     async def _get_fountain_instance(self, fountain_id: int) -> "WaterFountain":
-        """Get the WaterFountain instance for the given fountain_id."""
+        """Get the WaterFountain instance for the given fountain_id.
+        :param fountain_id: The ID of the fountain to get the instance for.
+        :return: The WaterFountain instance for the given fountain_id.
+        """
         from pypetkitapi.water_fountain_container import WaterFountain
 
         water_fountain = self.client.petkit_entities.get(fountain_id)
@@ -41,7 +44,10 @@ class BluetoothManager:
         return water_fountain
 
     async def check_relay_availability(self, fountain_id: int) -> bool:
-        """Check if BLE relay is available for the given fountain_id."""
+        """Check if BLE relay is available for the given fountain_id.
+        :param fountain_id: The ID of the fountain to check the relay for.
+        :return: True if the relay is available, False otherwise.
+        """
         fountain = None
         for account in self.client.account_data:
             if account.device_list:
@@ -73,7 +79,10 @@ class BluetoothManager:
         return True
 
     async def open_ble_connection(self, fountain_id: int) -> bool:
-        """Open a BLE connection to the given fountain_id."""
+        """Open a BLE connection to the given fountain_id.
+        :param fountain_id: The ID of the fountain to open the BLE connection for.
+        :return: True if the BLE connection was established, False otherwise.
+        """
         _LOGGER.info("Opening BLE connection to fountain %s", fountain_id)
         water_fountain = await self._get_fountain_instance(fountain_id)
         if await self.check_relay_availability(fountain_id) is False:
@@ -124,7 +133,10 @@ class BluetoothManager:
         return False
 
     async def close_ble_connection(self, fountain_id: int) -> None:
-        """Close the BLE connection to the given fountain_id."""
+        """Close the BLE connection to the given fountain_id.
+        :param fountain_id: The ID of the fountain to close the BLE connection for.
+        :return: None
+        """
         _LOGGER.info("Closing BLE connection to fountain %s", fountain_id)
         water_fountain = await self._get_fountain_instance(fountain_id)
 
@@ -145,7 +157,11 @@ class BluetoothManager:
     async def get_ble_cmd_data(
         self, fountain_command: list, counter: int
     ) -> tuple[int, str]:
-        """Get the BLE command data for the given fountain_command."""
+        """Get the BLE command data for the given fountain_command.
+        :param fountain_command: The fountain command to get the BLE data for.
+        :param counter: The BLE counter for the fountain.
+        :return: The BLE command code and the encoded BLE data.
+        """
         cmd_code = fountain_command[0]
         modified_command = fountain_command[:2] + [counter] + fountain_command[2:]
         ble_data = [*BLE_START_TRAME, *modified_command, *BLE_END_TRAME]
@@ -154,13 +170,20 @@ class BluetoothManager:
 
     @staticmethod
     async def _encode_ble_data(byte_list: list) -> str:
-        """Encode the given byte_list to a base64 encoded string."""
+        """Encode the given byte_list to a base64 encoded string.
+        :param byte_list: The byte list to encode.
+        :return: The base64 encoded string.
+        """
         byte_array = bytearray(byte_list)
         b64_encoded = base64.b64encode(byte_array)
         return urllib.parse.quote(b64_encoded)
 
     async def send_ble_command(self, fountain_id: int, command: FountainAction) -> bool:
-        """Send the given BLE command to the fountain_id."""
+        """Send the given BLE command to the fountain_id.
+        :param fountain_id: The ID of the fountain to send the command to.
+        :param command: The command to send to the fountain.
+        :return: True if the command was sent successfully, False otherwise.
+        """
         _LOGGER.info("Sending BLE command to fountain %s", fountain_id)
         water_fountain = await self._get_fountain_instance(fountain_id)
         if water_fountain.is_connected is False:

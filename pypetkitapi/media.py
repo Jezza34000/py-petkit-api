@@ -574,7 +574,7 @@ class DownloadDecryptMedia:
             _LOGGER.debug("Concatenating segments %s", len(segment_files))
             await self._concat_segments(segment_files, file_name)
 
-    async def _get_m3u8_segments(self) -> tuple[str | None, str | None, list[str]]:
+    async def _get_m3u8_segments(self) -> tuple[Any, str | None, list[str | None]]:
         """Extract the segments from a m3u8 file.
         :return: Tuple of AES key, IV key, and list of segment URLs
         """
@@ -591,13 +591,19 @@ class DownloadDecryptMedia:
             raise ValueError("Missing mediaApi in video data")
         return await self.client.extract_segments_m3u8(str(media_api))
 
-    async def _get_file(self, url: str, aes_key: str, full_filename: str) -> bool:
+    async def _get_file(
+        self, url: str | None, aes_key: str | None, full_filename: str | None
+    ) -> bool:
         """Download a file from a URL and decrypt it.
         :param url: URL of the file to download.
         :param aes_key: AES key used for decryption.
         :param full_filename: Name of the file to save.
         :return: True if the file was downloaded successfully, False otherwise.
         """
+        if not url or not aes_key or not full_filename:
+            _LOGGER.debug("Missing URL, AES key, or filename")
+            return False
+
         # Download the file
         async with aiohttp.ClientSession() as session, session.get(url) as response:
             if response.status != 200:
