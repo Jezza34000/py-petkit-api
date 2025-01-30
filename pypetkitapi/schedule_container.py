@@ -27,10 +27,10 @@ class Type(BaseModel):
     is_custom: int | None = Field(0, alias="isCustom")
     name: str | None = None
     priority: int | None = None
-    repeat_option: str | None = Field(alias="repeatOption")
+    repeat_option: str | None = Field(None, alias="repeatOption")
     rpt: str | None = None
-    schedule_appoint: str | None = Field(alias="scheduleAppoint")
-    with_device_type: str | None = Field(alias="withDeviceType")
+    schedule_appoint: str | None = Field(None, alias="scheduleAppoint")
+    with_device_type: str | None = Field(None, alias="withDeviceType")
     with_pet: int | None = Field(0, alias="withPet")
 
 
