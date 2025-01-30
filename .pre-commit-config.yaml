@@ -70,3 +70,4 @@ repos:
       - id: mypy
         additional_dependencies:
           - types-aiofiles
+          - types-m3u8
