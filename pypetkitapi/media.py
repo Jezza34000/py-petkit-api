@@ -571,7 +571,7 @@ class DownloadDecryptMedia:
         elif len(segment_files) == 1:
             _LOGGER.debug("Single file segment, no need to concatenate")
         elif len(segment_files) > 1:
-            _LOGGER.debug("Concatenating segments %s", len(segment_files))
+            _LOGGER.debug("Concatenating video with %s segments", len(segment_files))
             await self._concat_segments(segment_files, file_name)
 
     async def _get_m3u8_segments(self) -> tuple[Any, str | None, list[str | None]]:
@@ -663,7 +663,7 @@ class DownloadDecryptMedia:
         try:
             decrypted_data = unpad(decrypted_data, AES.block_size)
         except ValueError as e:
-            _LOGGER.debug("Warning: Padding error occurred, ignoring error: %s", e)
+            _LOGGER.debug("Ignoring unpad warning : %s", e)
         return decrypted_data
 
     async def _concat_segments(self, ts_files: list[Path], output_file) -> None:
