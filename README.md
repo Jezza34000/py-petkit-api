@@ -3,8 +3,9 @@
 ---
 
 [![Lifecycle:Maturing](https://img.shields.io/badge/Lifecycle-Maturing-007EC6)](https://github.com/Jezza34000/py-petkit-api/)
-[![PyPI](https://img.shields.io/pypi/v/pypetkitapi.svg)][pypi_]
 [![Python Version](https://img.shields.io/pypi/pyversions/pypetkitapi)][python version] [![Actions status](https://github.com/Jezza34000/py-petkit-api/workflows/CI/badge.svg)](https://github.com/Jezza34000/py-petkit-api/actions)
+
+[![PyPI](https://img.shields.io/pypi/v/pypetkitapi.svg)][pypi_] [![PyPI Downloads](https://static.pepy.tech/badge/pypetkitapi)](https://pepy.tech/projects/pypetkitapi)
 
 ---
 
