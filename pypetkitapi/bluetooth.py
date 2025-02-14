@@ -83,7 +83,7 @@ class BluetoothManager:
         :param fountain_id: The ID of the fountain to open the BLE connection for.
         :return: True if the BLE connection was established, False otherwise.
         """
-        _LOGGER.info("Opening BLE connection to fountain %s", fountain_id)
+        _LOGGER.debug("Opening BLE connection to fountain %s", fountain_id)
         water_fountain = await self._get_fountain_instance(fountain_id)
         if await self.check_relay_availability(fountain_id) is False:
             _LOGGER.debug("BLE relay not available (id: %s).", fountain_id)
@@ -115,7 +115,7 @@ class BluetoothManager:
                 headers=await self.client.get_session_id(),
             )
             if response == 1:
-                _LOGGER.info(
+                _LOGGER.debug(
                     "BLE connection established successfully (id %s)", fountain_id
                 )
                 water_fountain.is_connected = True
@@ -124,7 +124,7 @@ class BluetoothManager:
                 )
                 return True
             await asyncio.sleep(4)
-        _LOGGER.info(
+        _LOGGER.debug(
             "Failed to establish BLE connection after %s attempts (id %s)",
             BLE_CONNECT_ATTEMPT,
             fountain_id,
@@ -137,7 +137,7 @@ class BluetoothManager:
         :param fountain_id: The ID of the fountain to close the BLE connection for.
         :return: None
         """
-        _LOGGER.info("Closing BLE connection to fountain %s", fountain_id)
+        _LOGGER.debug("Closing BLE connection to fountain %s", fountain_id)
         water_fountain = await self._get_fountain_instance(fountain_id)
 
         if water_fountain.is_connected is False:
@@ -152,7 +152,7 @@ class BluetoothManager:
             data={"bleId": fountain_id, "type": 24, "mac": water_fountain.mac},
             headers=await self.client.get_session_id(),
         )
-        _LOGGER.info("BLE connection closed successfully (id %s)", fountain_id)
+        _LOGGER.debug("BLE connection closed successfully (id %s)", fountain_id)
 
     async def get_ble_cmd_data(
         self, fountain_command: list, counter: int
@@ -184,7 +184,7 @@ class BluetoothManager:
         :param command: The command to send to the fountain.
         :return: True if the command was sent successfully, False otherwise.
         """
-        _LOGGER.info("Sending BLE command to fountain %s", fountain_id)
+        _LOGGER.debug("Sending BLE command to fountain %s", fountain_id)
         water_fountain = await self._get_fountain_instance(fountain_id)
         if water_fountain.is_connected is False:
             _LOGGER.debug("BLE connection not established (id %s)", fountain_id)
@@ -213,5 +213,5 @@ class BluetoothManager:
         if response != 1:
             _LOGGER.error("Failed to send BLE command (id %s)", fountain_id)
             return False
-        _LOGGER.info("BLE command sent successfully (id %s)", fountain_id)
+        _LOGGER.debug("BLE command sent successfully (id %s)", fountain_id)
         return True
