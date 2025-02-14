@@ -187,7 +187,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "pypetkitapi"
-version = "1.11.3"
+version = "1.11.4"
 description = "Python client for PetKit API"
 authors = ["Jezza34000 <info@mail.com>"]
 readme = "README.md"
@@ -209,7 +209,7 @@ ruff = "^0.8.1"
 types-aiofiles = "^24.1.0.20240626"
 
 [tool.bumpver]
-current_version = "1.11.3"
+current_version = "1.11.4"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump version {old_version} -> {new_version}"
 tag_message = "{new_version}"
