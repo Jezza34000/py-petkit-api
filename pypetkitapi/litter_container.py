@@ -147,6 +147,7 @@ class StateLitter(BaseModel):
     camera_status: int | None = Field(None, alias="cameraStatus")
     dump_state: int | None = Field(None, alias="dumpState")
     liquid: int | None = None
+    light_state: dict | None = Field(None, alias="lightState")
     pack_state: int | None = Field(None, alias="packState")
     package_install: int | None = Field(None, alias="packageInstall")
     package_secret: str | None = Field(None, alias="packageSecret")
