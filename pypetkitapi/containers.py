@@ -84,10 +84,10 @@ class Pet(BaseModel):
     device_nfo: Device | None = None  # Device is now optional
 
     # Litter stats
-    last_litter_usage: int = 0
+    last_litter_usage: int | None = None
     last_device_used: str | None = None
-    last_duration_usage: int = 0
-    last_measured_weight: int = 0
+    last_duration_usage: int | None = None
+    last_measured_weight: int | None = None
 
     def __init__(self, **data):
         """Initialize the Pet dataclass.

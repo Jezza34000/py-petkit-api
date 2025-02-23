@@ -504,7 +504,6 @@ class PetKitClient:
         """Collect data from litter data to populate pet stats.
         :param stats_data: Litter data.
         """
-
         if not stats_data.device_nfo:
             _LOGGER.warning(
                 "No device info for %s can't populate pet infos", stats_data
@@ -517,12 +516,25 @@ class PetKitClient:
                 stats_data.device_nfo.device_type in [T3, T4]
                 and stats_data.device_records
             ):
+                await self.init_pet_stats(pet)
                 await self._process_litter_no_camera(pet, stats_data)
             elif (
                 stats_data.device_nfo.device_type in [T5, T6]
                 and stats_data.device_pet_graph_out
             ):
+                await self.init_pet_stats(pet)
                 await self._process_litter_camera(pet, stats_data)
+
+    @staticmethod
+    async def init_pet_stats(pet: Pet) -> None:
+        """Initialize pet stats.
+        Allow pet stats to be displayed in HA even if no data is available.
+        :param pet: Pet data.
+        """
+        pet.last_litter_usage = 0
+        pet.last_device_used = "Unknown"
+        pet.last_duration_usage = 0
+        pet.last_measured_weight = 0
 
     async def _process_litter_no_camera(self, pet: Pet, device_records: Litter) -> None:
         """Process litter T3/T4 records (litter without camera).
