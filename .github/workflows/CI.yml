@@ -11,7 +11,7 @@ on:
 jobs:
   tests:
     name: "Python ${{ matrix.python-version }}"
-    runs-on: "ubuntu-latest"
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
@@ -45,6 +45,11 @@ jobs:
   sonarqube:
     name: SonarQube Cloud
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.13"]
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -58,6 +63,6 @@ jobs:
       - name: Run tox
         run: tox -e py
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v4
+        uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
