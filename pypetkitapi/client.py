@@ -530,13 +530,17 @@ class PetKitClient:
         :param device_records: Litter data.
         """
         for stat in (
-            s for s in device_records.device_records or [] if isinstance(s, LitterRecord)
+            s
+            for s in device_records.device_records or []
+            if isinstance(s, LitterRecord)
         ):
             if stat.pet_id == pet.pet_id and (
                 pet.last_litter_usage is None
                 or self.get_safe_value(stat.timestamp) > pet.last_litter_usage
             ):
-                pet.last_litter_usage = stat.timestamp
+                pet.last_litter_usage = (
+                    stat.timestamp if stat.timestamp is not None else 0
+                )
                 pet.last_measured_weight = self.get_safe_value(
                     stat.content.pet_weight if stat.content else None
                 )
