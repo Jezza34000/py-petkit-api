@@ -530,7 +530,7 @@ class PetKitClient:
         :param device_records: Litter data.
         """
         for stat in (
-            s for s in device_records.device_records or [] if isinstance(s, LitterStats)
+            s for s in device_records.device_records or [] if isinstance(s, LitterRecord)
         ):
             if stat.pet_id == pet.pet_id and (
                 pet.last_litter_usage is None
