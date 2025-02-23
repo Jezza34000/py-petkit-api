@@ -195,3 +195,6 @@ class PetkitEndpoint(StrEnum):
     SCHEDULE_REMOVE = "schedule/remove"
     SCHEDULE_COMPLETE = "schedule/complete"
     SCHEDULE_HISTORY = "schedule/userHistorySchedules"
+
+    # Pet
+    PET_UPDATE_SETTING = "updatepetprops"

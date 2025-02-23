@@ -17,6 +17,7 @@ from pypetkitapi.const import (
     FEEDER_MINI,
     K2,
     K3,
+    PET,
     T3,
     T4,
     T5,
@@ -265,11 +266,11 @@ ACTIONS_MAP = {
         supported_device=[D3],
     ),
     PetCommand.PET_UPDATE_SETTING: CmdData(
-        endpoint=PetkitEndpoint.CONTROL_DEVICE,
+        endpoint=PetkitEndpoint.PET_UPDATE_SETTING,
         params=lambda pet, setting: {
-            "petId": pet,
+            "petId": pet.pet_id,
             "kv": json.dumps(setting),
         },
-        supported_device=ALL_DEVICES,
+        supported_device=[PET],
     ),
 }
