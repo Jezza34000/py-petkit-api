@@ -512,16 +512,10 @@ class PetKitClient:
 
         pets_list = await self.get_pets_list()
         for pet in pets_list:
-            if (
-                stats_data.device_nfo.device_type in [T3, T4]
-                and stats_data.device_records
-            ):
+            if stats_data.device_nfo.device_type in [T3, T4]:
                 await self.init_pet_stats(pet)
                 await self._process_litter_no_camera(pet, stats_data)
-            elif (
-                stats_data.device_nfo.device_type in [T5, T6]
-                and stats_data.device_pet_graph_out
-            ):
+            elif stats_data.device_nfo.device_type in [T5, T6]:
                 await self.init_pet_stats(pet)
                 await self._process_litter_camera(pet, stats_data)
 
