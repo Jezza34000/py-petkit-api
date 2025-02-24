@@ -139,6 +139,8 @@ class PetkitEndpoint(StrEnum):
     LOGIN = "user/login"
     GET_LOGIN_CODE = "user/sendcodeforquicklogin"
     REFRESH_SESSION = "user/refreshsession"
+    DETAILS = "user/details2"
+    UNREAD_STATUS = "user/unreadStatus"
     FAMILY_LIST = "group/family/list"
     REFRESH_HOME_V2 = "refreshHomeV2"
 
