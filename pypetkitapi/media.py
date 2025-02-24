@@ -272,13 +272,14 @@ class MediaManager:
         media_cloud: MediaCloud, missing_image: bool, missing_video: bool
     ) -> None:
         """Log details about missing media."""
-        log_msg = "Media missing for event %s: "
         details = []
         if missing_image:
             details.append("IMAGE")
         if missing_video:
             details.append("VIDEO")
-        _LOGGER.debug("%s %s %s", log_msg, media_cloud.event_id, " + ".join(details))
+        _LOGGER.debug(
+            "Media missing for event : %s %s", media_cloud.event_id, " + ".join(details)
+        )
 
     async def _process_feeder(self, feeder: Feeder) -> list[MediaCloud]:
         """Process media files for a Feeder device.
