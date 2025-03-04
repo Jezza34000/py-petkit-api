@@ -322,7 +322,7 @@ class MediaManager:
         cp_sub = self.is_subscription_active(device_obj)
 
         if not feeder_id or not record.items:
-            _LOGGER.warning("Missing feeder_id or items for record")
+            _LOGGER.debug("Missing feeder_id or items for record")
             return media_files
 
         for item in record.items:
