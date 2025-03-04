@@ -41,6 +41,9 @@ class BluetoothManager:
         if not isinstance(water_fountain, WaterFountain):
             _LOGGER.error("Water fountain with ID %s not found.", fountain_id)
             raise TypeError(f"Water fountain with ID {fountain_id} not found.")
+        if water_fountain.device_nfo is None:
+            raise ValueError(f"Device info not found for fountain {fountain_id}")
+
         return water_fountain
 
     async def check_relay_availability(self, fountain_id: int) -> bool:
@@ -94,7 +97,11 @@ class BluetoothManager:
         response = await self.client.req.request(
             method=HTTPMethod.POST,
             url=PetkitEndpoint.BLE_CONNECT,
-            data={"bleId": fountain_id, "type": 24, "mac": water_fountain.mac},
+            data={
+                "bleId": fountain_id,
+                "type": water_fountain.device_nfo.type,  # type: ignore[union-attr]
+                "mac": water_fountain.mac,
+            },
             headers=await self.client.get_session_id(),
         )
         if response != {"state": 1}:
@@ -111,7 +118,11 @@ class BluetoothManager:
             response = await self.client.req.request(
                 method=HTTPMethod.POST,
                 url=PetkitEndpoint.BLE_POLL,
-                data={"bleId": fountain_id, "type": 24, "mac": water_fountain.mac},
+                data={
+                    "bleId": fountain_id,
+                    "type": water_fountain.device_nfo.type,  # type: ignore[union-attr]
+                    "mac": water_fountain.mac,
+                },
                 headers=await self.client.get_session_id(),
             )
             if response == 1:
@@ -149,7 +160,11 @@ class BluetoothManager:
         await self.client.req.request(
             method=HTTPMethod.POST,
             url=PetkitEndpoint.BLE_CANCEL,
-            data={"bleId": fountain_id, "type": 24, "mac": water_fountain.mac},
+            data={
+                "bleId": fountain_id,
+                "type": water_fountain.device_nfo.type,  # type: ignore[union-attr]
+                "mac": water_fountain.mac,
+            },
             headers=await self.client.get_session_id(),
         )
         _LOGGER.debug("BLE connection closed successfully (id %s)", fountain_id)
@@ -206,7 +221,7 @@ class BluetoothManager:
                 "cmd": cmd_code,
                 "data": cmd_data,
                 "mac": water_fountain.mac,
-                "type": 24,
+                "type": water_fountain.device_nfo.type,  # type: ignore[union-attr]
             },
             headers=await self.client.get_session_id(),
         )
