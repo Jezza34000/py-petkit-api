@@ -88,12 +88,13 @@ class BluetoothManager:
         """
         _LOGGER.debug("Opening BLE connection to fountain %s", fountain_id)
         water_fountain = await self._get_fountain_instance(fountain_id)
-        if await self.check_relay_availability(fountain_id) is False:
-            _LOGGER.debug("BLE relay not available (id: %s).", fountain_id)
-            return False
         if water_fountain.is_connected is True:
             _LOGGER.debug("BLE connection already established (id %s)", fountain_id)
             return True
+        water_fountain.is_connected = False
+        if await self.check_relay_availability(fountain_id) is False:
+            _LOGGER.debug("BLE relay not available (id: %s).", fountain_id)
+            return False
         response = await self.client.req.request(
             method=HTTPMethod.POST,
             url=PetkitEndpoint.BLE_CONNECT,
@@ -106,7 +107,6 @@ class BluetoothManager:
         )
         if response != {"state": 1}:
             _LOGGER.debug("Unable to open a BLE connection (id %s)", fountain_id)
-            water_fountain.is_connected = False
             return False
         for attempt in range(BLE_CONNECT_ATTEMPT):
             _LOGGER.debug(
@@ -125,7 +125,16 @@ class BluetoothManager:
                 },
                 headers=await self.client.get_session_id(),
             )
-            if response == 1:
+            if response == 0:
+                # Wait for 4 seconds before polling again, connection is still in progress
+                await asyncio.sleep(4)
+            elif response == -1:
+                _LOGGER.debug("Failed to establish BLE connection (id %s)", fountain_id)
+                water_fountain.last_ble_poll = datetime.now().strftime(
+                    "%Y-%m-%dT%H:%M:%S.%f"
+                )
+                return False
+            elif response == 1:
                 _LOGGER.debug(
                     "BLE connection established successfully (id %s)", fountain_id
                 )
@@ -134,13 +143,11 @@ class BluetoothManager:
                     "%Y-%m-%dT%H:%M:%S.%f"
                 )
                 return True
-            await asyncio.sleep(4)
         _LOGGER.debug(
-            "Failed to establish BLE connection after %s attempts (id %s)",
+            "Failed to establish BLE connection reached the max %s attempts allowed (id %s)",
             BLE_CONNECT_ATTEMPT,
             fountain_id,
         )
-        water_fountain.is_connected = False
         return False
 
     async def close_ble_connection(self, fountain_id: int) -> None:
