@@ -28,7 +28,9 @@ T3 = "t3"
 T4 = "t4"
 T5 = "t5"
 T6 = "t6"
+W4 = "w4"
 W5 = "w5"
+CTW2 = "ctw2"
 CTW3 = "ctw3"
 K2 = "k2"
 K3 = "k3"
@@ -42,7 +44,7 @@ LITTER_NO_CAMERA = [T3, T4]
 FEEDER_WITH_CAMERA = [D4H, D4SH]
 DEVICES_FEEDER = [FEEDER, FEEDER_MINI, D3, D4, D4S, D4H, D4SH]
 # Water Fountain
-DEVICES_WATER_FOUNTAIN = [W5, CTW3]
+DEVICES_WATER_FOUNTAIN = [W4, W5, CTW2, CTW3]
 # Purifier
 DEVICES_PURIFIER = [K2]
 # All devices
