@@ -24,6 +24,7 @@ from pypetkitapi.const import (
     FEEDER_WITH_CAMERA,
     LITTER_WITH_CAMERA,
     MediaType,
+    PetkitEndpoint,
     RecordTypeLST,
 )
 from pypetkitapi.litter_container import LitterRecord
@@ -353,7 +354,7 @@ class MediaManager:
                     user_id=user_id,
                     image=item.preview,
                     video=await self.construct_video_url(
-                        device_type, item.media_api, user_id, cp_sub
+                        device_type, item, user_id, cp_sub
                     ),
                     filepath=filepath,
                     aes_key=item.aes_key,
@@ -407,7 +408,7 @@ class MediaManager:
                     user_id=user_id,
                     image=record.preview,
                     video=await self.construct_video_url(
-                        device_type, record.media_api, user_id, cp_sub
+                        device_type, record, user_id, cp_sub
                     ),
                     filepath=filepath,
                     aes_key=record.aes_key,
@@ -442,22 +443,26 @@ class MediaManager:
     @staticmethod
     async def construct_video_url(
         device_type: str | None,
-        media_url: str | None,
+        event_data: LitterRecord | RecordsItems,
         user_id: int,
         cp_sub: bool | None,
     ) -> str | None:
         """Construct the video URL.
         :param device_type: Device type
-        :param media_url: Media URL
+        :param event_data: LitterRecord | RecordsItems
         :param user_id: User ID
         :param cp_sub: Cpsub value
         :return: Constructed video URL
         """
-        if not media_url or not user_id or not cp_sub:
+        if not hasattr(event_data, "media_api") or not user_id or not cp_sub:
             return None
-        params = parse_qs(urlparse(media_url).query)
+        params = parse_qs(str(urlparse(event_data.media_api).query))
         param_dict = {k: v[0] for k, v in params.items()}
-        return f"/{device_type}/cloud/video?startTime={param_dict.get("startTime")}&deviceId={param_dict.get("deviceId")}&userId={user_id}&mark={param_dict.get("mark")}"
+        url = f"/{device_type}/{PetkitEndpoint.CLOUD_VIDEO}?startTime={param_dict.get('startTime')}&deviceId={param_dict.get('deviceId')}&userId={user_id}&mark={param_dict.get('mark')}"
+        if hasattr(event_data, "eat_end_time"):
+            # Special case for Eat video (need to add endTime)
+            url += f"&endTime={event_data.eat_end_time}"
+        return url
 
     @staticmethod
     async def _get_timestamp(item) -> int | None:
