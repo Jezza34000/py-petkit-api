@@ -207,13 +207,15 @@ class TestMediaManager(unittest.IsolatedAsyncioTestCase):
     async def test_construct_video_url(self):
         """Test construct_video_url method"""
         device_type = "feeder"
-        media_url = f"http://example.com/media?startTime=1234567890&deviceId={DEVICE_ID}&mark=1234567890"
+        event_data = MagicMock()
+        event_data.media_api = f"http://example.com/media?startTime=1234567890&deviceId={DEVICE_ID}&mark=1234567890"
+        event_data.eat_end_time = 123456789
         user_id = USER_ID
         cp_sub = True
 
-        expected_url = f"/feeder/cloud/video?startTime=1234567890&deviceId={DEVICE_ID}&userId={USER_ID}&mark=1234567890"
+        expected_url = f"/feeder/cloud/video?startTime=1234567890&deviceId={DEVICE_ID}&userId={USER_ID}&mark=1234567890&endTime=123456789"
         result = await MediaManager.construct_video_url(
-            device_type, media_url, user_id, cp_sub
+            device_type, event_data, user_id, cp_sub
         )
         self.assertEqual(result, expected_url)
 
@@ -225,13 +227,13 @@ class TestMediaManager(unittest.IsolatedAsyncioTestCase):
 
         # Test with missing user_id
         result = await MediaManager.construct_video_url(
-            device_type, media_url, None, cp_sub
+            device_type, event_data, None, cp_sub
         )
         self.assertIsNone(result)
 
         # Test with missing cp_sub
         result = await MediaManager.construct_video_url(
-            device_type, media_url, user_id, None
+            device_type, event_data, user_id, None
         )
         self.assertIsNone(result)
 
