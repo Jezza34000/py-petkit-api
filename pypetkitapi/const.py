@@ -78,7 +78,7 @@ class Header(StrEnum):
     ACCEPT = "*/*"
     ACCEPT_LANG = "en-US;q=1, it-US;q=0.9"
     ENCODING = "gzip, deflate"
-    API_VERSION = "11.4.0"
+    API_VERSION = "12.0.2"
     CONTENT_TYPE = "application/x-www-form-urlencoded"
     AGENT = "okhttp/3.12.11"
     CLIENT = f"{Client.PLATFORM_TYPE}({Client.OS_VERSION};{Client.MODEL_NAME})"
