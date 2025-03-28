@@ -21,6 +21,7 @@ from pypetkitapi.containers import (
     UserDevice,
     Wifi,
 )
+from pypetkitapi.purifier_container import Purifier
 
 
 class SettingsLitter(BaseModel):
@@ -386,31 +387,6 @@ class PetOutGraph(BaseModel):
         }
 
 
-class K3Device(BaseModel):
-    """Dataclass for K3 device data."""
-
-    battery: int | None = None
-    created_at: datetime | None = Field(None, alias="createdAt")
-    firmware: int | None = None
-    hardware: int | None = None
-    id: int | None = None
-    lighting: int | None = None
-    liquid: int | None = None
-    liquid_lack: int | None = Field(None, alias="liquidLack")
-    mac: str | None = None
-    name: str | None = None
-    refreshing: int | None = None
-    relate_t4: int | None = Field(None, alias="relateT4")
-    relation: dict | None = None
-    secret: str | None = None
-    settings: dict | None = None
-    sn: str | None = None
-    timezone: float | None = None
-    update_at: datetime | None = Field(None, alias="updateAt")
-    user_id: str | None = Field(None, alias="userId")
-    voltage: int | None = None
-
-
 class Litter(BaseModel):
     """Dataclass for Litter Data.
     Supported devices = T3, T4, T5, T6
@@ -425,7 +401,7 @@ class Litter(BaseModel):
     firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
     hardware: int
     id: int
-    k3_device: K3Device | None = Field(None, alias="k3Device")
+    k3_device: Purifier | None = Field(None, alias="k3Device")
     is_pet_out_tips: int | None = Field(None, alias="isPetOutTips")
     locale: str | None = None
     mac: str | None = None
