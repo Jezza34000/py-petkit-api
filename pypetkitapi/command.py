@@ -98,7 +98,7 @@ class DeviceAction(StrEnum):
     END = "end_action"
     START = "start_action"
     STOP = "stop_action"
-    # Purifier only
+    # Purifier K2 only
     MODE = "mode_action"
     # All devices
     POWER = "power_action"
@@ -159,8 +159,8 @@ def get_endpoint_reset_desiccant(device):
 
 def get_endpoint_update_setting(device):
     """Get the endpoint for the device"""
-    if device.device_nfo.device_type == FEEDER_MINI:
-        return PetkitEndpoint.UPDATE_SETTING_FEEDER_MINI
+    if device.device_nfo.device_type in [FEEDER_MINI, K3]:
+        return PetkitEndpoint.UPDATE_SETTING_OLD
     return PetkitEndpoint.UPDATE_SETTING
 
 
