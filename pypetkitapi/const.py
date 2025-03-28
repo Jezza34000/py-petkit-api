@@ -46,7 +46,7 @@ DEVICES_FEEDER = [FEEDER, FEEDER_MINI, D3, D4, D4S, D4H, D4SH]
 # Water Fountain
 DEVICES_WATER_FOUNTAIN = [W4, W5, CTW2, CTW3]
 # Purifier
-DEVICES_PURIFIER = [K2]
+DEVICES_PURIFIER = [K2, K3]
 # All devices
 ALL_DEVICES = [
     *DEVICES_LITTER_BOX,
@@ -152,7 +152,7 @@ class PetkitEndpoint(StrEnum):
     GET_DEVICE_RECORD = "getDeviceRecord"
     GET_DEVICE_RECORD_RELEASE = "getDeviceRecordRelease"
     UPDATE_SETTING = "updateSettings"
-    UPDATE_SETTING_FEEDER_MINI = "update"
+    UPDATE_SETTING_OLD = "update"
 
     # Bluetooth
     BLE_AS_RELAY = "ble/ownSupportBleDevices"
