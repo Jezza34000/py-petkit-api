@@ -3,12 +3,13 @@
 import asyncio
 import base64
 from datetime import datetime
+from enum import StrEnum
 from http import HTTPMethod
 import logging
 from typing import TYPE_CHECKING
 import urllib.parse
 
-from pypetkitapi.command import FOUNTAIN_COMMAND, FountainAction
+from pypetkitapi.command import BLUETOOTH_ACTION
 from pypetkitapi.const import (
     BLE_CONNECT_ATTEMPT,
     BLE_END_TRAME,
@@ -18,7 +19,7 @@ from pypetkitapi.const import (
 from pypetkitapi.containers import BleRelay
 
 if TYPE_CHECKING:
-    from pypetkitapi import PetKitClient, WaterFountain
+    from pypetkitapi import PetKitClient, PypetkitError, WaterFountain
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -176,19 +177,29 @@ class BluetoothManager:
         )
         _LOGGER.debug("BLE connection closed successfully (id %s)", fountain_id)
 
-    async def get_ble_cmd_data(
-        self, fountain_command: list, counter: int
-    ) -> tuple[int, str]:
+    async def build_ble_command(
+        self, fountain_id: int, cmd_code: int, cmd_type: int, cmd_data: list[int | str]
+    ) -> str:
         """Get the BLE command data for the given fountain_command.
-        :param fountain_command: The fountain command to get the BLE data for.
-        :param counter: The BLE counter for the fountain.
+        BLE command format : [header, cmd_code, type_code, counter, length_of_cmd_data, 0, cmd_data + end_bytes]
+        :param fountain_id: The ID of the fountain to get the BLE command data for.
+        :param cmd_code: BLE command code (1-255).
+        :param cmd_type: BLE command type (1 = write, 2 = read).
+        :param cmd_data: The BLE command data.
         :return: The BLE command code and the encoded BLE data.
         """
-        cmd_code = fountain_command[0]
-        modified_command = fountain_command[:2] + [counter] + fountain_command[2:]
-        ble_data = [*BLE_START_TRAME, *modified_command, *BLE_END_TRAME]
-        encoded_data = await self._encode_ble_data(ble_data)
-        return cmd_code, encoded_data
+        return await self._encode_ble_data(
+            BLE_START_TRAME
+            + [
+                cmd_code,
+                cmd_type,
+                await self._get_incremented_ble_counter(fountain_id),
+                len(cmd_data),
+                0,
+            ]
+            + cmd_data
+            + BLE_END_TRAME
+        )
 
     @staticmethod
     async def _encode_ble_data(byte_list: list) -> str:
@@ -200,33 +211,56 @@ class BluetoothManager:
         b64_encoded = base64.b64encode(byte_array)
         return urllib.parse.quote(b64_encoded)
 
-    async def send_ble_command(self, fountain_id: int, command: FountainAction) -> bool:
+    async def _get_incremented_ble_counter(self, fountain_id: int) -> int:
+        """Get the incremented BLE counter for the given fountain_id.
+        :param fountain_id: The ID of the fountain to get the incremented BLE counter for.
+        :return: The incremented BLE counter.
+        """
+        water_fountain = await self._get_fountain_instance(fountain_id)
+        water_fountain.ble_counter += 1
+        if water_fountain.ble_counter > 255:
+            water_fountain.ble_counter = 0
+        return water_fountain.ble_counter
+
+    async def send_ble_command(
+        self, fountain_id: int, action: StrEnum, setting: dict | None = None
+    ) -> bool:
         """Send the given BLE command to the fountain_id.
         :param fountain_id: The ID of the fountain to send the command to.
-        :param command: The command to send to the fountain.
+        :param action: The BLE command to send.
+        :param setting: The setting to send with the command.
         :return: True if the command was sent successfully, False otherwise.
         """
-        _LOGGER.debug("Sending BLE command to fountain %s", fountain_id)
+        if action not in BLUETOOTH_ACTION:
+            raise PypetkitError(f"Bluetooth command {action} not supported.")
+        action_info = BLUETOOTH_ACTION.get(action)
+
+        _LOGGER.debug("Sending BLE command %s to fountain %s", action, fountain_id)
         water_fountain = await self._get_fountain_instance(fountain_id)
+
         if water_fountain.is_connected is False:
-            _LOGGER.debug("BLE connection not established (id %s)", fountain_id)
-            return False
-        command_data = FOUNTAIN_COMMAND.get(command)
-        if command_data is None:
-            _LOGGER.error(
-                "BLE fountain command '%s' not found (id %s)", command, fountain_id
-            )
-            return False
-        cmd_code, cmd_data = await self.get_ble_cmd_data(
-            list(command_data), water_fountain.ble_counter
-        )
+            # Fountain is not connected, try to establish a connection
+            if not await self.open_ble_connection(fountain_id):
+                _LOGGER.debug(
+                    "BLE connection not established, can't send command (id %s)",
+                    fountain_id,
+                )
+                return False
+
+        if callable(action_info.data):
+            cmd_data = action_info.data(setting)
+        else:
+            cmd_data = action_info.data
+
         response = await self.client.req.request(
             method=HTTPMethod.POST,
             url=PetkitEndpoint.BLE_CONTROL_DEVICE,
             data={
                 "bleId": water_fountain.id,
-                "cmd": cmd_code,
-                "data": cmd_data,
+                "cmd": action_info.cmd_code,
+                "data": await self.build_ble_command(
+                    fountain_id, action_info.cmd_code, action_info.cmd_type, cmd_data
+                ),
                 "mac": water_fountain.mac,
                 "type": water_fountain.device_nfo.type,  # type: ignore[union-attr]
             },

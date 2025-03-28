@@ -109,31 +109,11 @@ class DeviceAction(StrEnum):
 class FountainAction(StrEnum):
     """Fountain Action"""
 
-    MODE_NORMAL = "Normal"
-    MODE_SMART = "Smart"
-    MODE_STANDARD = "Standard"
-    MODE_INTERMITTENT = "Intermittent"
-    PAUSE = "Pause"
-    CONTINUE = "Continue"
-    POWER_OFF = "Power Off"
-    POWER_ON = "Power On"
-    RESET_FILTER = "Reset Filter"
-    DO_NOT_DISTURB = "Do Not Disturb"
-    DO_NOT_DISTURB_OFF = "Do Not Disturb Off"
-    LIGHT_LOW = "Light Low"
-    LIGHT_MEDIUM = "Light Medium"
-    LIGHT_HIGH = "Light High"
-    LIGHT_ON = "Light On"
-    LIGHT_OFF = "Light Off"
-
-
-FOUNTAIN_COMMAND = {
-    FountainAction.PAUSE: [220, 1, 3, 0, 1, 0, 2],
-    FountainAction.CONTINUE: [220, 1, 3, 0, 1, 1, 2],
-    FountainAction.RESET_FILTER: [222, 1, 0, 0],
-    FountainAction.POWER_OFF: [220, 1, 3, 0, 0, 1, 1],
-    FountainAction.POWER_ON: [220, 1, 3, 0, 1, 1, 1],
-}
+    SET_MODE = "set_mode"
+    SET_CONFIG = "set_config"
+    SET_DND_CFG = "set_dnd"
+    SET_LIGHT_CFG = "set_light"
+    RESET_FILTER = "reset_filter"
 
 
 @dataclass
@@ -143,6 +123,16 @@ class CmdData:
     endpoint: str | Callable
     params: Callable
     supported_device: list[str] = field(default_factory=list)
+
+
+@dataclass
+class CmdBluetooth:
+    """Command Bluetooth"""
+
+    cmd_code: int
+    data: Callable | list[int]
+    cmd_type: int = 1
+    counter: int = 0
 
 
 def get_endpoint_manual_feed(device):
@@ -274,5 +264,31 @@ ACTIONS_MAP = {
             "kv": json.dumps(setting),
         },
         supported_device=[PET],
+    ),
+}
+BLUETOOTH_ACTION = {
+    FountainAction.SET_MODE: CmdBluetooth(
+        cmd_code=220,
+        # TODO : TO BE IMPLEMENTED
+        data=lambda settings: get_ble_mode_data(settings),
+    ),
+    FountainAction.SET_CONFIG: CmdBluetooth(
+        cmd_code=220,
+        # TODO : TO BE IMPLEMENTED
+        data=lambda settings: get_ble_settings_data(settings),
+    ),
+    FountainAction.RESET_FILTER: CmdBluetooth(
+        cmd_code=222,
+        data=[0],
+    ),
+    FountainAction.SET_LIGHT_CFG: CmdBluetooth(
+        cmd_code=225,
+        # TODO : TO BE IMPLEMENTED
+        data=lambda settings: get_ble_dnd_settings(settings),
+    ),
+    FountainAction.SET_DND_CFG: CmdBluetooth(
+        cmd_code=226,
+        # TODO : TO BE IMPLEMENTED
+        data=lambda settings: get_ble_dnd_settings(settings),
     ),
 }
