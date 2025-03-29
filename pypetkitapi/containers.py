@@ -1,5 +1,7 @@
 """Dataclasses container for petkit API."""
 
+from typing import Any
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -68,6 +70,40 @@ class Device(BaseModel):
         return value
 
 
+class PetDetails(BaseModel):
+    """Dataclass for pet details.
+    Subclass of Pet.
+    """
+
+    active_degree: int | None = Field(None, alias="activeDegree")
+    avatar: str | None = None
+    birth: str | None = None
+    block_time: int | None = Field(None, alias="blockTime")
+    blocke: int | None = None
+    body_info: dict[str, Any] | None = Field(None, alias="bodyInfo")
+    category: dict[str, Any]
+    created_at: str | None = Field(None, alias="createdAt")
+    device_count: int | None = Field(None, alias="deviceCount")
+    emotion: int | None = None
+    family_id: int | None = Field(None, alias="familyId")
+    female_state: int | None = Field(None, alias="femaleState")
+    gender: int | None = None
+    id: int | None = None
+    is_royal_canin_pet: int | None = Field(None, alias="isRoyalCaninPet")
+    male_state: int | None = Field(None, alias="maleState")
+    name: str | None = None
+    oms_discern_pic: dict[str, Any] | None = Field(None, alias="omsDiscernPic")
+    owner: dict[str, Any] | None = None
+    size: dict[str, Any] | None = None
+    states: list[Any] | None = None
+    type: dict[str, Any] | None = None
+    updated_at: str | None = Field(None, alias="updatedAt")
+    weight: float | None = None
+    weight_control: int | None = Field(None, alias="weightControl")
+    weight_control_tips: dict[str, Any] | None = Field(None, alias="weightControlTips")
+    weight_label: str | None = Field(None, alias="weightLabel")
+
+
 class Pet(BaseModel):
     """Dataclass for pet data.
     Subclass of AccountData.
@@ -81,7 +117,8 @@ class Pet(BaseModel):
     sn: str | None = None  # Fictive field copied from id (for HA compatibility)
     name: str | None = None  # Fictive field copied from pet_name (for HA compatibility)
     firmware: str | None = None  # Fictive fixed field (for HA compatibility)
-    device_nfo: Device | None = None  # Device is now optional
+    device_nfo: Device | None = None
+    pet_details: PetDetails | None = None
 
     # Litter stats
     last_litter_usage: int | None = None

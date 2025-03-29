@@ -38,7 +38,14 @@ from pypetkitapi.const import (
     PetkitDomain,
     PetkitEndpoint,
 )
-from pypetkitapi.containers import AccountData, Device, Pet, RegionInfo, SessionInfo
+from pypetkitapi.containers import (
+    AccountData,
+    Device,
+    Pet,
+    PetDetails,
+    RegionInfo,
+    SessionInfo,
+)
 from pypetkitapi.exceptions import (
     PetkitAuthenticationError,
     PetkitAuthenticationUnregisteredEmailError,
@@ -227,6 +234,18 @@ class PetKitClient:
             raise PetkitSessionError("No session ID available")
         return {"F-Session": self._session.id, "X-Session": self._session.id}
 
+    async def _get_pet_details(self) -> list[PetDetails]:
+        """Fetch pet details from the PetKit API."""
+        _LOGGER.debug("Fetching user details")
+        response = await self.req.request(
+            method=HTTPMethod.GET,
+            url=PetkitEndpoint.DETAILS,
+            headers=await self.get_session_id(),
+        )
+        user_details = response.get("user", {})
+        dogs = user_details.get("dogs", [])
+        return [PetDetails(**dog) for dog in dogs]
+
     async def _get_account_data(self) -> None:
         """Get the account data from the PetKit service."""
         _LOGGER.debug("Fetching account data")
@@ -252,6 +271,13 @@ class PetKitClient:
                         typeCode=0,
                         uniqueId=str(pet.sn),
                     )
+
+        # Fetch pet details and update pet information
+        pet_details_list = await self._get_pet_details()
+        for pet_details in pet_details_list:
+            pet_id = pet_details.id
+            if pet_id in self.petkit_entities:
+                self.petkit_entities[pet_id].pet_details = pet_details
 
     async def get_devices_data(self) -> None:
         """Get the devices data from the PetKit servers."""
