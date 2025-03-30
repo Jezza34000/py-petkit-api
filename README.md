@@ -41,6 +41,7 @@ PetKit Client is a Python library for interacting with the PetKit API. It allows
 - Fetch account and device data
 - Control PetKit devices (Feeder, Litter Box, Water Fountain, Purifiers)
 - Fetch images & videos produced by devices
+  > Pictures are available **with or without** Care+ subscription, Videos are only available **with** Care+ subscription
 
 ## Installation
 
