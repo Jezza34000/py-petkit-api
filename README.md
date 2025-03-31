@@ -31,6 +31,12 @@
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [black]: https://github.com/psf/black
 
+### Enjoying this library?
+
+[![Sponsor Jezza34000][github-sponsor-shield]][github-sponsor] [![Static Badge][buymeacoffee-shield]][buymeacoffee]
+
+---
+
 ## Overview
 
 PetKit Client is a Python library for interacting with the PetKit API. It allows you to manage your PetKit devices, retrieve account data, and control devices through the API.
@@ -116,7 +122,9 @@ Check at the usage in the Home Assistant integration : [here](https://github.com
 
 ## Help and Support
 
-A discord server is available for support and help, check here: [here](https://github.com/Jezza34000/homeassistant_petkit)
+Developers? Want to help? Join us on our Discord channel dedicated to developers and contributors.
+
+[![Discord][discord-shield]][discord]
 
 ## Contributing
 
@@ -126,3 +134,21 @@ Please open an issue or submit a pull request.
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
+
+---
+
+[homeassistant_petkit]: https://github.com/Jezza34000/py-petkit-api
+[commits-shield]: https://img.shields.io/github/commit-activity/y/Jezza34000/py-petkit-api.svg?style=flat
+[commits]: https://github.com/Jezza34000/py-petkit-api/commits/main
+[discord]: https://discord.gg/Va8DrmtweP
+[discord-shield]: https://img.shields.io/discord/1318098700379361362.svg?style=for-the-badge&label=Discord&logo=discord&color=5865F2
+[forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=for-the-badge&label=Home%20Assistant%20Community&logo=homeassistant&color=18bcf2
+[forum]: https://community.home-assistant.io/t/petkit-integration/834431
+[license-shield]: https://img.shields.io/github/license/Jezza34000/py-petkit-api.svg??style=flat
+[maintenance-shield]: https://img.shields.io/badge/maintainer-Jezza34000-blue.svg?style=flat
+[releases-shield]: https://img.shields.io/github/release/Jezza34000/py-petkit-api.svg?style=for-the-badge&color=41BDF5
+[releases]: https://github.com/Jezza34000/py-petkit-api/releases
+[github-sponsor-shield]: https://img.shields.io/badge/sponsor-Jezza34000-blue.svg?style=for-the-badge&logo=githubsponsors&color=EA4AAA
+[github-sponsor]: https://github.com/sponsors/Jezza34000
+[buymeacoffee-shield]: https://img.shields.io/badge/Donate-buy_me_a_coffee-yellow.svg?style=for-the-badge&logo=buy-me-a-coffee
+[buymeacoffee]: https://www.buymeacoffee.com/jezza
