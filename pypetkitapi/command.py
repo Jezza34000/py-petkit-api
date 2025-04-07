@@ -57,7 +57,8 @@ class FeederCommand(StrEnum):
 class LitterCommand(StrEnum):
     """Specific LitterCommand"""
 
-    RESET_DEODORIZER = "reset_deodorizer"
+    RESET_N50_DEODORIZER = "reset_deodorizer"
+    # T5/T6 N60 does not have this command, must use control_device
 
 
 class PetCommand(StrEnum):
@@ -71,14 +72,15 @@ class LBCommand(IntEnum):
 
     CLEANING = 0
     DUMPING = 1
-    ODOR_REMOVAL = 2
+    ODOR_REMOVAL = 2  # For T4=K3 spray, for T5/T6=N60 fan
     RESETTING = 3
     LEVELING = 4
     CALIBRATING = 5
     RESET_DEODOR = 6
     LIGHT = 7
-    RESET_MAX_DEODOR = 8
+    RESET_N50_DEODOR = 8
     MAINTENANCE = 9
+    RESET_N60_DEODOR = 10
 
 
 class PurMode(IntEnum):
@@ -251,7 +253,7 @@ ACTIONS_MAP = {
         },
         supported_device=DEVICES_FEEDER,
     ),
-    LitterCommand.RESET_DEODORIZER: CmdData(
+    LitterCommand.RESET_N50_DEODORIZER: CmdData(
         endpoint=PetkitEndpoint.DEODORANT_RESET,
         params=lambda device: {
             "deviceId": device.id,
