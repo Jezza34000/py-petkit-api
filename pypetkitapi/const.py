@@ -166,7 +166,7 @@ class PetkitEndpoint(StrEnum):
     GET_WORK_RECORD = "getWorkRecord"
 
     # Litter Box
-    DEODORANT_RESET = "deodorantReset"
+    DEODORANT_RESET = "deodorantReset"  # For N50 only
     STATISTIC = "statistic"
     STATISTIC_RELEASE = "statisticRelease"
     GET_PET_OUT_GRAPH = "getPetOutGraph"
