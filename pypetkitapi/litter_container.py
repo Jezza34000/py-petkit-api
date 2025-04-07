@@ -30,12 +30,21 @@ class SettingsLitter(BaseModel):
     """
 
     auto_interval_min: int | None = Field(None, alias="autoIntervalMin")
+    auto_interval_spray: int | None = Field(None, alias="autoIntervalSpray")
+    auto_product: int | None = Field(None, alias="autoProduct")
+    auto_spray: int | None = Field(None, alias="autoSpray")
     auto_work: int | None = Field(None, alias="autoWork")
     avoid_repeat: int | None = Field(None, alias="avoidRepeat")
     bury: int | None = None
+    camera: int | None = None
+    camera_config: int | None = Field(None, alias="cameraConfig")
+    camera_light: int | None = Field(None, alias="cameraLight")
+    cleanning_notify: int | None = Field(None, alias="cleanningNotify")
+    click_ok_enable: int | None = Field(None, alias="clickOkEnable")
     control_settings: int | None = Field(None, alias="controlSettings")
     deep_clean: int | None = Field(None, alias="deepClean")
     deep_refresh: int | None = Field(None, alias="deepRefresh")
+    deep_spray: int | None = Field(None, alias="deepSpray")
     deodorant_notify: int | None = Field(None, alias="deodorantNotify")
     distrub_multi_range: list[list[int]] | None = Field(None, alias="distrubMultiRange")
     disturb_config: int | None = Field(None, alias="disturbConfig")
@@ -44,6 +53,9 @@ class SettingsLitter(BaseModel):
     downpos: int | None = None
     dump_switch: int | None = Field(None, alias="dumpSwitch")
     fixed_time_clear: int | None = Field(None, alias="fixedTimeClear")
+    fixed_time_spray: int | None = Field(None, alias="fixedTimeSpray")
+    garbage_notify: int | None = Field(None, alias="garbageNotify")
+    highlight: int | None = Field(None, alias="highlight")
     kitten: int | None = None
     kitten_percent: float | None = Field(None, alias="kittenPercent")
     kitten_tips_time: int | None = Field(None, alias="kittenTipsTime")
@@ -52,39 +64,30 @@ class SettingsLitter(BaseModel):
     language: str | None = None
     language_follow: int | None = Field(None, alias="languageFollow")
     languages: list[str] | None = None
+    light_assist: int | None = Field(None, alias="lightAssist")
     light_config: int | None = Field(None, alias="lightConfig")
     light_mode: int | None = Field(None, alias="lightMode")
     light_multi_range: list[Any] | None = Field(None, alias="lightMultiRange")
     light_range: list[int] | None = Field(None, alias="lightRange")
     lightest: int | None = Field(None, alias="lightest")
     litter_full_notify: int | None = Field(None, alias="litterFullNotify")
-    manual_lock: int | None = Field(None, alias="manualLock")
-    no_remind: int | None = Field(None, alias="noRemind")
-    pet_in_notify: int | None = Field(None, alias="petInNotify")
-    relate_k3_switch: int | None = Field(None, alias="relateK3Switch")
-    sand_type: int | None = Field(None, alias="sandType")
-    soft_mode: int | None = Field(None, alias="softMode")
-    still_time: int | None = Field(None, alias="stillTime")
-    stop_time: int | None = Field(None, alias="stopTime")
-    underweight: int | None = Field(None, alias="underweight")
-    unit: int | None = None
-    weight_popup: int | None = Field(None, alias="weightPopup")
-    work_notify: int | None = Field(None, alias="workNotify")
-    auto_product: int | None = Field(None, alias="autoProduct")
-    camera: int | None = None
-    camera_config: int | None = Field(None, alias="cameraConfig")
-    cleanning_notify: int | None = Field(None, alias="cleanningNotify")
-    garbage_notify: int | None = Field(None, alias="garbageNotify")
-    highlight: int | None = Field(None, alias="highlight")
-    light_assist: int | None = Field(None, alias="lightAssist")
     live_encrypt: int | None = Field(None, alias="liveEncrypt")
+    manual_lock: int | None = Field(None, alias="manualLock")
     microphone: int | None = None
     move_notify: int | None = Field(None, alias="moveNotify")
     night: int | None = None
+    no_remind: int | None = Field(None, alias="noRemind")
     package_standard: list[int] | None = Field(None, alias="packageStandard")
     pet_detection: int | None = Field(None, alias="petDetection")
+    pet_in_notify: int | None = Field(None, alias="petInNotify")
     pet_notify: int | None = Field(None, alias="petNotify")
     pre_live: int | None = Field(None, alias="preLive")
+    relate_k3_switch: int | None = Field(None, alias="relateK3Switch")
+    sand_type: int | None = Field(None, alias="sandType")
+    soft_mode: int | None = Field(None, alias="softMode")
+    spray_notify: int | None = Field(None, alias="sprayNotify")
+    still_time: int | None = Field(None, alias="stillTime")
+    stop_time: int | None = Field(None, alias="stopTime")
     system_sound_enable: int | None = Field(None, alias="systemSoundEnable")
     time_display: int | None = Field(None, alias="timeDisplay")
     toilet_detection: int | None = Field(None, alias="toiletDetection")
@@ -93,9 +96,13 @@ class SettingsLitter(BaseModel):
     tone_mode: int | None = Field(None, alias="toneMode")
     tone_multi_range: list[list[int]] | None = Field(None, alias="toneMultiRange")
     tumbling: int | None = None
+    underweight: int | None = Field(None, alias="underweight")
+    unit: int | None = None
     upload: int | None = None
     volume: int | None = None
     wander_detection: int | None = Field(None, alias="wanderDetection")
+    weight_popup: int | None = Field(None, alias="weightPopup")
+    work_notify: int | None = Field(None, alias="workNotify")
 
 
 class WorkState(BaseModel):
@@ -114,51 +121,56 @@ class StateLitter(BaseModel):
     -> LitterData subclass.
     """
 
+    bagging_state: int | None = Field(None, alias="baggingState")
+    battery: int | None = None
     box: int | None = None
     box_full: bool | None = Field(None, alias="boxFull")
     box_state: int | None = Field(None, alias="boxState")
+    box_store_state: int | None = Field(None, alias="boxStoreState")
+    camera_status: int | None = Field(None, alias="cameraStatus")
     deodorant_left_days: int | None = Field(None, alias="deodorantLeftDays")
+    dump_state: int | None = Field(None, alias="dumpState")
     error_code: str | None = Field(None, alias="errorCode")
     error_detail: str | None = Field(None, alias="errorDetail")
     error_level: int | None = Field(None, alias="errorLevel")
     error_msg: str | None = Field(None, alias="errorMsg")
     frequent_restroom: int | None = Field(None, alias="frequentRestroom")
+    liquid: int | None = None
     liquid_empty: bool | None = Field(None, alias="liquidEmpty")
     liquid_lack: bool | None = Field(None, alias="liquidLack")
     liquid_reset: int | None = Field(None, alias="liquidReset")
+    light_state: dict | None = Field(None, alias="lightState")
     low_power: bool | None = Field(None, alias="lowPower")
     offline_time: int | None = Field(None, alias="offlineTime")
     ota: int | None = None
     overall: int | None = None
+    pack_state: int | None = Field(None, alias="packState")
+    package_install: int | None = Field(None, alias="packageInstall")
+    package_secret: str | None = Field(None, alias="packageSecret")
+    package_sn: str | None = Field(None, alias="packageSn")
+    package_state: int | None = Field(None, alias="packageState")
     pet_error: bool | None = Field(None, alias="petError")
     pet_in_time: int | None = Field(None, alias="petInTime")
     pim: int | None = None
+    pi_ins: int | None = Field(None, alias="piIns")
     power: int | None = None
+    purification_left_days: int | None = Field(None, alias="purificationLeftDays")
     sand_correct: int | None = Field(None, alias="sandCorrect")
     sand_lack: bool | None = Field(None, alias="sandLack")
     sand_percent: int | None = Field(None, alias="sandPercent")
     sand_status: int | None = Field(None, alias="sandStatus")
     sand_type: int | None = Field(None, alias="sandType")
     sand_weight: int | None = Field(None, alias="sandWeight")
-    used_times: int | None = Field(None, alias="usedTimes")
-    wifi: Wifi | None = None
-    bagging_state: int | None = Field(None, alias="baggingState")
-    battery: int | None = None
-    box_store_state: int | None = Field(None, alias="boxStoreState")
-    camera_status: int | None = Field(None, alias="cameraStatus")
-    dump_state: int | None = Field(None, alias="dumpState")
-    liquid: int | None = None
-    light_state: dict | None = Field(None, alias="lightState")
-    pack_state: int | None = Field(None, alias="packState")
-    package_install: int | None = Field(None, alias="packageInstall")
-    package_secret: str | None = Field(None, alias="packageSecret")
-    package_sn: str | None = Field(None, alias="packageSn")
-    package_state: int | None = Field(None, alias="packageState")
-    pi_ins: int | None = Field(None, alias="piIns")
-    purification_left_days: int | None = Field(None, alias="purificationLeftDays")
     seal_door_state: int | None = Field(None, alias="sealDoorState")
+    spray_days: int | None = Field(None, alias="sprayDays")
+    spray_left_days: int | None = Field(None, alias="sprayLeftDays")
+    spray_reset_time: int | None = Field(None, alias="sprayResetTime")
+    spray_state: int | None = Field(None, alias="sprayState")
     top_ins: int | None = Field(None, alias="topIns")
+    used_times: int | None = Field(None, alias="usedTimes")
     wander_time: int | None = Field(None, alias="wanderTime")
+    weight_state: int | None = Field(None, alias="weightState")
+    wifi: Wifi | None = None
     work_state: WorkState | None = Field(None, alias="workState")
 
 
@@ -396,44 +408,44 @@ class Litter(BaseModel):
 
     auto_upgrade: int | None = Field(None, alias="autoUpgrade")
     bt_mac: str | None = Field(None, alias="btMac")
+    cloud_product: CloudProduct | None = Field(None, alias="cloudProduct")  # For T5/T6
     created_at: str | None = Field(None, alias="createdAt")
+    device_nfo: Device | None = None
+    device_pet_graph_out: list[PetOutGraph] | None = None
+    device_records: list[LitterRecord] | None = None
+    device_stats: LitterStats | None = None
     firmware: float
     firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
     hardware: int
     id: int
-    k3_device: Purifier | None = Field(None, alias="k3Device")
+    in_times: int | None = None
     is_pet_out_tips: int | None = Field(None, alias="isPetOutTips")
+    k3_device: Purifier | None = Field(None, alias="k3Device")
+    last_out_time: int | None = None
     locale: str | None = None
     mac: str | None = None
     maintenance_time: int | None = Field(None, alias="maintenanceTime")
+    medias: list | None = None
     multi_config: bool | None = Field(None, alias="multiConfig")
     name: str | None = None
+    p2p_type: int | None = Field(None, alias="p2pType")
+    package_ignore_state: int | None = Field(None, alias="packageIgnoreState")
+    package_total_count: int | None = Field(None, alias="packageTotalCount")
+    package_used_count: int | None = Field(None, alias="packageUsedCount")
     pet_in_tip_limit: int | None = Field(None, alias="petInTipLimit")
+    pet_out_records: list[list[int]] | None = Field(None, alias="petOutRecords")
     pet_out_tips: list[Any] | None = Field(None, alias="petOutTips")
     secret: str | None = None
+    service_status: int | None = None
     settings: SettingsLitter | None = None
     share_open: int | None = Field(None, alias="shareOpen")
     signup_at: str | None = Field(None, alias="signupAt")
     sn: str
     state: StateLitter | None = None
     timezone: float | None = None
-    cloud_product: CloudProduct | None = Field(None, alias="cloudProduct")  # For T5/T6
-    in_times: int | None = Field(None, alias="inTimes")
-    last_out_time: int | None = Field(None, alias="lastOutTime")
-    p2p_type: int | None = Field(None, alias="p2pType")
-    package_ignore_state: int | None = Field(None, alias="packageIgnoreState")
-    package_total_count: int | None = Field(None, alias="packageTotalCount")
-    package_used_count: int | None = Field(None, alias="packageUsedCount")
-    pet_out_records: list[list[int]] | None = Field(None, alias="petOutRecords")
-    service_status: int | None = Field(None, alias="serviceStatus")
-    total_time: int | None = Field(None, alias="totalTime")
-    with_k3: int | None = Field(None, alias="withK3")
+    total_time: int | None = None
     user: UserDevice | None = None
-    device_records: list[LitterRecord] | None = None
-    device_stats: LitterStats | None = None
-    device_pet_graph_out: list[PetOutGraph] | None = None
-    device_nfo: Device | None = None
-    medias: list | None = None
+    with_k3: int | None = Field(None, alias="withK3")
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
