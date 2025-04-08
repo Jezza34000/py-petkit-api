@@ -139,7 +139,7 @@ class StateLitter(BaseModel):
     liquid_empty: bool | None = Field(None, alias="liquidEmpty")
     liquid_lack: bool | None = Field(None, alias="liquidLack")
     liquid_reset: int | None = Field(None, alias="liquidReset")
-    light_state: dict | None = Field(None, alias="lightState")
+    light_state: WorkState | None = Field(None, alias="lightState")
     low_power: bool | None = Field(None, alias="lowPower")
     offline_time: int | None = Field(None, alias="offlineTime")
     ota: int | None = None
