@@ -34,7 +34,7 @@ class TestCommandModule(unittest.TestCase):
         self.assertEqual(FeederCommand.MANUAL_FEED, "manual_feed")
 
     def test_litter_command(self):
-        self.assertEqual(LitterCommand.RESET_DEODORIZER, "reset_deodorizer")
+        self.assertEqual(LitterCommand.RESET_N50_DEODORIZER, "reset_deodorizer")
 
     def test_pet_command(self):
         self.assertEqual(PetCommand.PET_UPDATE_SETTING, "pet_update_setting")
