@@ -25,8 +25,8 @@ from pypetkitapi.purifier_container import Purifier
 
 
 class SettingsLitter(BaseModel):
-    """Dataclass for settings.
-    -> LitterData subclass.
+    """Sub-dataclass for settings of Litter.
+    Litter -> settings
     """
 
     auto_interval_min: int | None = Field(None, alias="autoIntervalMin")
@@ -106,7 +106,9 @@ class SettingsLitter(BaseModel):
 
 
 class WorkState(BaseModel):
-    """Dataclass for work state data."""
+    """Sub-Sub-dataclass for state of Litter.
+    Litter -> state ->  [STATE] -> WorkState
+    """
 
     safe_warn: int | None = Field(None, alias="safeWarn")
     stop_time: int | None = Field(None, alias="stopTime")
@@ -117,8 +119,8 @@ class WorkState(BaseModel):
 
 
 class StateLitter(BaseModel):
-    """Dataclass for state.
-    -> LitterData subclass.
+    """Sub-dataclass for state of Litter.
+    Litter -> state
     """
 
     bagging_state: int | None = Field(None, alias="baggingState")
@@ -176,7 +178,9 @@ class StateLitter(BaseModel):
 
 
 class ContentSC(BaseModel):
-    """Dataclass for content data."""
+    """Sub-Sub-class of LitterRecord.
+    LitterRecord -> subContent -> content
+    """
 
     box: int | None = None
     box_full: bool | None = Field(None, alias="boxFull")
@@ -191,18 +195,30 @@ class ContentSC(BaseModel):
 
 
 class LRContent(BaseModel):
-    """Dataclass for pet data."""
+    """Dataclass for sub-content of LitterRecord.
+    LitterRecord -> ShitPictures
+    """
 
+    area: int | None = None
     auto_clear: int | None = Field(None, alias="autoClear")
+    clear_over_tips: int | None = Field(None, alias="clearOverTips")
+    count: int | None = None
     interval: int | None = None
+    mark: int | None = None
+    media: int | None = None
+    pet_out_tips: int | None = Field(None, alias="petOutTips")
     pet_weight: int | None = Field(None, alias="petWeight")
+    start_time: int | None = Field(None, alias="startTime")
     time_in: int | None = Field(None, alias="timeIn")
     time_out: int | None = Field(None, alias="timeOut")
-    error: int | None = None
+    toilet_detection: int | None = Field(None, alias="toiletDetection")
+    upload: int | None = None
 
 
 class LRSubContent(BaseModel):
-    """Dataclass for sub-content data."""
+    """Subclass of LitterRecord.
+    LitterRecord -> subContent
+    """
 
     aes_key: str | None = Field(None, alias="aesKey")
     content: ContentSC | None = None
@@ -226,9 +242,19 @@ class LRSubContent(BaseModel):
     user_id: str | None = Field(None, alias="userId")
 
 
+class ShitPictures(BaseModel):
+    """Dataclass for sub-content of LitterRecord.
+    LitterRecord -> ShitPictures
+    """
+
+    pic_id: str | None = Field(None, alias="picId")
+    shit_aes_key: str | None = Field(None, alias="shitAesKey")
+    shit_picture: str | None = Field(None, alias="shitPicture")
+
+
 class LitterRecord(BaseModel):
     """Dataclass for feeder record data.
-    Litter records
+    Litter records (Main class)
     """
 
     data_type: ClassVar[str] = DEVICE_RECORDS
@@ -250,6 +276,7 @@ class LitterRecord(BaseModel):
     pet_name: str | None = Field(None, alias="petName")
     preview: str | None = None
     related_event: str | None = Field(None, alias="relatedEvent")
+    shit_pictures: ShitPictures | None = None
     storage_space: int | None = Field(None, alias="storageSpace")
     sub_content: list[LRSubContent] | None = Field(None, alias="subContent")
     timestamp: int | None = None
