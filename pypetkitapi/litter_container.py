@@ -213,6 +213,7 @@ class LRContent(BaseModel):
     time_out: int | None = Field(None, alias="timeOut")
     toilet_detection: int | None = Field(None, alias="toiletDetection")
     upload: int | None = None
+    error: int | None = None
 
 
 class LRSubContent(BaseModel):
