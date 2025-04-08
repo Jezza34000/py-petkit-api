@@ -155,6 +155,7 @@ class StateLitter(BaseModel):
     pi_ins: int | None = Field(None, alias="piIns")
     power: int | None = None
     purification_left_days: int | None = Field(None, alias="purificationLeftDays")
+    refresh_state: WorkState | None = Field(None, alias="refreshState")
     sand_correct: int | None = Field(None, alias="sandCorrect")
     sand_lack: bool | None = Field(None, alias="sandLack")
     sand_percent: int | None = Field(None, alias="sandPercent")
@@ -410,6 +411,7 @@ class Litter(BaseModel):
     bt_mac: str | None = Field(None, alias="btMac")
     cloud_product: CloudProduct | None = Field(None, alias="cloudProduct")  # For T5/T6
     created_at: str | None = Field(None, alias="createdAt")
+    deodorant_tip: int | None = Field(None, alias="deodorantTip")
     device_nfo: Device | None = None
     device_pet_graph_out: list[PetOutGraph] | None = None
     device_records: list[LitterRecord] | None = None
@@ -435,6 +437,7 @@ class Litter(BaseModel):
     pet_in_tip_limit: int | None = Field(None, alias="petInTipLimit")
     pet_out_records: list[list[int]] | None = Field(None, alias="petOutRecords")
     pet_out_tips: list[Any] | None = Field(None, alias="petOutTips")
+    purification_tip: int | None = Field(None, alias="purificationTip")
     secret: str | None = None
     service_status: int | None = None
     settings: SettingsLitter | None = None
