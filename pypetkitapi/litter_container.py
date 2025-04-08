@@ -448,7 +448,7 @@ class Litter(BaseModel):
     firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
     hardware: int
     id: int
-    in_times: int | None = None
+    in_times: int | None = Field(None, alias="inTimes")
     is_pet_out_tips: int | None = Field(None, alias="isPetOutTips")
     k3_device: Purifier | None = Field(None, alias="k3Device")
     last_out_time: int | None = None
@@ -467,14 +467,14 @@ class Litter(BaseModel):
     pet_out_tips: list[Any] | None = Field(None, alias="petOutTips")
     purification_tip: int | None = Field(None, alias="purificationTip")
     secret: str | None = None
-    service_status: int | None = None
+    service_status: int | None = Field(None, alias="serviceStatus")
     settings: SettingsLitter | None = None
     share_open: int | None = Field(None, alias="shareOpen")
     signup_at: str | None = Field(None, alias="signupAt")
     sn: str
     state: StateLitter | None = None
     timezone: float | None = None
-    total_time: int | None = None
+    total_time: int | None = Field(None, alias="totalTime")
     user: UserDevice | None = None
     with_k3: int | None = Field(None, alias="withK3")
 
