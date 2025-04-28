@@ -15,6 +15,7 @@ PET_DATA = "petData"
 BLE_CONNECT_ATTEMPT = 32
 BLE_START_TRAME = [250, 252, 253]
 BLE_END_TRAME = [251]
+ALLOWED_DIRECT_BT_DEVICES = [14, 16, 24]
 
 # PetKit Models
 FEEDER = "feeder"
@@ -78,7 +79,7 @@ class Header(StrEnum):
     ACCEPT = "*/*"
     ACCEPT_LANG = "en-US;q=1, it-US;q=0.9"
     ENCODING = "gzip, deflate"
-    API_VERSION = "12.1.0"
+    API_VERSION = "12.1.4"
     CONTENT_TYPE = "application/x-www-form-urlencoded"
     AGENT = "okhttp/3.12.11"
     CLIENT = f"{Client.PLATFORM_TYPE}({Client.OS_VERSION};{Client.MODEL_NAME})"
