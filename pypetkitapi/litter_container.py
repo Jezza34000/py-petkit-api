@@ -83,6 +83,7 @@ class SettingsLitter(BaseModel):
     pet_notify: int | None = Field(None, alias="petNotify")
     pre_live: int | None = Field(None, alias="preLive")
     relate_k3_switch: int | None = Field(None, alias="relateK3Switch")
+    sand_saving: int | None = Field(None, alias="sandSaving")
     sand_type: int | None = Field(None, alias="sandType")
     soft_mode: int | None = Field(None, alias="softMode")
     spray_notify: int | None = Field(None, alias="sprayNotify")
