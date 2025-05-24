@@ -37,11 +37,11 @@
 
 ---
 
-## Overview
+## ℹ️ Overview
 
 PetKit Client is a Python library for interacting with the PetKit API. It allows you to manage your PetKit devices, retrieve account data, and control devices through the API.
 
-## Features
+## 🚀 Features
 
 - Login and session management
 - Fetch account and device data
@@ -49,7 +49,7 @@ PetKit Client is a Python library for interacting with the PetKit API. It allows
 - Fetch images & videos produced by devices
   > Pictures are available **with or without** Care+ subscription, Videos are only available **with** Care+ subscription
 
-## Installation
+## ⬇️ Installation
 
 Install the library using pip:
 
@@ -57,7 +57,7 @@ Install the library using pip:
 pip install pypetkitapi
 ```
 
-## Usage Example:
+## 💡 Usage Example:
 
 Here is a simple example of how to use the library to interact with the PetKit API \
 This example is not an exhaustive list of all the features available in the library.
@@ -116,17 +116,42 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## More example usage
+## 💡 More example usage
 
 Check at the usage in the Home Assistant integration : [here](https://github.com/Jezza34000/homeassistant_petkit)
 
-## Help and Support
+## ☑️ Supported Devices
+
+| **Category**     | **Name**                  | **Device**                                                                                                                                             |
+| ---------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **🍗 Feeders**   | ✅ Fresh Element          | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/feeder.png" width="40"/></a>     |
+|                  | ✅ Fresh Element Mini Pro | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/feedermini.png" width="40"/></a> |
+|                  | ✅ Fresh Element Infinity | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/d3.png" width="40"/></a>         |
+|                  | ✅ Fresh Element Solo     | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/d4.png" width="40"/></a>         |
+|                  | ✅ Fresh Element Gemini   | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/d4s.png" width="40"/></a>        |
+|                  | ✅ YumShare Solo          | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/d4h.png" width="40"/></a>        |
+|                  | ✅ YumShare Dual-hopper   | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/d4sh.png" width="40"/></a>       |
+| **🚽 Litters**   | ✅ PuraX                  | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/t3.png" width="40"/></a>         |
+|                  | ✅ PuraMax                | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/t4.1.png" width="40"/></a>       |
+|                  | ✅ PuraMax 2              | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/t4.png" width="40"/></a>         |
+|                  | ✅ Purobot Max Pro        | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/t5.png" width="40"/></a>         |
+|                  | ✅ Purobot Ultra          | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/t6.png" width="40"/></a>         |
+| **⛲ Fountains** | ✅ Eversweet Solo 2       | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/5w5.png" width="40"/></a>        |
+|                  | ✅ Eversweet 3 Pro        | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/4w5.png" width="40"/></a>        |
+|                  | ✅ Eversweet 3 Pro UVC    | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/6w5.png" width="40"/></a>        |
+|                  | ✅ Eversweet 5 Mini       | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/2w5.png" width="40"/></a>        |
+|                  | ✅ Eversweet Max          | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/ctw3.png" width="40"/></a>       |
+| **🧴 Purifiers** | ✅ Air Magicube           | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/k2.png" width="40"/></a>         |
+|                  | ✅ Air Smart Spray        | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/k3.png" width="40"/></a>         |
+
+
+## 🛟 Help and Support
 
 Developers? Want to help? Join us on our Discord channel dedicated to developers and contributors.
 
 [![Discord][discord-shield]][discord]
 
-## Contributing
+## 👨‍💻  Contributing
 
 Contributions are welcome!\
 Please open an issue or submit a pull request.
