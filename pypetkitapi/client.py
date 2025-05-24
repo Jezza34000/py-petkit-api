@@ -16,6 +16,8 @@ from pypetkitapi.bluetooth import BluetoothManager
 from pypetkitapi.command import ACTIONS_MAP
 from pypetkitapi.const import (
     CLIENT_NFO,
+    DEFAULT_COUNTRY,
+    DEFAULT_TZ,
     DEVICE_DATA,
     DEVICE_RECORDS,
     DEVICE_STATS,
@@ -91,6 +93,12 @@ class PetKitClient:
         session: aiohttp.ClientSession | None = None,
     ) -> None:
         """Initialize the PetKit Client."""
+
+        if region is None or not region.strip():
+            region = DEFAULT_COUNTRY
+        if timezone is None or not timezone.strip():
+            timezone = DEFAULT_TZ
+
         self.username = username
         self.password = password
         self.region = region.lower()

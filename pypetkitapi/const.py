@@ -2,6 +2,9 @@
 
 from enum import StrEnum
 
+DEFAULT_COUNTRY = "DE"
+DEFAULT_TZ = "Europe/Berlin"
+
 RES_KEY = "result"
 ERR_KEY = "error"
 SUCCESS_KEY = "success"
