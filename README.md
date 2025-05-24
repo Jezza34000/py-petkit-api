@@ -144,14 +144,13 @@ Check at the usage in the Home Assistant integration : [here](https://github.com
 | **🧴 Purifiers** | ✅ Air Magicube           | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/k2.png" width="40"/></a>         |
 |                  | ✅ Air Smart Spray        | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/k3.png" width="40"/></a>         |
 
-
 ## 🛟 Help and Support
 
 Developers? Want to help? Join us on our Discord channel dedicated to developers and contributors.
 
 [![Discord][discord-shield]][discord]
 
-## 👨‍💻  Contributing
+## 👨‍💻 Contributing
 
 Contributions are welcome!\
 Please open an issue or submit a pull request.
