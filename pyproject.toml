@@ -116,6 +116,7 @@ ignore = [
     "E501", # line too long
 
     "PLC1901", # {existing} can be simplified to {replacement} as an empty string is falsey; too many false positives
+    "PLC0415", # import should be at the top-level of a file
     "PLR0911", # Too many return statements ({returns} > {max_returns})
     "PLR0912", # Too many branches ({branches} > {max_branches})
     "PLR0913", # Too many arguments to function call ({c_args} > {max_args})
