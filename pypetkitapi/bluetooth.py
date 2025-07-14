@@ -185,7 +185,7 @@ class BluetoothManager:
         :return: The BLE command code and the encoded BLE data.
         """
         cmd_code = fountain_command[0]
-        modified_command = fountain_command[:2] + [counter] + fountain_command[2:]
+        modified_command = [*fountain_command[:2], counter, *fountain_command[2:]]
         ble_data = [*BLE_START_TRAME, *modified_command, *BLE_END_TRAME]
         encoded_data = await self._encode_ble_data(ble_data)
         return cmd_code, encoded_data
