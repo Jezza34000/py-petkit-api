@@ -832,7 +832,7 @@ class PrepReq:
 
             match error_code:
                 case 5:
-                    raise PetkitSessionExpiredError(f"Session expired: {error_msg}")
+                    raise PetkitSessionExpiredError(f"Session expired: {error_msg}. WARNING : Make sure you're not using your main PetKit app account. Use a separate one for Home Assistant. Refer to the documentation for more details.")
                 case 122:
                     raise PetkitAuthenticationError(
                         f"Authentication failed: {error_msg}"
