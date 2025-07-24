@@ -59,7 +59,7 @@ class Purifier(BaseModel):
     name: str | None = None
     refreshing: int | None = None
     relate_t4: int | None = Field(None, alias="relateT4")
-    relation: dict[str, str]
+    relation: dict[str, str] | list | None = None
     secret: str | None = None
     settings: Settings | None = None
     share_open: int | None = Field(None, alias="shareOpen")
