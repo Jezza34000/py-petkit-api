@@ -453,6 +453,35 @@ class MediaManager:
                     timestamp=record.timestamp,
                 )
             )
+
+            # Gather Waste images if available
+            if hasattr(record, "sub_content") and record.sub_content:
+                for sub_record in record.sub_content:
+                    if (
+                        hasattr(sub_record, "shit_pictures")
+                        and isinstance(sub_record.shit_pictures, list)
+                        and len(sub_record.shit_pictures) > 2
+                    ):
+                        waste_image_data = sub_record.shit_pictures[2]
+                        if (
+                            waste_image_data.shit_picture
+                            and waste_image_data.shit_aes_key
+                        ):
+                            waste_filepath = f"{litter_id}/{date_str}/{RecordType.WASTE.name.lower()}"
+                            media_files.append(
+                                MediaCloud(
+                                    event_id=record.event_id,
+                                    event_type=RecordType.WASTE,
+                                    device_id=litter_id,
+                                    user_id=user_id,
+                                    image=waste_image_data.shit_picture,
+                                    video=None,
+                                    filepath=waste_filepath,
+                                    aes_key=waste_image_data.shit_aes_key,
+                                    timestamp=record.timestamp,
+                                )
+                            )
+
         return media_files
 
     @staticmethod
