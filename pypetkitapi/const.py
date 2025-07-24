@@ -126,7 +126,7 @@ class RecordType(StrEnum):
     MOVE = "move"
     PET = "pet"
     TOILETING = "toileting"
-    WASTE = "waste"
+    WASTE = "waste_check"
     DISH_BEFORE = "dish_before"
     DISH_AFTER = "dish_after"
 
