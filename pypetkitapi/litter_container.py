@@ -81,6 +81,7 @@ class SettingsLitter(BaseModel):
     pet_detection: int | None = Field(None, alias="petDetection")
     pet_in_notify: int | None = Field(None, alias="petInNotify")
     pet_notify: int | None = Field(None, alias="petNotify")
+    ph_detection: int | None = Field(None, alias="phDetection")
     pre_live: int | None = Field(None, alias="preLive")
     relate_k3_switch: int | None = Field(None, alias="relateK3Switch")
     sand_saving: int | None = Field(None, alias="sandSaving")
@@ -92,6 +93,7 @@ class SettingsLitter(BaseModel):
     system_sound_enable: int | None = Field(None, alias="systemSoundEnable")
     time_display: int | None = Field(None, alias="timeDisplay")
     toilet_detection: int | None = Field(None, alias="toiletDetection")
+    toilet_light: int | None = Field(None, alias="toiletLight")
     toilet_notify: int | None = Field(None, alias="toiletNotify")
     tone_config: int | None = Field(None, alias="toneConfig")
     tone_mode: int | None = Field(None, alias="toneMode")
@@ -100,6 +102,7 @@ class SettingsLitter(BaseModel):
     underweight: int | None = Field(None, alias="underweight")
     unit: int | None = None
     upload: int | None = None
+    voice: int | None = None
     volume: int | None = None
     wander_detection: int | None = Field(None, alias="wanderDetection")
     weight_popup: int | None = Field(None, alias="weightPopup")
@@ -189,6 +192,7 @@ class ContentSC(BaseModel):
     litter_percent: int | None = Field(None, alias="litterPercent")
     mark: int | None = None
     media: int | None = None
+    ph_reason: int | None = Field(None, alias="phReason")
     result: int | None = None
     start_reason: int | None = Field(None, alias="startReason")
     start_time: int | None = Field(None, alias="startTime")
@@ -217,9 +221,20 @@ class LRContent(BaseModel):
     error: int | None = None
 
 
+class ShitPictures(BaseModel):
+    """Dataclass for sub-content of LitterRecord.
+    LitterRecord -> ShitPictures
+    """
+
+    created_at: str | None = Field(None, alias="createdAt")
+    pic_id: str | None = Field(None, alias="picId")
+    shit_aes_key: str | None = Field(None, alias="shitAesKey")
+    shit_picture: str | None = Field(None, alias="shitPicture")
+
+
 class LRSubContent(BaseModel):
     """Subclass of LitterRecord.
-    LitterRecord -> subContent
+    LitterRecord -> List[subContent]
     """
 
     aes_key: str | None = Field(None, alias="aesKey")
@@ -236,22 +251,12 @@ class LRSubContent(BaseModel):
     preview: str | None = None
     related_event: str | None = Field(None, alias="relatedEvent")
     shit_aes_key: str | None = Field(None, alias="shitAesKey")
-    shit_picture: str | None = Field(None, alias="shitPicture")
+    shit_pictures: ShitPictures | None = None
     storage_space: int | None = Field(None, alias="storageSpace")
     sub_content: list[Any] | None = Field(None, alias="subContent")
     timestamp: int | None = None
     upload: int | None = None
     user_id: str | None = Field(None, alias="userId")
-
-
-class ShitPictures(BaseModel):
-    """Dataclass for sub-content of LitterRecord.
-    LitterRecord -> ShitPictures
-    """
-
-    pic_id: str | None = Field(None, alias="picId")
-    shit_aes_key: str | None = Field(None, alias="shitAesKey")
-    shit_picture: str | None = Field(None, alias="shitPicture")
 
 
 class LitterRecord(BaseModel):
