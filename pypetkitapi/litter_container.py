@@ -226,7 +226,7 @@ class ShitPictures(BaseModel):
     LitterRecord -> ShitPictures
     """
 
-    created_at: str | None = Field(None, alias="createdAt")
+    created_at: str | int | None = Field(None, alias="createdAt")
     pic_id: str | None = Field(None, alias="picId")
     shit_aes_key: str | None = Field(None, alias="shitAesKey")
     shit_picture: str | None = Field(None, alias="shitPicture")
@@ -251,7 +251,7 @@ class LRSubContent(BaseModel):
     preview: str | None = None
     related_event: str | None = Field(None, alias="relatedEvent")
     shit_aes_key: str | None = Field(None, alias="shitAesKey")
-    shit_pictures: ShitPictures | None = None
+    shit_pictures: list[ShitPictures] | None = Field(None, alias="shitPictures")
     storage_space: int | None = Field(None, alias="storageSpace")
     sub_content: list[Any] | None = Field(None, alias="subContent")
     timestamp: int | None = None
@@ -283,7 +283,7 @@ class LitterRecord(BaseModel):
     pet_name: str | None = Field(None, alias="petName")
     preview: str | None = None
     related_event: str | None = Field(None, alias="relatedEvent")
-    shit_pictures: ShitPictures | None = None
+    shit_pictures: list[ShitPictures] | None = Field(None, alias="shitPictures")
     storage_space: int | None = Field(None, alias="storageSpace")
     sub_content: list[LRSubContent] | None = Field(None, alias="subContent")
     timestamp: int | None = None
