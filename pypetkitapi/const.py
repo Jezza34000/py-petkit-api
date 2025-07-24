@@ -126,6 +126,9 @@ class RecordType(StrEnum):
     MOVE = "move"
     PET = "pet"
     TOILETING = "toileting"
+    WASTE = "waste"
+    DISH_BEFORE = "dish_before"
+    DISH_AFTER = "dish_after"
 
 
 RecordTypeLST = [
@@ -134,6 +137,9 @@ RecordTypeLST = [
     RecordType.MOVE,
     RecordType.PET,
     RecordType.TOILETING,
+    RecordType.WASTE,
+    RecordType.DISH_BEFORE,
+    RecordType.DISH_AFTER,
 ]
 
 

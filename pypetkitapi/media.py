@@ -345,7 +345,7 @@ class MediaManager:
                 continue
 
             date_str = await self.get_date_from_ts(timestamp)
-            filepath = f"{feeder_id}/{date_str}/{record_type.name.lower()}"
+            filepath = f"{feeder_id}/{date_str}"
             media_files.append(
                 MediaCloud(
                     event_id=item.event_id,
@@ -356,7 +356,7 @@ class MediaManager:
                     video=await self.construct_video_url(
                         device_type, item, user_id, cp_sub
                     ),
-                    filepath=filepath,
+                    filepath=f"{filepath}/{record_type.name.lower()}",
                     aes_key=item.aes_key,
                     timestamp=timestamp,
                 )
@@ -369,12 +369,12 @@ class MediaManager:
                     media_files.append(
                         MediaCloud(
                             event_id=item.event_id,
-                            event_type=RecordType.EAT,
+                            event_type=RecordType.DISH_BEFORE,
                             device_id=feeder_id,
                             user_id=user_id,
                             image=item.preview1,
                             video=None,
-                            filepath=f"{filepath}_before",
+                            filepath=f"{filepath}/{RecordType.DISH_BEFORE.name.lower()}",
                             aes_key=item.aes_key,
                             timestamp=timestamp,
                         )
@@ -384,12 +384,12 @@ class MediaManager:
                     media_files.append(
                         MediaCloud(
                             event_id=item.event_id,
-                            event_type=RecordType.EAT,
+                            event_type=RecordType.DISH_AFTER,
                             device_id=feeder_id,
                             user_id=user_id,
                             image=item.preview2,
                             video=None,
-                            filepath=f"{filepath}_after",
+                            filepath=f"{filepath}/{RecordType.DISH_AFTER.name.lower()}",
                             aes_key=item.aes_key,
                             timestamp=timestamp,
                         )
