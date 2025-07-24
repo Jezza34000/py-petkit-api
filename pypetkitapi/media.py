@@ -361,6 +361,39 @@ class MediaManager:
                     timestamp=timestamp,
                 )
             )
+
+            # Gather the dish before and after images for EAT records
+            if record_type == RecordType.EAT:
+                if hasattr(item, "preview1") and item.preview1:
+                    # Preview1 is dish before image
+                    media_files.append(
+                        MediaCloud(
+                            event_id=item.event_id,
+                            event_type=RecordType.EAT,
+                            device_id=feeder_id,
+                            user_id=user_id,
+                            image=item.preview1,
+                            video=None,
+                            filepath=f"{filepath}_before",
+                            aes_key=item.aes_key,
+                            timestamp=timestamp,
+                        )
+                    )
+                if hasattr(item, "preview2") and item.preview2:
+                    # Preview2 is dish after image
+                    media_files.append(
+                        MediaCloud(
+                            event_id=item.event_id,
+                            event_type=RecordType.EAT,
+                            device_id=feeder_id,
+                            user_id=user_id,
+                            image=item.preview2,
+                            video=None,
+                            filepath=f"{filepath}_after",
+                            aes_key=item.aes_key,
+                            timestamp=timestamp,
+                        )
+                    )
         return media_files
 
     async def _process_litter(self, litter: Litter) -> list[MediaCloud]:
@@ -399,11 +432,16 @@ class MediaManager:
             timestamp = record.timestamp or None
             date_str = await self.get_date_from_ts(timestamp)
 
-            filepath = f"{litter_id}/{date_str}/toileting"
+            if getattr(record, "enum_event_type", None) == "pet_detect":
+                event_type = RecordType.PET
+            else:
+                event_type = RecordType.TOILETING
+
+            filepath = f"{litter_id}/{date_str}/{event_type.name.lower()}"
             media_files.append(
                 MediaCloud(
                     event_id=record.event_id,
-                    event_type=RecordType.TOILETING,
+                    event_type=event_type,
                     device_id=litter_id,
                     user_id=user_id,
                     image=record.preview,
