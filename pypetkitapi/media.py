@@ -467,11 +467,11 @@ class MediaManager:
                             waste_image_data.shit_picture
                             and waste_image_data.shit_aes_key
                         ):
-                            waste_filepath = f"{litter_id}/{date_str}/{RecordType.WASTE.name.lower()}"
+                            waste_filepath = f"{litter_id}/{date_str}/{RecordType.WASTE_CHECK.name.lower()}"
                             media_files.append(
                                 MediaCloud(
                                     event_id=record.event_id,
-                                    event_type=RecordType.WASTE,
+                                    event_type=RecordType.WASTE_CHECK,
                                     device_id=litter_id,
                                     user_id=user_id,
                                     image=waste_image_data.shit_picture,
