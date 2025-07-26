@@ -38,7 +38,9 @@ class SettingsLitter(BaseModel):
     bury: int | None = None
     camera: int | None = None
     camera_config: int | None = Field(None, alias="cameraConfig")
+    camera_inward: int | None = Field(None, alias="cameraInward")
     camera_light: int | None = Field(None, alias="cameraLight")
+    camera_off: int | None = Field(None, alias="cameraOff")
     cleanning_notify: int | None = Field(None, alias="cleanningNotify")
     click_ok_enable: int | None = Field(None, alias="clickOkEnable")
     control_settings: int | None = Field(None, alias="controlSettings")
@@ -78,6 +80,7 @@ class SettingsLitter(BaseModel):
     move_notify: int | None = Field(None, alias="moveNotify")
     night: int | None = None
     no_remind: int | None = Field(None, alias="noRemind")
+    no_sound: int | None = Field(None, alias="noSound")
     package_standard: list[int] | None = Field(None, alias="packageStandard")
     pet_detection: int | None = Field(None, alias="petDetection")
     pet_in_notify: int | None = Field(None, alias="petInNotify")
