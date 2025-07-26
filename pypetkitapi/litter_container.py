@@ -56,6 +56,7 @@ class SettingsLitter(BaseModel):
     fixed_time_spray: int | None = Field(None, alias="fixedTimeSpray")
     garbage_notify: int | None = Field(None, alias="garbageNotify")
     highlight: int | None = Field(None, alias="highlight")
+    home_mode: int | None = Field(None, alias="homeMode")
     kitten: int | None = None
     kitten_percent: float | None = Field(None, alias="kittenPercent")
     kitten_tips_time: int | None = Field(None, alias="kittenTipsTime")
@@ -174,6 +175,7 @@ class StateLitter(BaseModel):
     spray_reset_time: int | None = Field(None, alias="sprayResetTime")
     spray_state: int | None = Field(None, alias="sprayState")
     top_ins: int | None = Field(None, alias="topIns")
+    trunk_state: int | None = Field(None, alias="trunkState")
     used_times: int | None = Field(None, alias="usedTimes")
     wander_time: int | None = Field(None, alias="wanderTime")
     weight_state: int | None = Field(None, alias="weightState")
@@ -450,14 +452,14 @@ class Litter(BaseModel):
     device_pet_graph_out: list[PetOutGraph] | None = None
     device_records: list[LitterRecord] | None = None
     device_stats: LitterStats | None = None
-    firmware: float
+    firmware: float | str | None = None
     firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
     hardware: int
     id: int
     in_times: int | None = Field(None, alias="inTimes")
     is_pet_out_tips: int | None = Field(None, alias="isPetOutTips")
     k3_device: Purifier | None = Field(None, alias="k3Device")
-    last_out_time: int | None = None
+    last_out_time: int | None = Field(None, alias="lastOutTime")
     locale: str | None = None
     mac: str | None = None
     maintenance_time: int | None = Field(None, alias="maintenanceTime")
@@ -472,6 +474,7 @@ class Litter(BaseModel):
     pet_out_records: list[list[int]] | None = Field(None, alias="petOutRecords")
     pet_out_tips: list[Any] | None = Field(None, alias="petOutTips")
     purification_tip: int | None = Field(None, alias="purificationTip")
+    ph_error_popup: int | None = Field(None, alias="phErrorPopup")
     secret: str | None = None
     service_status: int | None = Field(None, alias="serviceStatus")
     settings: SettingsLitter | None = None
