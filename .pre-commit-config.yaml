@@ -5,7 +5,7 @@ repos:
       - id: pre-commit-update
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
       - id: check-ast
@@ -35,7 +35,7 @@ repos:
       - id: black
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.5
+    rev: v0.12.9
     hooks:
       - id: ruff
         args:
@@ -65,7 +65,7 @@ repos:
           - --force
           - --keep-updates
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.17.0
+    rev: v1.17.1
     hooks:
       - id: mypy
         additional_dependencies:
