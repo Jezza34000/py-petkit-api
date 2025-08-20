@@ -7,6 +7,10 @@ class PypetkitError(Exception):
     """Class for PyPetkit exceptions."""
 
 
+class PetkitServerBusyError(PypetkitError):
+    """Raised when the server is busy (error_code 1)."""
+
+
 class PetkitTimeoutError(PypetkitError):
     """Class for PyPetkit timeout exceptions."""
 

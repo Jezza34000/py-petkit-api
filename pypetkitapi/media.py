@@ -345,7 +345,7 @@ class MediaManager:
                 continue
 
             date_str = await self.get_date_from_ts(timestamp)
-            filepath = f"{feeder_id}/{date_str}/{record_type.name.lower()}"
+            filepath = f"{feeder_id}/{date_str}"
             media_files.append(
                 MediaCloud(
                     event_id=item.event_id,
@@ -356,11 +356,44 @@ class MediaManager:
                     video=await self.construct_video_url(
                         device_type, item, user_id, cp_sub
                     ),
-                    filepath=filepath,
+                    filepath=f"{filepath}/{record_type.name.lower()}",
                     aes_key=item.aes_key,
                     timestamp=timestamp,
                 )
             )
+
+            # Gather the dish before and after images for EAT records
+            if record_type == RecordType.EAT:
+                if hasattr(item, "preview1") and item.preview1:
+                    # Preview1 is dish before image
+                    media_files.append(
+                        MediaCloud(
+                            event_id=item.event_id,
+                            event_type=RecordType.DISH_BEFORE,
+                            device_id=feeder_id,
+                            user_id=user_id,
+                            image=item.preview1,
+                            video=None,
+                            filepath=f"{filepath}/{RecordType.DISH_BEFORE.name.lower()}",
+                            aes_key=item.aes_key,
+                            timestamp=timestamp,
+                        )
+                    )
+                if hasattr(item, "preview2") and item.preview2:
+                    # Preview2 is dish after image
+                    media_files.append(
+                        MediaCloud(
+                            event_id=item.event_id,
+                            event_type=RecordType.DISH_AFTER,
+                            device_id=feeder_id,
+                            user_id=user_id,
+                            image=item.preview2,
+                            video=None,
+                            filepath=f"{filepath}/{RecordType.DISH_AFTER.name.lower()}",
+                            aes_key=item.aes_key,
+                            timestamp=timestamp,
+                        )
+                    )
         return media_files
 
     async def _process_litter(self, litter: Litter) -> list[MediaCloud]:
@@ -399,11 +432,16 @@ class MediaManager:
             timestamp = record.timestamp or None
             date_str = await self.get_date_from_ts(timestamp)
 
-            filepath = f"{litter_id}/{date_str}/toileting"
+            if getattr(record, "enum_event_type", None) == "pet_detect":
+                event_type = RecordType.PET
+            else:
+                event_type = RecordType.TOILETING
+
+            filepath = f"{litter_id}/{date_str}/{event_type.name.lower()}"
             media_files.append(
                 MediaCloud(
                     event_id=record.event_id,
-                    event_type=RecordType.TOILETING,
+                    event_type=event_type,
                     device_id=litter_id,
                     user_id=user_id,
                     image=record.preview,
@@ -415,6 +453,35 @@ class MediaManager:
                     timestamp=record.timestamp,
                 )
             )
+
+            # Gather Waste images if available
+            if hasattr(record, "sub_content") and record.sub_content:
+                for sub_record in record.sub_content:
+                    if (
+                        hasattr(sub_record, "shit_pictures")
+                        and isinstance(sub_record.shit_pictures, list)
+                        and len(sub_record.shit_pictures) > 2
+                    ):
+                        waste_image_data = sub_record.shit_pictures[2]
+                        if (
+                            waste_image_data.shit_picture
+                            and waste_image_data.shit_aes_key
+                        ):
+                            waste_filepath = f"{litter_id}/{date_str}/{RecordType.WASTE_CHECK.name.lower()}"
+                            media_files.append(
+                                MediaCloud(
+                                    event_id=record.event_id,
+                                    event_type=RecordType.WASTE_CHECK,
+                                    device_id=litter_id,
+                                    user_id=user_id,
+                                    image=waste_image_data.shit_picture,
+                                    video=None,
+                                    filepath=waste_filepath,
+                                    aes_key=waste_image_data.shit_aes_key,
+                                    timestamp=record.timestamp,
+                                )
+                            )
+
         return media_files
 
     @staticmethod

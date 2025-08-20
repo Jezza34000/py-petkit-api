@@ -11,11 +11,19 @@ from typing import Any
 import aiohttp
 from aiohttp import ContentTypeError
 import m3u8
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from pypetkitapi.bluetooth import BluetoothManager
 from pypetkitapi.command import ACTIONS_MAP
 from pypetkitapi.const import (
     CLIENT_NFO,
+    DEFAULT_COUNTRY,
+    DEFAULT_TZ,
     DEVICE_DATA,
     DEVICE_RECORDS,
     DEVICE_STATS,
@@ -52,6 +60,7 @@ from pypetkitapi.exceptions import (
     PetkitInvalidHTTPResponseCodeError,
     PetkitInvalidResponseFormat,
     PetkitRegionalServerNotFoundError,
+    PetkitServerBusyError,
     PetkitSessionError,
     PetkitSessionExpiredError,
     PetkitTimeoutError,
@@ -91,6 +100,12 @@ class PetKitClient:
         session: aiohttp.ClientSession | None = None,
     ) -> None:
         """Initialize the PetKit Client."""
+
+        if region is None or not region.strip():
+            region = DEFAULT_COUNTRY
+        if timezone is None or not timezone.strip():
+            timezone = DEFAULT_TZ
+
         self.username = username
         self.password = password
         self.region = region.lower()
@@ -761,6 +776,12 @@ class PrepReq:
             "X-Timezone": get_timezone_offset(self.timezone),
         }
 
+    @retry(
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=1, min=1, max=16),
+        retry=retry_if_exception_type(PetkitServerBusyError),
+        reraise=True,
+    )
     async def request(
         self,
         method: str,
@@ -823,8 +844,12 @@ class PrepReq:
             error_msg = response_json[ERR_KEY].get("msg", "Unknown error")
 
             match error_code:
+                case 1:
+                    raise PetkitServerBusyError(f"Server busy: {error_msg}")
                 case 5:
-                    raise PetkitSessionExpiredError(f"Session expired: {error_msg}")
+                    raise PetkitSessionExpiredError(
+                        f"Session expired: {error_msg}. WARNING : Make sure you're not using your main PetKit app account. Use a separate one for Home Assistant. Refer to the documentation for more details."
+                    )
                 case 122:
                     raise PetkitAuthenticationError(
                         f"Authentication failed: {error_msg}"

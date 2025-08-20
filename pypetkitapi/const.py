@@ -2,6 +2,9 @@
 
 from enum import StrEnum
 
+DEFAULT_COUNTRY = "DE"
+DEFAULT_TZ = "Europe/Berlin"
+
 RES_KEY = "result"
 ERR_KEY = "error"
 SUCCESS_KEY = "success"
@@ -15,7 +18,6 @@ PET_DATA = "petData"
 BLE_CONNECT_ATTEMPT = 32
 BLE_START_TRAME = [250, 252, 253]
 BLE_END_TRAME = [251]
-ALLOWED_DIRECT_BT_DEVICES = [14, 16, 24]
 
 # PetKit Models
 FEEDER = "feeder"
@@ -79,7 +81,7 @@ class Header(StrEnum):
     ACCEPT = "*/*"
     ACCEPT_LANG = "en-US;q=1, it-US;q=0.9"
     ENCODING = "gzip, deflate"
-    API_VERSION = "12.1.4"
+    API_VERSION = "12.4.1"
     CONTENT_TYPE = "application/x-www-form-urlencoded"
     AGENT = "okhttp/3.12.11"
     CLIENT = f"{Client.PLATFORM_TYPE}({Client.OS_VERSION};{Client.MODEL_NAME})"
@@ -124,6 +126,9 @@ class RecordType(StrEnum):
     MOVE = "move"
     PET = "pet"
     TOILETING = "toileting"
+    WASTE_CHECK = "waste_check"
+    DISH_BEFORE = "dish_before"
+    DISH_AFTER = "dish_after"
 
 
 RecordTypeLST = [
@@ -132,6 +137,9 @@ RecordTypeLST = [
     RecordType.MOVE,
     RecordType.PET,
     RecordType.TOILETING,
+    RecordType.WASTE_CHECK,
+    RecordType.DISH_BEFORE,
+    RecordType.DISH_AFTER,
 ]
 
 

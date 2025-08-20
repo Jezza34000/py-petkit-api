@@ -177,15 +177,12 @@ class BluetoothManager:
         )
         _LOGGER.debug("BLE connection closed successfully (id %s)", fountain_id)
 
-    async def build_ble_command(
-        self, fountain_id: int, cmd_code: int, cmd_type: int, cmd_data: list[int | str]
-    ) -> str:
+    async def get_ble_cmd_data(
+        self, fountain_command: list, counter: int
+    ) -> tuple[int, str]:
         """Get the BLE command data for the given fountain_command.
-        BLE command format : [header, cmd_code, type_code, counter, length_of_cmd_data, 0, cmd_data + end_bytes]
-        :param fountain_id: The ID of the fountain to get the BLE command data for.
-        :param cmd_code: BLE command code (1-255).
-        :param cmd_type: BLE command type (1 = write, 2 = read).
-        :param cmd_data: The BLE command data.
+        :param fountain_command: The fountain command to get the BLE data for.
+        :param counter: The BLE counter for the fountain.
         :return: The BLE command code and the encoded BLE data.
         """
         return await self._encode_ble_data(

@@ -38,7 +38,9 @@ class SettingsLitter(BaseModel):
     bury: int | None = None
     camera: int | None = None
     camera_config: int | None = Field(None, alias="cameraConfig")
+    camera_inward: int | None = Field(None, alias="cameraInward")
     camera_light: int | None = Field(None, alias="cameraLight")
+    camera_off: int | None = Field(None, alias="cameraOff")
     cleanning_notify: int | None = Field(None, alias="cleanningNotify")
     click_ok_enable: int | None = Field(None, alias="clickOkEnable")
     control_settings: int | None = Field(None, alias="controlSettings")
@@ -56,6 +58,7 @@ class SettingsLitter(BaseModel):
     fixed_time_spray: int | None = Field(None, alias="fixedTimeSpray")
     garbage_notify: int | None = Field(None, alias="garbageNotify")
     highlight: int | None = Field(None, alias="highlight")
+    home_mode: int | None = Field(None, alias="homeMode")
     kitten: int | None = None
     kitten_percent: float | None = Field(None, alias="kittenPercent")
     kitten_tips_time: int | None = Field(None, alias="kittenTipsTime")
@@ -77,12 +80,15 @@ class SettingsLitter(BaseModel):
     move_notify: int | None = Field(None, alias="moveNotify")
     night: int | None = None
     no_remind: int | None = Field(None, alias="noRemind")
+    no_sound: int | None = Field(None, alias="noSound")
     package_standard: list[int] | None = Field(None, alias="packageStandard")
     pet_detection: int | None = Field(None, alias="petDetection")
     pet_in_notify: int | None = Field(None, alias="petInNotify")
     pet_notify: int | None = Field(None, alias="petNotify")
+    ph_detection: int | None = Field(None, alias="phDetection")
     pre_live: int | None = Field(None, alias="preLive")
     relate_k3_switch: int | None = Field(None, alias="relateK3Switch")
+    sand_saving: int | None = Field(None, alias="sandSaving")
     sand_type: int | None = Field(None, alias="sandType")
     soft_mode: int | None = Field(None, alias="softMode")
     spray_notify: int | None = Field(None, alias="sprayNotify")
@@ -91,6 +97,7 @@ class SettingsLitter(BaseModel):
     system_sound_enable: int | None = Field(None, alias="systemSoundEnable")
     time_display: int | None = Field(None, alias="timeDisplay")
     toilet_detection: int | None = Field(None, alias="toiletDetection")
+    toilet_light: int | None = Field(None, alias="toiletLight")
     toilet_notify: int | None = Field(None, alias="toiletNotify")
     tone_config: int | None = Field(None, alias="toneConfig")
     tone_mode: int | None = Field(None, alias="toneMode")
@@ -99,6 +106,7 @@ class SettingsLitter(BaseModel):
     underweight: int | None = Field(None, alias="underweight")
     unit: int | None = None
     upload: int | None = None
+    voice: int | None = None
     volume: int | None = None
     wander_detection: int | None = Field(None, alias="wanderDetection")
     weight_popup: int | None = Field(None, alias="weightPopup")
@@ -170,6 +178,7 @@ class StateLitter(BaseModel):
     spray_reset_time: int | None = Field(None, alias="sprayResetTime")
     spray_state: int | None = Field(None, alias="sprayState")
     top_ins: int | None = Field(None, alias="topIns")
+    trunk_state: int | None = Field(None, alias="trunkState")
     used_times: int | None = Field(None, alias="usedTimes")
     wander_time: int | None = Field(None, alias="wanderTime")
     weight_state: int | None = Field(None, alias="weightState")
@@ -188,6 +197,7 @@ class ContentSC(BaseModel):
     litter_percent: int | None = Field(None, alias="litterPercent")
     mark: int | None = None
     media: int | None = None
+    ph_reason: int | None = Field(None, alias="phReason")
     result: int | None = None
     start_reason: int | None = Field(None, alias="startReason")
     start_time: int | None = Field(None, alias="startTime")
@@ -216,9 +226,20 @@ class LRContent(BaseModel):
     error: int | None = None
 
 
+class ShitPictures(BaseModel):
+    """Dataclass for sub-content of LitterRecord.
+    LitterRecord -> ShitPictures
+    """
+
+    created_at: str | int | None = Field(None, alias="createdAt")
+    pic_id: str | None = Field(None, alias="picId")
+    shit_aes_key: str | None = Field(None, alias="shitAesKey")
+    shit_picture: str | None = Field(None, alias="shitPicture")
+
+
 class LRSubContent(BaseModel):
     """Subclass of LitterRecord.
-    LitterRecord -> subContent
+    LitterRecord -> List[subContent]
     """
 
     aes_key: str | None = Field(None, alias="aesKey")
@@ -235,22 +256,12 @@ class LRSubContent(BaseModel):
     preview: str | None = None
     related_event: str | None = Field(None, alias="relatedEvent")
     shit_aes_key: str | None = Field(None, alias="shitAesKey")
-    shit_picture: str | None = Field(None, alias="shitPicture")
+    shit_pictures: list[ShitPictures] | None = Field(None, alias="shitPictures")
     storage_space: int | None = Field(None, alias="storageSpace")
     sub_content: list[Any] | None = Field(None, alias="subContent")
     timestamp: int | None = None
     upload: int | None = None
     user_id: str | None = Field(None, alias="userId")
-
-
-class ShitPictures(BaseModel):
-    """Dataclass for sub-content of LitterRecord.
-    LitterRecord -> ShitPictures
-    """
-
-    pic_id: str | None = Field(None, alias="picId")
-    shit_aes_key: str | None = Field(None, alias="shitAesKey")
-    shit_picture: str | None = Field(None, alias="shitPicture")
 
 
 class LitterRecord(BaseModel):
@@ -277,7 +288,7 @@ class LitterRecord(BaseModel):
     pet_name: str | None = Field(None, alias="petName")
     preview: str | None = None
     related_event: str | None = Field(None, alias="relatedEvent")
-    shit_pictures: ShitPictures | None = None
+    shit_pictures: list[ShitPictures] | None = Field(None, alias="shitPictures")
     storage_space: int | None = Field(None, alias="storageSpace")
     sub_content: list[LRSubContent] | None = Field(None, alias="subContent")
     timestamp: int | None = None
@@ -444,14 +455,14 @@ class Litter(BaseModel):
     device_pet_graph_out: list[PetOutGraph] | None = None
     device_records: list[LitterRecord] | None = None
     device_stats: LitterStats | None = None
-    firmware: float
+    firmware: float | str | None = None
     firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
     hardware: int
     id: int
     in_times: int | None = Field(None, alias="inTimes")
     is_pet_out_tips: int | None = Field(None, alias="isPetOutTips")
     k3_device: Purifier | None = Field(None, alias="k3Device")
-    last_out_time: int | None = None
+    last_out_time: int | None = Field(None, alias="lastOutTime")
     locale: str | None = None
     mac: str | None = None
     maintenance_time: int | None = Field(None, alias="maintenanceTime")
@@ -466,6 +477,7 @@ class Litter(BaseModel):
     pet_out_records: list[list[int]] | None = Field(None, alias="petOutRecords")
     pet_out_tips: list[Any] | None = Field(None, alias="petOutTips")
     purification_tip: int | None = Field(None, alias="purificationTip")
+    ph_error_popup: int | None = Field(None, alias="phErrorPopup")
     secret: str | None = None
     service_status: int | None = Field(None, alias="serviceStatus")
     settings: SettingsLitter | None = None

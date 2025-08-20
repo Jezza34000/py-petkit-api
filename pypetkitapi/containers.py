@@ -55,12 +55,19 @@ class Device(BaseModel):
 
     created_at: int = Field(alias="createdAt")
     device_id: int = Field(alias="deviceId")
-    device_name: str = Field(alias="deviceName")
+    device_name: str | None = Field("unnamed_device", alias="deviceName")
     device_type: str = Field(alias="deviceType")
     group_id: int = Field(alias="groupId")
     type: int
     type_code: int = Field(0, alias="typeCode")
     unique_id: str = Field(alias="uniqueId")
+
+    @field_validator("device_name", mode="before")
+    def set_default_name(cls, value):  # noqa: N805
+        """Set default device_name if None or empty to avoid issues."""
+        if value is None or not isinstance(value, str) or not value.strip():
+            return "unnamed_device"
+        return value.lower()
 
     @field_validator("device_name", "device_type", "unique_id", mode="before")
     def convert_to_lower(cls, value):  # noqa: N805
