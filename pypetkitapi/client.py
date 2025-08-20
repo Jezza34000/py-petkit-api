@@ -11,6 +11,12 @@ from typing import Any
 import aiohttp
 from aiohttp import ContentTypeError
 import m3u8
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from pypetkitapi.bluetooth import BluetoothManager
 from pypetkitapi.command import ACTIONS_MAP
@@ -54,6 +60,7 @@ from pypetkitapi.exceptions import (
     PetkitInvalidHTTPResponseCodeError,
     PetkitInvalidResponseFormat,
     PetkitRegionalServerNotFoundError,
+    PetkitServerBusyError,
     PetkitSessionError,
     PetkitSessionExpiredError,
     PetkitTimeoutError,
@@ -769,6 +776,12 @@ class PrepReq:
             "X-Timezone": get_timezone_offset(self.timezone),
         }
 
+    @retry(
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=1, min=1, max=16),
+        retry=retry_if_exception_type(PetkitServerBusyError),
+        reraise=True,
+    )
     async def request(
         self,
         method: str,
@@ -831,6 +844,8 @@ class PrepReq:
             error_msg = response_json[ERR_KEY].get("msg", "Unknown error")
 
             match error_code:
+                case 1:
+                    raise PetkitServerBusyError(f"Server busy: {error_msg}")
                 case 5:
                     raise PetkitSessionExpiredError(
                         f"Session expired: {error_msg}. WARNING : Make sure you're not using your main PetKit app account. Use a separate one for Home Assistant. Refer to the documentation for more details."
