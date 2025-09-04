@@ -35,6 +35,7 @@ from pypetkitapi.const import (
     FEEDER_WITH_CAMERA,
     LITTER_NO_CAMERA,
     LITTER_WITH_CAMERA,
+    LIVE_DATA,
     LOGIN_DATA,
     PET,
     RES_KEY,
@@ -49,6 +50,7 @@ from pypetkitapi.const import (
 from pypetkitapi.containers import (
     AccountData,
     Device,
+    LiveFeed,
     Pet,
     PetDetails,
     RegionInfo,
@@ -301,11 +303,14 @@ class PetKitClient:
             await self._get_account_data()
 
         device_list = self._collect_devices()
-        main_tasks, record_tasks, media_tasks = self._prepare_tasks(device_list)
+        main_tasks, record_tasks, media_tasks, live_tasks = self._prepare_tasks(
+            device_list
+        )
 
         await asyncio.gather(*main_tasks)
         await asyncio.gather(*record_tasks)
         await asyncio.gather(*media_tasks)
+        await asyncio.gather(*live_tasks)
         await self._execute_stats_tasks()
 
         end_time = datetime.now()
@@ -324,13 +329,16 @@ class PetKitClient:
                 _LOGGER.debug("Found %s devices", len(account.device_list))
         return device_list
 
-    def _prepare_tasks(self, device_list: list[Device]) -> tuple[list, list, list]:
+    def _prepare_tasks(
+        self, device_list: list[Device]
+    ) -> tuple[list, list, list, list]:
         """Prepare main and record tasks based on device types.
         :param device_list: List of devices.
         :return: Tuple of main tasks, record tasks and media tasks.
         """
         main_tasks: list = []
         record_tasks: list = []
+        live_tasks: list = []
         media_tasks: list = []
 
         for device in device_list:
@@ -339,13 +347,15 @@ class PetKitClient:
             if device_type in DEVICES_FEEDER:
                 main_tasks.append(self._fetch_device_data(device, Feeder))
                 record_tasks.append(self._fetch_device_data(device, FeederRecord))
-                self._add_feeder_task_by_type(media_tasks, device_type, device)
+                self._add_feeder_task_by_type(
+                    media_tasks, live_tasks, device_type, device
+                )
 
             elif device_type in DEVICES_LITTER_BOX:
                 main_tasks.append(self._fetch_device_data(device, Litter))
                 record_tasks.append(self._fetch_device_data(device, LitterRecord))
                 self._add_lb_task_by_type(
-                    record_tasks, media_tasks, device_type, device
+                    record_tasks, media_tasks, live_tasks, device_type, device
                 )
 
             elif device_type in DEVICES_WATER_FOUNTAIN:
@@ -357,10 +367,15 @@ class PetKitClient:
             elif device_type in DEVICES_PURIFIER:
                 main_tasks.append(self._fetch_device_data(device, Purifier))
 
-        return main_tasks, record_tasks, media_tasks
+        return main_tasks, record_tasks, media_tasks, live_tasks
 
     def _add_lb_task_by_type(
-        self, record_tasks: list, media_tasks: list, device_type: str, device: Device
+        self,
+        record_tasks: list,
+        live_tasks: list,
+        media_tasks: list,
+        device_type: str,
+        device: Device,
     ) -> None:
         """Add specific tasks for litter box devices.
         :param record_tasks: List of record tasks.
@@ -373,9 +388,10 @@ class PetKitClient:
         if device_type in LITTER_WITH_CAMERA:
             record_tasks.append(self._fetch_device_data(device, PetOutGraph))
             media_tasks.append(self._fetch_media(device))
+            live_tasks.append(self._fetch_device_data(device, LiveFeed))
 
     def _add_feeder_task_by_type(
-        self, media_tasks: list, device_type: str, device: Device
+        self, media_tasks: list, live_tasks: list, device_type: str, device: Device
     ) -> None:
         """Add specific tasks for feeder box devices.
         :param media_tasks: List of media tasks.
@@ -384,6 +400,7 @@ class PetKitClient:
         """
         if device_type in FEEDER_WITH_CAMERA:
             media_tasks.append(self._fetch_media(device))
+            live_tasks.append(self._fetch_device_data(device, LiveFeed))
 
     async def _execute_stats_tasks(self) -> None:
         """Execute tasks to populate pet stats."""
@@ -418,6 +435,7 @@ class PetKitClient:
             | WaterFountainRecord
             | PetOutGraph
             | LitterStats
+            | LiveFeed
         ],
     ) -> None:
         """Fetch the device data from the PetKit servers.
@@ -508,6 +526,19 @@ class PetKitClient:
         else:
             _LOGGER.warning(
                 "Cannot assign device_stats or device_pet_graph_out to entity of type %s",
+                type(entity),
+            )
+
+    @data_handler(LIVE_DATA)
+    async def _handle_live_data(self, device: Device, device_data, device_type: str):
+        """Handle device records."""
+        entity = self.petkit_entities.get(device.device_id)
+        if entity and isinstance(entity, (Feeder, Litter)):
+            entity.live_feed = device_data
+            _LOGGER.debug("Device live feed data fetched OK for %s", device_type)
+        else:
+            _LOGGER.warning(
+                "Cannot assign live_data to entity of type %s",
                 type(entity),
             )
 

@@ -13,6 +13,7 @@ DEVICE_RECORDS = "deviceRecords"
 DEVICE_DATA = "deviceData"
 DEVICE_STATS = "deviceStats"
 PET_DATA = "petData"
+LIVE_DATA = "liveData"
 
 # Bluetooth
 BLE_CONNECT_ATTEMPT = 32
@@ -181,6 +182,7 @@ class PetkitEndpoint(StrEnum):
     GET_PET_OUT_GRAPH = "getPetOutGraph"
 
     # Video features
+    LIVE = "start/live"
     GET_M3U8 = "getM3u8"
     CLOUD_VIDEO = "cloud/video"
     GET_DOWNLOAD_M3U8 = "getDownloadM3u8"

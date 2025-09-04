@@ -1,8 +1,10 @@
 """Dataclasses container for petkit API."""
 
-from typing import Any
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field, field_validator
+
+from pypetkitapi.const import LIVE_DATA, PetkitEndpoint
 
 
 class RegionInfo(BaseModel):
@@ -210,3 +212,31 @@ class FirmwareDetail(BaseModel):
 
     module: str | None = None
     version: int | None = None
+
+
+class LiveFeed(BaseModel):
+    """Dataclass for live feed details.
+    Subclass of many other device dataclasses.
+    """
+
+    data_type: ClassVar[str] = LIVE_DATA
+
+    channel_id: str | None = Field(None, alias="channelId")
+    app_rtm_user_id: str | None = Field(None, alias="appRtmUserId")
+    dev_rtm_user_id: str | None = Field(None, alias="devRtmUserId")
+    rtc_token: str | None = Field(None, alias="rtcToken")
+    rtm_token: str | None = Field(None, alias="rtmToken")
+
+    @classmethod
+    def get_endpoint(cls, device_type: str) -> str:
+        """Get the endpoint URL for the given device type."""
+        return PetkitEndpoint.LIVE
+
+    @classmethod
+    def query_param(
+        cls,
+        device: Device,
+        device_data: Any | None = None,
+    ) -> dict:
+        """Generate query parameters including request_date."""
+        return {"definition": 2, "deviceId": device.device_id}

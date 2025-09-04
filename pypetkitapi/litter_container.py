@@ -18,6 +18,7 @@ from pypetkitapi.containers import (
     CloudProduct,
     Device,
     FirmwareDetail,
+    LiveFeed,
     UserDevice,
     Wifi,
 )
@@ -464,6 +465,7 @@ class Litter(BaseModel):
     k3_device: Purifier | None = Field(None, alias="k3Device")
     last_out_time: int | None = Field(None, alias="lastOutTime")
     locale: str | None = None
+    live_feed: LiveFeed | None = None
     mac: str | None = None
     maintenance_time: int | None = Field(None, alias="maintenanceTime")
     medias: list | None = None

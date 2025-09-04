@@ -18,6 +18,7 @@ from pypetkitapi.containers import (
     CloudProduct,
     Device,
     FirmwareDetail,
+    LiveFeed,
     UserDevice,
     Wifi,
 )
@@ -326,6 +327,7 @@ class Feeder(BaseModel):
     hardware: int
     id: int
     locale: str | None = None
+    live_feed: LiveFeed | None = None
     mac: str | None = None
     manual_feed: ManualFeed | None = None
     model_code: int | None = Field(None, alias="modelCode")
