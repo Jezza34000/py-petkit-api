@@ -181,7 +181,7 @@ class PetKitClient:
         # Prepare the data to send
         client_nfo = CLIENT_NFO.copy()
         client_nfo["timezoneId"] = self.timezone
-        client_nfo["timezone"] = get_timezone_offset(self.timezone)
+        client_nfo["timezone"] = await get_timezone_offset(self.timezone)
 
         data = LOGIN_DATA.copy()
         data["client"] = str(client_nfo)
@@ -750,6 +750,8 @@ class PetKitClient:
 class PrepReq:
     """Prepare the request to the PetKit API."""
 
+    base_headers: dict[str, str]
+
     def __init__(
         self, base_url: str, session: aiohttp.ClientSession, timezone: str
     ) -> None:
@@ -757,9 +759,9 @@ class PrepReq:
         self.base_url = base_url
         self.session = session
         self.timezone = timezone
-        self.base_headers = self._generate_header()
+        self.base_headers = {}
 
-    def _generate_header(self) -> dict[str, str]:
+    async def _generate_header(self) -> dict[str, str]:
         """Create header for interaction with API endpoint."""
         return {
             "Accept": Header.ACCEPT.value,
@@ -773,7 +775,7 @@ class PrepReq:
             "X-Hour": Header.HOUR.value,
             "X-TimezoneId": self.timezone,
             "X-Api-Version": Header.API_VERSION.value,
-            "X-Timezone": get_timezone_offset(self.timezone),
+            "X-Timezone": await get_timezone_offset(self.timezone),
         }
 
     @retry(
@@ -800,6 +802,9 @@ class PrepReq:
         :param headers: Headers to send.
         :return: Response from the API.
         """
+        if not self.base_headers:
+            self.base_headers = await self._generate_header()
+
         _url = url if full_url else "/".join(s.strip("/") for s in [self.base_url, url])
         _headers = {**self.base_headers, **(headers or {})}
         _LOGGER.debug("Request: %s %s", method, _url)
