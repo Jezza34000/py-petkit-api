@@ -37,7 +37,7 @@ from .const import (
     MediaType,
     RecordType,
 )
-from .containers import Pet
+from .containers import LiveFeed, Pet
 from .exceptions import (
     PetkitAuthenticationUnregisteredEmailError,
     PetkitRegionalServerNotFoundError,
@@ -81,6 +81,7 @@ __all__ = [
     "Litter",
     "LitterCommand",
     "LitterRecord",
+    "LiveFeed",
     "MediaManager",
     "DownloadDecryptMedia",
     "MediaCloud",
