@@ -66,7 +66,28 @@ class MediaFile:
 class MediaManager:
     """Class to manage media files from PetKit devices."""
 
-    media_table: list[MediaFile] = []
+    def __init__(self):
+        """Media Manager init"""
+        self.media_table: list[MediaFile] = []
+        self._media_index: dict[tuple[str, MediaType], MediaFile] = {}
+
+    def _add_media_to_table(self, media_file: MediaFile) -> None:
+        """Add file to index"""
+        self.media_table.append(media_file)
+        index_key = (media_file.event_id, media_file.media_type)
+        self._media_index[index_key] = media_file
+
+    def clear_media_table(self) -> None:
+        """Empty index table"""
+        self.media_table.clear()
+        self._media_index.clear()
+
+    def _rebuild_index(self) -> None:
+        """Rebuild index."""
+        self._media_index.clear()
+        for media_file in self.media_table:
+            index_key = (media_file.event_id, media_file.media_type)
+            self._media_index[index_key] = media_file
 
     async def gather_all_media_from_cloud(
         self, devices: list[Feeder | Litter]
@@ -108,7 +129,7 @@ class MediaManager:
         self, storage_path: Path, device_id: int
     ) -> list[MediaFile]:
         """Construct the media file table for disk storage."""
-        self.media_table.clear()
+        self.clear_media_table()
 
         today_str = datetime.now().strftime("%Y%m%d")
         base_path = storage_path / str(device_id) / today_str
@@ -139,17 +160,17 @@ class MediaManager:
     ) -> None:
         """Process a subdirectory to collect media files."""
         if not await aiofiles.os.path.exists(subdir):
-            _LOGGER.debug("Path does not exist, skip: %s", subdir)
             return
 
-        _LOGGER.debug("Scanning files into: %s", subdir)
         entries = await aiofiles.os.scandir(subdir)
+
         for entry in entries:
             media_file = await self._create_media_file(
                 entry, device_id, record_type, subdir, valid_pattern
             )
+
             if media_file:
-                self.media_table.append(media_file)
+                self._add_media_to_table(media_file)
 
     @staticmethod
     async def _create_media_file(
@@ -227,8 +248,8 @@ class MediaManager:
         self, media_cloud: MediaCloud, dl_types: list[MediaType], existing_ids: set[str]
     ) -> bool:
         """Check if any media type is missing."""
-        missing_image = self._is_image_missing(media_cloud, dl_types, existing_ids)
-        missing_video = self._is_video_missing(media_cloud, dl_types, existing_ids)
+        missing_image = self._is_image_missing(media_cloud, dl_types)
+        missing_video = self._is_video_missing(media_cloud, dl_types)
 
         if missing_image or missing_video:
             self._log_missing_details(media_cloud, missing_image, missing_video)
@@ -236,37 +257,29 @@ class MediaManager:
         return False
 
     def _is_image_missing(
-        self, media_cloud: MediaCloud, dl_types: list[MediaType], existing_ids: set[str]
+        self, media_cloud: MediaCloud, dl_types: list[MediaType]
     ) -> bool:
-        """Check if image is missing."""
+        """Check if image is missing"""
         return bool(
             media_cloud.image
             and MediaType.IMAGE in dl_types
-            and not self._media_exists(
-                media_cloud.event_id, MediaType.IMAGE, existing_ids
-            )
+            and not self._media_exists(media_cloud.event_id, MediaType.IMAGE)
         )
 
     def _is_video_missing(
-        self, media_cloud: MediaCloud, dl_types: list[MediaType], existing_ids: set[str]
+        self, media_cloud: MediaCloud, dl_types: list[MediaType]
     ) -> bool:
-        """Check if video is missing."""
+        """Check if video is missing"""
         return bool(
             media_cloud.video
             and MediaType.VIDEO in dl_types
-            and not self._media_exists(
-                media_cloud.event_id, MediaType.VIDEO, existing_ids
-            )
+            and not self._media_exists(media_cloud.event_id, MediaType.VIDEO)
         )
 
-    def _media_exists(
-        self, event_id: str, media_type: MediaType, existing_ids: set[str]
-    ) -> bool:
-        """Check if media exists in local storage."""
-        for mf in self.media_table:
-            if event_id in existing_ids and mf.media_type == media_type:
-                return True
-        return False
+    def _media_exists(self, event_id: str, media_type: MediaType) -> bool:
+        """Check if media exists - O(1) lookup."""
+        index_key = (event_id, media_type)
+        return index_key in self._media_index
 
     @staticmethod
     def _log_missing_details(
