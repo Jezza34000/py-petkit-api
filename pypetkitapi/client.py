@@ -196,9 +196,7 @@ class PetKitClient:
             data["validCode"] = valid_code
         else:
             _LOGGER.debug("Login method: using password")
-            data["password"] = hashlib.md5(
-                self.password.encode()
-            ).hexdigest()  # noqa: S324
+            data["password"] = hashlib.md5(self.password.encode()).hexdigest()
 
         # Send the login request
         response = await self.req.request(
