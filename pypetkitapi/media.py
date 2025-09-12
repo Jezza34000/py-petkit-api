@@ -71,7 +71,7 @@ class MediaManager:
         """Media Manager init"""
         self.media_table: list[MediaFile] = []
         self._media_index: dict[tuple[str, MediaType], MediaFile] = {}
-        self._debug_test = kwargs.pop(PTK_DBG, False)
+        self._debug_test = kwargs.get(PTK_DBG, False)
 
     def _add_media_to_table(self, media_file: MediaFile) -> None:
         """Add file to index"""
@@ -215,12 +215,10 @@ class MediaManager:
         if not dl_type or not event_type:
             _LOGGER.debug("Missing dl_type or event_type, no downloads")
             return []
-
-        existing_event_ids = {media_file.event_id for media_file in self.media_table}
         return [
             mc
             for mc in media_cloud_list
-            if self._should_process_media(mc, event_type, dl_type, existing_event_ids)
+            if self._should_process_media(mc, event_type, dl_type)
         ]
 
     def _should_process_media(
@@ -228,13 +226,12 @@ class MediaManager:
         media_cloud: MediaCloud,
         event_filter: list[RecordType],
         dl_types: list[MediaType],
-        existing_ids: set[str],
     ) -> bool:
         """Determine if a media should be processed as missing."""
         if self._should_skip_event_type(media_cloud.event_type, event_filter):
             return False
-
-        return self._is_media_missing(media_cloud, dl_types, existing_ids)
+        _LOGGER.debug("Process media => %s ", media_cloud)
+        return self._is_media_missing(media_cloud, dl_types)
 
     @staticmethod
     def _should_skip_event_type(
@@ -247,7 +244,9 @@ class MediaManager:
         return False
 
     def _is_media_missing(
-        self, media_cloud: MediaCloud, dl_types: list[MediaType], existing_ids: set[str]
+        self,
+        media_cloud: MediaCloud,
+        dl_types: list[MediaType],
     ) -> bool:
         """Check if any media type is missing."""
         missing_image = self._is_image_missing(media_cloud, dl_types)
@@ -455,7 +454,7 @@ class MediaManager:
             filepath = f"{litter_id}/{date_str}/{event_type.name.lower()}"
             media_files.append(
                 MediaCloud(
-                    event_id=record.event_id,
+                    event_id=f"{litter_id}_{record.timestamp}",
                     event_type=event_type,
                     device_id=litter_id,
                     user_id=user_id,
@@ -485,7 +484,7 @@ class MediaManager:
                             waste_filepath = f"{litter_id}/{date_str}/{RecordType.WASTE_CHECK.name.lower()}"
                             media_files.append(
                                 MediaCloud(
-                                    event_id=record.event_id,
+                                    event_id=f"{litter_id}_{record.timestamp}",
                                     event_type=RecordType.WASTE_CHECK,
                                     device_id=litter_id,
                                     user_id=user_id,
@@ -597,10 +596,9 @@ class DownloadDecryptMedia:
         self.file_data = file_data
         if not file_type:
             file_type = []
-        filename = f"{self.file_data.device_id}_{self.file_data.timestamp}"
 
         if self.file_data.image and MediaType.IMAGE in file_type:
-            full_filename = f"{filename}.{MediaType.IMAGE}"
+            full_filename = f"{file_data.event_id}.{MediaType.IMAGE}"
             if await self.not_existing_file(full_filename):
                 # Image download
                 _LOGGER.debug("Download image file (event id: %s)", file_data.event_id)
@@ -611,7 +609,7 @@ class DownloadDecryptMedia:
                 )
 
         if self.file_data.video and MediaType.VIDEO in file_type:
-            if await self.not_existing_file(f"{filename}.{MediaType.VIDEO}"):
+            if await self.not_existing_file(f"{file_data.event_id}.{MediaType.VIDEO}"):
                 # Video download
                 _LOGGER.debug("Download video file (event id: %s)", file_data.event_id)
                 await self._get_video_m3u8()
