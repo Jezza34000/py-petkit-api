@@ -212,27 +212,27 @@ class TestMediaManager(unittest.IsolatedAsyncioTestCase):
         event_data.eat_end_time = 123456789
         user_id = USER_ID
         cp_sub = True
-
         expected_url = f"/feeder/cloud/video?startTime=1234567890&deviceId={DEVICE_ID}&userId={USER_ID}&mark=1234567890&endTime=123456789"
-        result = await MediaManager.construct_video_url(
+
+        media_manager = MediaManager()
+        media_manager._debug_test = False
+
+        result = await media_manager.construct_video_url(
             device_type, event_data, user_id, cp_sub
         )
         self.assertEqual(result, expected_url)
 
-        # Test with missing media_url
-        result = await MediaManager.construct_video_url(
+        result = await media_manager.construct_video_url(
             device_type, None, user_id, cp_sub
         )
         self.assertIsNone(result)
 
-        # Test with missing user_id
-        result = await MediaManager.construct_video_url(
+        result = await media_manager.construct_video_url(
             device_type, event_data, None, cp_sub
         )
         self.assertIsNone(result)
 
-        # Test with missing cp_sub
-        result = await MediaManager.construct_video_url(
+        result = await media_manager.construct_video_url(
             device_type, event_data, user_id, None
         )
         self.assertIsNone(result)
