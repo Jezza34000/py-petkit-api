@@ -23,6 +23,7 @@ from pypetkitapi import Feeder, Litter, PetKitClient, RecordsItems, RecordType
 from pypetkitapi.const import (
     FEEDER_WITH_CAMERA,
     LITTER_WITH_CAMERA,
+    PTK_DBG,
     MediaType,
     PetkitEndpoint,
     RecordTypeLST,
@@ -66,10 +67,11 @@ class MediaFile:
 class MediaManager:
     """Class to manage media files from PetKit devices."""
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """Media Manager init"""
         self.media_table: list[MediaFile] = []
         self._media_index: dict[tuple[str, MediaType], MediaFile] = {}
+        self._debug_test = kwargs.pop(PTK_DBG, False)
 
     def _add_media_to_table(self, media_file: MediaFile) -> None:
         """Add file to index"""
@@ -520,8 +522,8 @@ class MediaManager:
             return "unknown"
         return datetime.fromtimestamp(timestamp).strftime("%Y%m%d")
 
-    @staticmethod
     async def construct_video_url(
+        self,
         device_type: str | None,
         event_data: LitterRecord | RecordsItems,
         user_id: int,
@@ -534,7 +536,11 @@ class MediaManager:
         :param cp_sub: Cpsub value
         :return: Constructed video URL
         """
-        if not hasattr(event_data, "media_api") or not user_id or not cp_sub:
+        if (
+            not hasattr(event_data, "media_api")
+            or not user_id
+            or not (self._debug_test or cp_sub)
+        ):
             return None
         params = parse_qs(str(urlparse(event_data.media_api).query))
         param_dict = {k: v[0] for k, v in params.items()}

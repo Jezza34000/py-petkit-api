@@ -18,6 +18,7 @@ from tenacity import (
     wait_exponential,
 )
 
+from pypetkitapi import utils
 from pypetkitapi.bluetooth import BluetoothManager
 from pypetkitapi.command import ACTIONS_MAP
 from pypetkitapi.const import (
@@ -38,6 +39,7 @@ from pypetkitapi.const import (
     LIVE_DATA,
     LOGIN_DATA,
     PET,
+    PTK_DBG,
     RES_KEY,
     T3,
     T4,
@@ -100,6 +102,7 @@ class PetKitClient:
         region: str,
         timezone: str,
         session: aiohttp.ClientSession | None = None,
+        **kwargs,
     ) -> None:
         """Initialize the PetKit Client."""
 
@@ -122,15 +125,26 @@ class PetKitClient:
             base_url=PetkitDomain.PASSPORT_PETKIT,
             session=self.aiohttp_session,
             timezone=self.timezone,
+            **kwargs,
         )
-        self.bluetooth_manager = BluetoothManager(self)
+        self.bluetooth_manager = BluetoothManager(self, **kwargs)
+        self._debug_test = kwargs.pop(PTK_DBG, False)
         from pypetkitapi import MediaManager
 
         from . import __version__
 
-        self.media_manager = MediaManager()
+        self.media_manager = MediaManager(**kwargs)
 
         _LOGGER.debug("PetKit Client initialized (version %s)", __version__)
+        if self._debug_test:
+            _LOGGER.info(
+                "WARNING: pypetkitapi library is in DEBUG_TEST mode. Disable it if you are not developing."
+            )
+
+            _LOGGER.info("Installed packages :")
+            packages = utils.get_installed_packages()
+            for pkg in packages:
+                _LOGGER.info(pkg)
 
     async def _get_base_url(self) -> None:
         """Get the list of API servers, filter by region, and return the matching server."""
@@ -782,13 +796,14 @@ class PrepReq:
     base_headers: dict[str, str]
 
     def __init__(
-        self, base_url: str, session: aiohttp.ClientSession, timezone: str
+        self, base_url: str, session: aiohttp.ClientSession, timezone: str, **kwargs
     ) -> None:
         """Initialize the request."""
         self.base_url = base_url
         self.session = session
         self.timezone = timezone
         self.base_headers = {}
+        self._debug_test = kwargs.pop(PTK_DBG, False)
 
     async def _generate_header(self) -> dict[str, str]:
         """Create header for interaction with API endpoint."""
