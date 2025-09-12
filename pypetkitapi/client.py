@@ -128,7 +128,7 @@ class PetKitClient:
             **kwargs,
         )
         self.bluetooth_manager = BluetoothManager(self, **kwargs)
-        self._debug_test = kwargs.pop(PTK_DBG, False)
+        self._debug_test = kwargs.get(PTK_DBG, False)
         from pypetkitapi import MediaManager
 
         from . import __version__

@@ -30,7 +30,7 @@ class BluetoothManager:
     def __init__(self, client: "PetKitClient", **kwargs):
         """Initialize the BluetoothManager class."""
         self.client = client
-        self._debug_test = kwargs.pop(PTK_DBG, False)
+        self._debug_test = kwargs.get(PTK_DBG, False)
 
     async def _get_fountain_instance(self, fountain_id: int) -> "WaterFountain":
         """Get the WaterFountain instance for the given fountain_id.
