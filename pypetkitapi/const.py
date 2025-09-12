@@ -75,6 +75,7 @@ class Client(StrEnum):
     OS_VERSION = "15.1"
     MODEL_NAME = "23127PN0CG"
     SOURCE = "app.petkit-android"
+    PHONE_BRAND = "Xiaomi"
 
 
 class Header(StrEnum):
@@ -83,12 +84,12 @@ class Header(StrEnum):
     ACCEPT = "*/*"
     ACCEPT_LANG = "en-US;q=1, it-US;q=0.9"
     ENCODING = "gzip, deflate"
-    API_VERSION = "12.4.1"
+    API_VERSION = "12.4.9"
     CONTENT_TYPE = "application/x-www-form-urlencoded"
-    AGENT = "okhttp/3.12.11"
+    AGENT = "okhttp/3.14.19"
     CLIENT = f"{Client.PLATFORM_TYPE}({Client.OS_VERSION};{Client.MODEL_NAME})"
     LOCALE = "en-US"
-    IMG_VERSION = "1.0"
+    IMG_VERSION = "1"
     HOUR = "24"
 
 
@@ -96,6 +97,7 @@ CLIENT_NFO = {
     "locale": Header.LOCALE.value,
     "name": Client.MODEL_NAME.value,
     "osVersion": Client.OS_VERSION.value,
+    "phoneBrand": Client.PHONE_BRAND.value,
     "platform": Client.PLATFORM_TYPE.value,
     "source": Client.SOURCE.value,
     "version": Header.API_VERSION.value,
