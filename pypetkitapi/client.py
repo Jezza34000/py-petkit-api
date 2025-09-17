@@ -120,10 +120,9 @@ class PetKitClient:
         self.petkit_entities: dict[
             int, Feeder | Litter | WaterFountain | Purifier | Pet
         ] = {}
-        self.aiohttp_session = session or aiohttp.ClientSession()
         self.req = PrepReq(
             base_url=PetkitDomain.PASSPORT_PETKIT,
-            session=self.aiohttp_session,
+            session=session,
             timezone=self.timezone,
             **kwargs,
         )
@@ -784,16 +783,9 @@ class PetKitClient:
         _LOGGER.debug("Command execution success, API response : %s", res)
         return True
 
-    async def close(self) -> None:
-        """Close the aiohttp session if it was created by the client."""
-        if self.aiohttp_session:
-            await self.aiohttp_session.close()
-
 
 class PrepReq:
     """Prepare the request to the PetKit API."""
-
-    base_headers: dict[str, str]
 
     def __init__(
         self, base_url: str, session: aiohttp.ClientSession, timezone: str, **kwargs
@@ -802,7 +794,7 @@ class PrepReq:
         self.base_url = base_url
         self.session = session
         self.timezone = timezone
-        self.base_headers = {}
+        self.base_headers: dict[str, str] = {}
         self._debug_test = kwargs.pop(PTK_DBG, False)
 
     async def _generate_header(self) -> dict[str, str]:
@@ -825,7 +817,14 @@ class PrepReq:
     @retry(
         stop=stop_after_attempt(5),
         wait=wait_exponential(multiplier=1, min=1, max=16),
-        retry=retry_if_exception_type(PetkitServerBusyError),
+        retry=(
+            retry_if_exception_type(PetkitServerBusyError)
+            | retry_if_exception_type(aiohttp.ClientConnectorError)
+            | retry_if_exception_type(aiohttp.ClientOSError)
+            | retry_if_exception_type(aiohttp.ServerDisconnectedError)
+            | retry_if_exception_type(aiohttp.ClientResponseError)
+            | retry_if_exception_type(asyncio.TimeoutError)
+        ),
         reraise=True,
     )
     async def request(
@@ -862,7 +861,17 @@ class PrepReq:
             ) as resp:
                 return await self._handle_response(resp, _url)
         except aiohttp.ClientConnectorError as e:
+            _LOGGER.warning("Connection error while reaching %s: %s", _url, e)
             raise PetkitTimeoutError(f"Cannot connect to host: {e}") from e
+        except aiohttp.ClientOSError as e:
+            _LOGGER.warning("OS-level client error on %s: %s", _url, e)
+            raise PetkitTimeoutError(f"Client OS error: {e}") from e
+        except aiohttp.ServerDisconnectedError as e:
+            _LOGGER.warning("Server disconnected unexpectedly from %s: %s", _url, e)
+            raise PetkitTimeoutError(f"Server disconnected: {e}") from e
+        except asyncio.TimeoutError as e:
+            _LOGGER.warning("Timeout error while waiting for %s", _url)
+            raise PetkitTimeoutError(f"Request to {_url} timed out") from e
 
     @staticmethod
     async def _handle_response(response: aiohttp.ClientResponse, url: str) -> dict:
