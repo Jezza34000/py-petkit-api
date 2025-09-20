@@ -6,6 +6,7 @@ from enum import StrEnum
 import hashlib
 from http import HTTPMethod
 import logging
+import statistics
 from typing import Any
 
 import aiohttp
@@ -583,35 +584,76 @@ class PetKitClient:
             return 0
         return end - start
 
-    async def populate_pet_stats(self, stats_data: Litter) -> None:
+    async def populate_pet_stats(self, litter_data: Litter) -> None:
         """Collect data from litter data to populate pet stats.
-        :param stats_data: Litter data.
+        :param litter_data: Litter data.
         """
-        if not stats_data.device_nfo:
+        if not litter_data.device_nfo:
             _LOGGER.warning(
-                "No device info for %s can't populate pet infos", stats_data
+                "No device info for %s can't populate pet infos", litter_data
             )
             return
 
         pets_list = await self.get_pets_list()
         for pet in pets_list:
-            if stats_data.device_nfo.device_type in [T3, T4]:
-                await self.init_pet_stats(pet)
-                await self._process_litter_no_camera(pet, stats_data)
-            elif stats_data.device_nfo.device_type in [T5, T6]:
-                await self.init_pet_stats(pet)
-                await self._process_litter_camera(pet, stats_data)
+            if litter_data.device_nfo.device_type in [T3, T4]:
+                await self.init_pet_stats(pet, litter_data)
+                await self._process_litter_no_camera(pet, litter_data)
+            elif litter_data.device_nfo.device_type in [T5, T6]:
+                await self.init_pet_stats(pet, litter_data)
+                await self._process_litter_camera(pet, litter_data)
 
     @staticmethod
-    async def init_pet_stats(pet: Pet) -> None:
+    async def init_pet_stats(pet: Pet, litter_data: Litter) -> None:
         """Initialize pet stats.
         Allow pet stats to be displayed in HA even if no data is available.
         :param pet: Pet data.
+        :param litter_data: Litter data.
         """
-        pet.last_litter_usage = 0
-        pet.last_device_used = "Unknown"
-        pet.last_duration_usage = 0
-        pet.last_measured_weight = 0
+        if (
+            getattr(pet, "last_litter_usage", None) is None
+            and getattr(pet, "last_device_used", None) is None
+            and getattr(pet, "last_duration_usage", None) is None
+            and getattr(pet, "last_measured_weight", None) is None
+        ):
+            pet.last_litter_usage = 0
+            pet.last_device_used = "Unknown"
+            pet.last_duration_usage = 0
+            pet.last_measured_weight = 0
+
+        # Initialize yowling_detected if voice == 1
+        if (
+            getattr(pet, "yowling_detected", None) is None
+            and litter_data.settings
+            and getattr(litter_data.settings, "voice", None) == 1
+        ):
+            pet.yowling_detected = 0
+
+        # Initialize PH-related fields if ph_detection == 1
+        if (
+            getattr(pet, "abnormal_ph_detected", None) is None
+            and getattr(pet, "measured_ph", None) is None
+            and getattr(pet, "soft_stool_detected", None) is None
+            and getattr(pet, "last_urination", None) is None
+            and getattr(pet, "last_defecation", None) is None
+            and litter_data.settings
+            and getattr(litter_data.settings, "ph_detection", None) == 1
+        ):
+            pet.abnormal_ph_detected = 0
+            pet.measured_ph = 7
+            pet.soft_stool_detected = 0
+            pet.last_urination = 0
+            pet.last_defecation = 0
+
+    @staticmethod
+    def set_if_not_none(obj, attr, value):
+        """Set the attribute of an object if the value is not None.
+        :param obj: Object to set the attribute on.
+        :param attr: Attribute to set.
+        :param value: Value to set.
+        """
+        if value is not None:
+            setattr(obj, attr, value)
 
     async def _process_litter_no_camera(self, pet: Pet, device_records: Litter) -> None:
         """Process litter T3/T4 records (litter without camera).
@@ -625,40 +667,117 @@ class PetKitClient:
         ):
             if stat.pet_id == pet.pet_id and (
                 pet.last_litter_usage is None
-                or self.get_safe_value(stat.timestamp) > pet.last_litter_usage
+                or getattr(stat, "timestamp", 0) > pet.last_litter_usage
             ):
-                pet.last_litter_usage = (
-                    stat.timestamp if stat.timestamp is not None else 0
+                self.set_if_not_none(pet, "last_litter_usage", stat.timestamp)
+                self.set_if_not_none(
+                    pet,
+                    "last_measured_weight",
+                    getattr(stat.content, "pet_weight", None) if stat.content else None,
                 )
-                pet.last_measured_weight = self.get_safe_value(
-                    stat.content.pet_weight if stat.content else None
+                self.set_if_not_none(
+                    pet,
+                    "last_duration_usage",
+                    (
+                        self.calculate_duration(
+                            stat.content.time_in, stat.content.time_out
+                        )
+                        if stat.content
+                        else None
+                    ),
                 )
-                pet.last_duration_usage = self.calculate_duration(
-                    stat.content.time_in if stat.content else None,
-                    stat.content.time_out if stat.content else None,
+                device_name = getattr(device_records.device_nfo, "device_name", None)
+                self.set_if_not_none(
+                    pet,
+                    "last_device_used",
+                    device_name.capitalize() if device_name is not None else None,
                 )
-                pet.last_device_used = getattr(
-                    device_records.device_nfo, "device_name", "Unknown"
-                ).capitalize()
 
-    async def _process_litter_camera(self, pet: Pet, pet_graphs: Litter) -> None:
+    async def _process_litter_camera(self, pet: Pet, litter_data: Litter) -> None:
         """Process litter T5/T6 records (litter WITH camera).
         :param pet: Pet data.
-        :param pet_graphs: Litter data.
+        :param litter_data: Litter data.
         """
-        for graph in pet_graphs.device_pet_graph_out or []:
-            if graph.pet_id == pet.pet_id and (
+        # Get last_litter_usage, last_measured_weight, last_duration_usage from PetOutGraph
+        for value in litter_data.device_pet_graph_out or []:
+            if value.pet_id == pet.pet_id and (
                 pet.last_litter_usage is None
-                or self.get_safe_value(graph.time) > pet.last_litter_usage
+                or getattr(value, "time", 0) > pet.last_litter_usage
             ):
-                pet.last_litter_usage = graph.time or 0
-                pet.last_measured_weight = self.get_safe_value(
-                    graph.content.pet_weight if graph.content else None
+                self.set_if_not_none(
+                    pet, "last_litter_usage", getattr(value.content, "time", None)
                 )
-                pet.last_duration_usage = self.get_safe_value(graph.toilet_time) or 0
-                pet.last_device_used = getattr(
-                    pet_graphs.device_nfo, "device_name", "Unknown"
-                ).capitalize()
+                self.set_if_not_none(
+                    pet,
+                    "last_measured_weight",
+                    getattr(value.content, "pet_weight", None),
+                )
+                self.set_if_not_none(
+                    pet, "last_duration_usage", getattr(value, "toilet_time", None)
+                )
+                device_name = getattr(litter_data.device_nfo, "device_name", None)
+                self.set_if_not_none(
+                    pet,
+                    "last_device_used",
+                    device_name.capitalize() if device_name else None,
+                )
+                self.set_if_not_none(pet, "last_event_id", value.event_id or None)
+
+        # Get yowling_detected, anormal_ph_detected, measured_ph, soft_stool_detected, last_urination and last_defecation from LitterRecord
+        for value in litter_data.device_records or []:
+            if value.pet_id == pet.pet_id and value.event_id == pet.last_event_id:
+                # yowling_detected
+                pet.yowling_detected = value.content.pet_voice if value.content else 0
+
+                # anormal_ph_detected : bool
+                if (
+                    value.sub_content
+                    and value.sub_content[0]
+                    and value.sub_content[0].content
+                ):
+                    pet.abnormal_ph_detected = value.sub_content[0].content.ph_state
+
+                # measured_ph : float | None
+                if (
+                    value.sub_content
+                    and value.sub_content[0]
+                    and value.sub_content[0].content
+                    and value.sub_content[0].content.detection_info
+                ):
+                    pet.measured_ph = statistics.mean(
+                        item["ph"]
+                        for item in value.sub_content[0].content.detection_info
+                    )
+                else:
+                    pet.measured_ph = None
+
+                # soft_stool_detected : bool
+                if (
+                    value.sub_content
+                    and value.sub_content[0]
+                    and value.sub_content[0].content
+                ):
+                    pet.soft_stool_detected = value.sub_content[0].content.soft_stools
+
+                # last_urination : str | None
+                if (
+                    value.sub_content
+                    and value.sub_content[0]
+                    and value.sub_content[0].content
+                    and getattr(value.sub_content[0].content, "urine_bolus", None) == 1
+                    and value.timestamp is not None
+                ):
+                    pet.last_urination = value.timestamp
+
+                # last_defecation : str | None
+                if (
+                    value.sub_content
+                    and value.sub_content[0]
+                    and value.sub_content[0].content
+                    and getattr(value.sub_content[0].content, "hard_stools", None) == 1
+                    and value.timestamp is not None
+                ):
+                    pet.last_defecation = value.timestamp
 
     async def get_cloud_video(self, video_url: str) -> dict[str, str | int] | None:
         """Get the video m3u8 link from the cloud.
