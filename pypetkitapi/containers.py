@@ -133,7 +133,14 @@ class Pet(BaseModel):
     last_litter_usage: int | None = None
     last_device_used: str | None = None
     last_duration_usage: int | None = None
+    last_event_id: str | None = None
     last_measured_weight: int | None = None
+    yowling_detected: int | None = None
+    abnormal_ph_detected: int | None = None
+    measured_ph: float | None = None
+    soft_stool_detected: int | None = None
+    last_urination: int | None = None
+    last_defecation: int | None = None
 
     def __init__(self, **data):
         """Initialize the Pet dataclass.

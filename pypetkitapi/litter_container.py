@@ -194,15 +194,20 @@ class ContentSC(BaseModel):
 
     box: int | None = None
     box_full: bool | None = Field(None, alias="boxFull")
+    detection_info: list | None = Field(None, alias="detectionInfo")
     err: str | None = None
     litter_percent: int | None = Field(None, alias="litterPercent")
     mark: int | None = None
     media: int | None = None
     ph_reason: int | None = Field(None, alias="phReason")
+    ph_state: int | None = Field(None, alias="phState")
     result: int | None = None
     start_reason: int | None = Field(None, alias="startReason")
     start_time: int | None = Field(None, alias="startTime")
     upload: int | None = None
+    urine_bolus: int | None = Field(None, alias="urineBolus")
+    soft_stools: int | None = Field(None, alias="softStools")
+    hard_stools: int | None = Field(None, alias="hardStools")
 
 
 class LRContent(BaseModel):
@@ -219,12 +224,16 @@ class LRContent(BaseModel):
     media: int | None = None
     pet_out_tips: int | None = Field(None, alias="petOutTips")
     pet_weight: int | None = Field(None, alias="petWeight")
+    pet_voice: int | None = Field(None, alias="petVoice")
     start_time: int | None = Field(None, alias="startTime")
     time_in: int | None = Field(None, alias="timeIn")
     time_out: int | None = Field(None, alias="timeOut")
     toilet_detection: int | None = Field(None, alias="toiletDetection")
     upload: int | None = None
     error: int | None = None
+    voice_time: str | list | None = Field(
+        None, alias="voiceTime"
+    )  # Workaround bad implementation from Petkit API for empty list "[]"
 
 
 class ShitPictures(BaseModel):
@@ -236,6 +245,7 @@ class ShitPictures(BaseModel):
     pic_id: str | None = Field(None, alias="picId")
     shit_aes_key: str | None = Field(None, alias="shitAesKey")
     shit_picture: str | None = Field(None, alias="shitPicture")
+    ph_state: int | None = Field(None, alias="phState")
 
 
 class LRSubContent(BaseModel):
