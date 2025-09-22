@@ -655,15 +655,13 @@ class PetKitClient:
         if value is not None:
             setattr(obj, attr, value)
 
-    async def _process_litter_no_camera(self, pet: Pet, device_records: Litter) -> None:
+    async def _process_litter_no_camera(self, pet: Pet, litter_data: Litter) -> None:
         """Process litter T3/T4 records (litter without camera).
         :param pet: Pet data.
-        :param device_records: Litter data.
+        :param litter_data: Litter data.
         """
         for stat in (
-            s
-            for s in device_records.device_records or []
-            if isinstance(s, LitterRecord)
+            s for s in litter_data.device_records or [] if isinstance(s, LitterRecord)
         ):
             if stat.pet_id == pet.pet_id and (
                 pet.last_litter_usage is None
@@ -686,7 +684,7 @@ class PetKitClient:
                         else None
                     ),
                 )
-                device_name = getattr(device_records.device_nfo, "device_name", None)
+                device_name = getattr(litter_data.device_nfo, "device_name", None)
                 self.set_if_not_none(
                     pet,
                     "last_device_used",
@@ -698,8 +696,16 @@ class PetKitClient:
         :param pet: Pet data.
         :param litter_data: Litter data.
         """
+        device_records = getattr(litter_data, "device_records", None)
+        device_pet_graph = getattr(litter_data, "device_pet_graph_out", None)
+
+        if not isinstance(device_records, list):
+            device_records = []
+        if not isinstance(device_pet_graph, list):
+            device_pet_graph = []
+
         # Get last_litter_usage, last_measured_weight, last_duration_usage from PetOutGraph
-        for value in litter_data.device_pet_graph_out or []:
+        for value in device_pet_graph:
             if value.pet_id == pet.pet_id and (
                 pet.last_litter_usage is None
                 or getattr(value, "time", 0) > pet.last_litter_usage
@@ -724,7 +730,8 @@ class PetKitClient:
                 self.set_if_not_none(pet, "last_event_id", value.event_id or None)
 
         # Get yowling_detected, anormal_ph_detected, measured_ph, soft_stool_detected, last_urination and last_defecation from LitterRecord
-        for value in litter_data.device_records or []:
+
+        for value in device_records:
             if value.pet_id == pet.pet_id and value.event_id == pet.last_event_id:
                 # yowling_detected
                 pet.yowling_detected = value.content.pet_voice if value.content else 0
