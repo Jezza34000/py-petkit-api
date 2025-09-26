@@ -33,6 +33,7 @@ T3 = "t3"
 T4 = "t4"
 T5 = "t5"
 T6 = "t6"
+T7 = "t7"
 W4 = "w4"
 W5 = "w5"
 CTW2 = "ctw2"
@@ -42,8 +43,8 @@ K3 = "k3"
 PET = "pet"
 
 # Litter
-DEVICES_LITTER_BOX = [T3, T4, T5, T6]
-LITTER_WITH_CAMERA = [T5, T6]
+DEVICES_LITTER_BOX = [T3, T4, T5, T6, T7]
+LITTER_WITH_CAMERA = [T5, T6, T7]
 LITTER_NO_CAMERA = [T3, T4]
 # Feeder
 FEEDER_WITH_CAMERA = [D4H, D4SH]
