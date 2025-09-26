@@ -237,7 +237,7 @@ mypy = "^1.8.0"
 [tool.poetry.group.test.dependencies]
 pytest = "^8.0.0"
 pytest-cov = "^6.0.0"
-pytest-asyncio = "^0.23.0"
+pytest-asyncio = "^0.26.0"
 
 [tool.bumpver]
 current_version = "1.21.1"
