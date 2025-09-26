@@ -228,7 +228,7 @@ pydantic = ">=2.10.4,<3.0.0"
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^4.0.1"
 black = "^24.10.0"
-ruff = "^0.8.1"
+ruff = "^0.13.0"
 
 [tool.poetry.group.typing.dependencies]
 types-aiofiles = "^24.1.0.20240626"
