@@ -35,7 +35,7 @@ repos:
       - id: black
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.13.1
+    rev: v0.13.2
     hooks:
       - id: ruff
         args:
@@ -51,6 +51,8 @@ repos:
     rev: v3.1.0
     hooks:
       - id: prettier
+        exclude: renovate.json
+
   - repo: https://github.com/cdce8p/python-typing-update
     rev: v0.7.2
     hooks:
