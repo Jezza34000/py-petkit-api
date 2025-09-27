@@ -227,7 +227,7 @@ pydantic = ">=2.10.4,<3.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^4.0.1"
-black = "^24.10.0"
+black = "^25.0.0"
 ruff = "^0.8.1"
 
 [tool.poetry.group.typing.dependencies]
