@@ -1,4 +1,22 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"]
+  "digest": {
+    "enabled": false
+  },
+  "extends": [
+    "config:recommended"
+  ],
+  "ignoreUnstable": true,
+  "packageRules": [
+    {
+      "automerge": false,
+      "description": "GitHub Actions - Version updates only for stable releases",
+      "matchDepTypes": [
+        "action"
+      ]
+    }
+  ],
+  "respectLatest": true,
+  "separateMajorMinor": false,
+  "separateMinorPatch": false
 }

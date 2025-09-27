@@ -12,6 +12,10 @@ from pypetkitapi.const import (
     LITTER_NO_CAMERA,
     LITTER_WITH_CAMERA,
     T3,
+    T4,
+    T5,
+    T6,
+    T7,
     PetkitEndpoint,
 )
 from pypetkitapi.containers import (
@@ -69,6 +73,7 @@ class SettingsLitter(BaseModel):
     language_follow: int | None = Field(None, alias="languageFollow")
     languages: list[str] | None = None
     light_assist: int | None = Field(None, alias="lightAssist")
+    light_assist_config: int | None = Field(None, alias="lightAssistConfig")
     light_config: int | None = Field(None, alias="lightConfig")
     light_mode: int | None = Field(None, alias="lightMode")
     light_multi_range: list[Any] | None = Field(None, alias="lightMultiRange")
@@ -78,6 +83,7 @@ class SettingsLitter(BaseModel):
     live_encrypt: int | None = Field(None, alias="liveEncrypt")
     manual_lock: int | None = Field(None, alias="manualLock")
     microphone: int | None = None
+    microlight: int | None = None
     move_notify: int | None = Field(None, alias="moveNotify")
     night: int | None = None
     no_remind: int | None = Field(None, alias="noRemind")
@@ -91,7 +97,9 @@ class SettingsLitter(BaseModel):
     relate_k3_switch: int | None = Field(None, alias="relateK3Switch")
     sand_saving: int | None = Field(None, alias="sandSaving")
     sand_type: int | None = Field(None, alias="sandType")
+    sand_tray_notify: int | None = Field(None, alias="sandTrayNotify")
     soft_mode: int | None = Field(None, alias="softMode")
+    soft_mode_clean: int | None = Field(None, alias="softModeClean")
     spray_notify: int | None = Field(None, alias="sprayNotify")
     still_time: int | None = Field(None, alias="stillTime")
     stop_time: int | None = Field(None, alias="stopTime")
@@ -99,6 +107,10 @@ class SettingsLitter(BaseModel):
     time_display: int | None = Field(None, alias="timeDisplay")
     toilet_detection: int | None = Field(None, alias="toiletDetection")
     toilet_light: int | None = Field(None, alias="toiletLight")
+    toilet_light_assist: int | None = Field(None, alias="toiletLightAssist")
+    toilet_light_assist_config: int | None = Field(
+        None, alias="toiletLightAssistConfig"
+    )
     toilet_notify: int | None = Field(None, alias="toiletNotify")
     tone_config: int | None = Field(None, alias="toneConfig")
     tone_mode: int | None = Field(None, alias="toneMode")
@@ -106,11 +118,17 @@ class SettingsLitter(BaseModel):
     tumbling: int | None = None
     underweight: int | None = Field(None, alias="underweight")
     unit: int | None = None
+    urine: int | None = None
     upload: int | None = None
     voice: int | None = None
     volume: int | None = None
     wander_detection: int | None = Field(None, alias="wanderDetection")
     weight_popup: int | None = Field(None, alias="weightPopup")
+    wifi_light_assist: int | None = Field(None, alias="wifiLightAssist")
+    wifi_light_assist_config: int | None = Field(None, alias="wifiLightAssistConfig")
+    wifi_light_assist_multi_range: list[list[int]] | None = Field(
+        None, alias="wifiLightAssistMultiRange"
+    )
     work_notify: int | None = Field(None, alias="workNotify")
 
 
@@ -173,6 +191,20 @@ class StateLitter(BaseModel):
     sand_status: int | None = Field(None, alias="sandStatus")
     sand_type: int | None = Field(None, alias="sandType")
     sand_weight: int | None = Field(None, alias="sandWeight")
+    sand_tray_sn: str | None = Field(None, alias="sandTraySn")  # T7 only
+    sand_tray_secret: str | None = Field(None, alias="sandTraySecret")  # T7 only
+    sand_tray_use_count: int | None = Field(None, alias="sandTrayUseCount")  # T7 only
+    sand_tray_standard_count: int | None = Field(
+        None, alias="sandTrayStandardCount"
+    )  # T7 only
+    sand_tray_standard_day: int | None = Field(
+        None, alias="sandTrayStandardDay"
+    )  # T7 only
+    sand_tray_install_time: int | None = Field(
+        None, alias="sandTrayInstallTime"
+    )  # T7 only
+    sand_tray_left_day: int | None = Field(None, alias="sandTrayLeftDay")  # T7 only
+    sand_tray_state: int | None = Field(None, alias="sandTrayState")  # T7 only
     seal_door_state: int | None = Field(None, alias="sealDoorState")
     spray_days: int | None = Field(None, alias="sprayDays")
     spray_left_days: int | None = Field(None, alias="sprayLeftDays")
@@ -185,6 +217,12 @@ class StateLitter(BaseModel):
     weight_state: int | None = Field(None, alias="weightState")
     wifi: Wifi | None = None
     work_state: WorkState | None = Field(None, alias="workState")
+    ph_sand: int | None = Field(None, alias="phSand")  # T7 only
+    soft_state: int | None = Field(None, alias="softState")  # T7 only
+    soft_time: int | None = Field(None, alias="softTime")  # T7 only
+    camera_state: int | None = Field(None, alias="cameraState")  # T7 only
+    rotate_angle: str | None = Field(None, alias="rotateAngle")  # T7 only
+    sand_tray_tip: int | None = Field(None, alias="sandTrayTip")  # T7 only
 
 
 class ContentSC(BaseModel):
@@ -310,9 +348,9 @@ class LitterRecord(BaseModel):
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
         """Get the endpoint URL for the given device type."""
-        if device_type in LITTER_NO_CAMERA:
+        if device_type in [T3, T4, T7]:  # T7 is here
             return PetkitEndpoint.GET_DEVICE_RECORD
-        if device_type in LITTER_WITH_CAMERA:
+        if device_type in [T5, T6]:  # T7 does not support this endpoint
             return PetkitEndpoint.GET_DEVICE_RECORD_RELEASE
         raise ValueError(f"Invalid device type: {device_type}")
 
