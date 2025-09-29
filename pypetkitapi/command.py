@@ -22,6 +22,7 @@ from pypetkitapi.const import (
     T4,
     T5,
     T6,
+    T7,
     PetkitEndpoint,
 )
 
@@ -182,7 +183,7 @@ ACTIONS_MAP = {
             "kv": json.dumps(command),
             "type": list(command.keys())[0].split("_")[0],
         },
-        supported_device=[K2, K3, T3, T4, T5, T6],
+        supported_device=[K2, K3, T3, T4, T5, T6, T7],
     ),
     FeederCommand.REMOVE_DAILY_FEED: CmdData(
         endpoint=PetkitEndpoint.REMOVE_DAILY_FEED,
