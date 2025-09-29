@@ -371,7 +371,7 @@ class LitterRecord(BaseModel):
             return {
                 "timestamp": int(datetime.now().timestamp()),
                 "deviceId": device.device_id,
-                "type": 2,
+                "type": device.type_code,
             }
         raise ValueError(f"Invalid device type: {device_type}")
 
@@ -426,7 +426,7 @@ class LitterStats(BaseModel):
         return {
             "endDate": end_date,
             "deviceId": device.device_id,
-            "type": 0,
+            "type": device.type_code,
             "startDate": start_date,
         }
 
