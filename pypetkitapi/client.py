@@ -646,7 +646,7 @@ class PetKitClient:
             pet.last_defecation = 0
 
     @staticmethod
-    def set_if_not_none(obj, attr, value):
+    def set_if_not_none(obj: Pet, attr: str, value: str | int | None) -> None:
         """Set the attribute of an object if the value is not None.
         :param obj: Object to set the attribute on.
         :param attr: Attribute to set.
@@ -692,7 +692,7 @@ class PetKitClient:
                 )
 
     async def _process_litter_camera(self, pet: Pet, litter_data: Litter) -> None:
-        """Process litter T5/T6 records (litter WITH camera).
+        """Process litter T5/T6/T7 records (litter WITH camera).
         :param pet: Pet data.
         :param litter_data: Litter data.
         """
