@@ -74,3 +74,11 @@ repos:
         additional_dependencies:
           - types-aiofiles
           - types-m3u8
+
+  - repo: https://github.com/renovatebot/pre-commit-hooks
+    rev: 41.143.0
+    hooks:
+      - id: renovate-config-validator
+
+ci:
+  skip: [renovate-config-validator]
