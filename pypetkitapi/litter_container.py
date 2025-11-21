@@ -426,7 +426,7 @@ class LitterStats(BaseModel):
         return {
             "endDate": end_date,
             "deviceId": device.device_id,
-            "type": device.type_code,
+            "type": "0",  # Not working : `device.type_code` Force to 0 workaround for T3/T4 ? ,
             "startDate": start_date,
         }
 
