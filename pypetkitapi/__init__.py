@@ -35,6 +35,7 @@ from .const import (
     T6,
     T7,
     W5,
+    BluetoothState,
     MediaType,
     RecordType,
 )
@@ -79,6 +80,7 @@ __all__ = [
     "T6",
     "T7",
     "W5",
+    "BluetoothState",
     "DeviceAction",
     "DeviceCommand",
     "DownloadDecryptMedia",

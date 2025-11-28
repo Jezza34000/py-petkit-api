@@ -1,6 +1,6 @@
 """Constants for the pypetkitapi library."""
 
-from enum import StrEnum
+from enum import IntEnum, StrEnum
 
 DEFAULT_COUNTRY = "DE"
 DEFAULT_TZ = "Europe/Berlin"
@@ -146,6 +146,16 @@ RecordTypeLST = [
     RecordType.DISH_BEFORE,
     RecordType.DISH_AFTER,
 ]
+
+
+class BluetoothState(IntEnum):
+    """Possible states of a Bluetooth connection."""
+
+    NO_STATE = 0
+    NOT_CONNECTED = 1
+    CONNECTING = 2
+    CONNECTED = 3
+    ERROR = 4
 
 
 class PetkitEndpoint(StrEnum):

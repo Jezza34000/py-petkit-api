@@ -14,6 +14,7 @@ from pypetkitapi.const import (
     BLE_END_TRAME,
     BLE_START_TRAME,
     PTK_DBG,
+    BluetoothState,
     PetkitEndpoint,
 )
 from pypetkitapi.containers import BleRelay
@@ -90,10 +91,11 @@ class BluetoothManager:
         """
         _LOGGER.debug("Opening BLE connection to fountain %s", fountain_id)
         water_fountain = await self._get_fountain_instance(fountain_id)
-        if water_fountain.is_connected:
+        if water_fountain.ble_connection_state == BluetoothState.CONNECTED:
             _LOGGER.debug("BLE connection already established (id %s)", fountain_id)
             return True
-        water_fountain.is_connected = False
+        # ToDo : BluetoothState.CONNECTING must be managed
+        water_fountain.ble_connection_state = BluetoothState.NOT_CONNECTED
         if not await self.check_relay_availability(fountain_id):
             _LOGGER.debug("BLE relay not available (id: %s).", fountain_id)
             return False
@@ -140,7 +142,7 @@ class BluetoothManager:
                 _LOGGER.debug(
                     "BLE connection established successfully (id %s)", fountain_id
                 )
-                water_fountain.is_connected = True
+                water_fountain.ble_connection_state = BluetoothState.CONNECTED
                 water_fountain.last_ble_poll = datetime.now().strftime(
                     "%Y-%m-%dT%H:%M:%S.%f"
                 )
@@ -160,7 +162,7 @@ class BluetoothManager:
         _LOGGER.debug("Closing BLE connection to fountain %s", fountain_id)
         water_fountain = await self._get_fountain_instance(fountain_id)
 
-        if not water_fountain.is_connected:
+        if water_fountain.ble_connection_state != BluetoothState.CONNECTED:
             _LOGGER.debug(
                 "BLE connection not established. Cannot close (id %s)", fountain_id
             )
@@ -210,9 +212,14 @@ class BluetoothManager:
         """
         _LOGGER.debug("Sending BLE command to fountain %s", fountain_id)
         water_fountain = await self._get_fountain_instance(fountain_id)
-        if not water_fountain.is_connected:
-            _LOGGER.debug("BLE connection not established (id %s)", fountain_id)
+
+        if not await self.open_ble_connection(fountain_id):
+            _LOGGER.error(
+                "Unable to send BLE command because the connection can't be established (id %s)",
+                fountain_id,
+            )
             return False
+
         command_data = FOUNTAIN_COMMAND.get(command)
         if command_data is None:
             _LOGGER.error(
