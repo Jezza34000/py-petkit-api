@@ -36,7 +36,7 @@ repos:
       - id: black
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.9
+    rev: v0.14.10
     hooks:
       - id: ruff
         args:
@@ -49,7 +49,7 @@ repos:
       - id: gitleaks
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0-alpha.8
+    rev: v3.1.0
     hooks:
       - id: prettier
         exclude: renovate.json
@@ -76,7 +76,7 @@ repos:
           - types-m3u8
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 42.57.1
+    rev: 42.66.8
     hooks:
       - id: renovate-config-validator
 
