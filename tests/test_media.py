@@ -14,7 +14,6 @@ from pypetkitapi.media import (
 from pypetkitapi.containers import CloudProduct
 from pypetkitapi.media import DownloadDecryptMedia
 
-
 TS_WORK_INDATE = 1672531200  # 2023-01-01
 DEVICE_ID = 855554752
 USER_ID = 794568421

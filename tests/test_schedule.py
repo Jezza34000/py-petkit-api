@@ -2,7 +2,6 @@ import unittest
 from pypetkitapi.schedule_container import Schedule, Owner, Type
 from pydantic import ValidationError
 
-
 fake_schedule_data = {
     "result": {
         "lastKey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
