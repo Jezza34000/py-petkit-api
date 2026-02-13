@@ -169,7 +169,7 @@ def get_endpoint_update_setting(device):
 
 ACTIONS_MAP = {
     DeviceCommand.UPDATE_SETTING: CmdData(
-        endpoint=lambda device: get_endpoint_update_setting(device),
+        endpoint=get_endpoint_update_setting,
         params=lambda device, setting: {
             "id": device.id,
             "kv": json.dumps(setting),
@@ -204,7 +204,7 @@ ACTIONS_MAP = {
         supported_device=DEVICES_FEEDER,
     ),
     FeederCommand.MANUAL_FEED: CmdData(
-        endpoint=lambda device: get_endpoint_manual_feed(device),
+        endpoint=get_endpoint_manual_feed,
         params=lambda device, setting: {
             "day": datetime.datetime.now().strftime("%Y%m%d"),
             "deviceId": device.id,
@@ -248,7 +248,7 @@ ACTIONS_MAP = {
         supported_device=[FEEDER],
     ),
     FeederCommand.RESET_DESICCANT: CmdData(
-        endpoint=lambda device: get_endpoint_reset_desiccant(device),
+        endpoint=get_endpoint_reset_desiccant,
         params=lambda device: {
             "deviceId": device.id,
         },
