@@ -308,6 +308,21 @@ class PetKitClient:
             if pet_id in self.petkit_entities:
                 self.petkit_entities[pet_id].pet_details = pet_details
 
+    async def _safe_gather(self, tasks: list, label: str) -> None:
+        if not tasks:
+            return
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for result in results:
+            if isinstance(result, Exception):
+                _LOGGER.error(
+                    "Task failure in %s: %s",
+                    label,
+                    repr(result),
+                    exc_info=result,
+                )
+
     async def get_devices_data(self) -> None:
         """Get the devices data from the PetKit servers."""
         start_time = datetime.now()
@@ -319,10 +334,10 @@ class PetKitClient:
             device_list
         )
 
-        await asyncio.gather(*main_tasks)
-        await asyncio.gather(*record_tasks)
-        await asyncio.gather(*media_tasks)
-        await asyncio.gather(*live_tasks)
+        await self._safe_gather(main_tasks, "main_tasks")
+        await self._safe_gather(record_tasks, "record_tasks")
+        await self._safe_gather(media_tasks, "media_tasks")
+        await self._safe_gather(live_tasks, "live_tasks")
         await self._execute_stats_tasks()
 
         end_time = datetime.now()
@@ -421,7 +436,7 @@ class PetKitClient:
             for device_id, entity in self.petkit_entities.items()
             if isinstance(entity, Litter)
         ]
-        await asyncio.gather(*stats_tasks)
+        await self._safe_gather(stats_tasks, "stats_tasks")
 
     async def _fetch_media(self, device: Device) -> None:
         """Fetch media data from the PetKit servers.
@@ -1009,6 +1024,11 @@ class PrepReq:
         try:
             response.raise_for_status()
         except aiohttp.ClientResponseError as e:
+            if e.status in (502, 503, 504):
+                raise PetkitServerBusyError(
+                    f"Server temporary error {e.status} on {url}"
+                ) from e
+
             raise PetkitInvalidHTTPResponseCodeError(
                 f"Request failed with status code {e.status}"
             ) from e
