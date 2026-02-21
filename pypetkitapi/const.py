@@ -73,7 +73,7 @@ class Client(StrEnum):
     """Platform constants"""
 
     PLATFORM_TYPE = "android"
-    OS_VERSION = "15.1"
+    OS_VERSION = "16.1"
     MODEL_NAME = "23127PN0CG"
     SOURCE = "app.petkit-android"
     PHONE_BRAND = "Xiaomi"
@@ -85,9 +85,9 @@ class Header(StrEnum):
     ACCEPT = "*/*"
     ACCEPT_LANG = "en-US;q=1, it-US;q=0.9"
     ENCODING = "gzip, deflate"
-    API_VERSION = "12.4.9"
+    API_VERSION = "13.2.1"
     CONTENT_TYPE = "application/x-www-form-urlencoded"
-    AGENT = "okhttp/3.14.19"
+    AGENT = "okhttp/3.14.9"
     CLIENT = f"{Client.PLATFORM_TYPE}({Client.OS_VERSION};{Client.MODEL_NAME})"
     LOCALE = "en-US"
     IMG_VERSION = "1"
@@ -173,6 +173,7 @@ class PetkitEndpoint(StrEnum):
     # Common to many device
     DEVICE_DETAIL = "device_detail"
     DEVICE_DATA = "deviceData"
+    GET_DEVICE_INFO = "device/getPetkitDevices"
     GET_DEVICE_RECORD = "getDeviceRecord"
     GET_DEVICE_RECORD_RELEASE = "getDeviceRecordRelease"
     UPDATE_SETTING = "updateSettings"
