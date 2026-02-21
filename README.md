@@ -122,27 +122,7 @@ Check at the usage in the Home Assistant integration : [here](https://github.com
 
 ## ☑️ Supported Devices
 
-| **Category**     | **Name**                  | **Device**                                                                                                                                             |
-| ---------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **🍗 Feeders**   | ✅ Fresh Element          | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/feeder.png" width="40"/></a>     |
-|                  | ✅ Fresh Element Mini Pro | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/feedermini.png" width="40"/></a> |
-|                  | ✅ Fresh Element Infinity | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/d3.png" width="40"/></a>         |
-|                  | ✅ Fresh Element Solo     | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/d4.png" width="40"/></a>         |
-|                  | ✅ Fresh Element Gemini   | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/d4s.png" width="40"/></a>        |
-|                  | ✅ YumShare Solo          | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/d4h.png" width="40"/></a>        |
-|                  | ✅ YumShare Dual-hopper   | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/d4sh.png" width="40"/></a>       |
-| **🚽 Litters**   | ✅ PuraX                  | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/t3.png" width="40"/></a>         |
-|                  | ✅ PuraMax                | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/t4.1.png" width="40"/></a>       |
-|                  | ✅ PuraMax 2              | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/t4.png" width="40"/></a>         |
-|                  | ✅ Purobot Max Pro        | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/t5.png" width="40"/></a>         |
-|                  | ✅ Purobot Ultra          | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/t6.png" width="40"/></a>         |
-| **⛲ Fountains** | ✅ Eversweet Solo 2       | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/5w5.png" width="40"/></a>        |
-|                  | ✅ Eversweet 3 Pro        | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/4w5.png" width="40"/></a>        |
-|                  | ✅ Eversweet 3 Pro UVC    | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/6w5.png" width="40"/></a>        |
-|                  | ✅ Eversweet 5 Mini       | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/2w5.png" width="40"/></a>        |
-|                  | ✅ Eversweet Max          | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/ctw3.png" width="40"/></a>       |
-| **🧴 Purifiers** | ✅ Air Magicube           | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/k2.png" width="40"/></a>         |
-|                  | ✅ Air Smart Spray        | <a href=""><img src="https://raw.githubusercontent.com/Jezza34000/homeassistant_petkit/refs/heads/main/images/devices/k3.png" width="40"/></a>         |
+- **[Supported Devices](https://github.com/Jezza34000/homeassistant_petkit/wiki/Supported-Devices)**
 
 ## 🛟 Help and Support
 
