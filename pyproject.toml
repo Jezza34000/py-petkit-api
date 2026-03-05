@@ -28,6 +28,7 @@ select = [
   "B018",   # Found useless attribute access. Either assign it to a variable or remove it.
   "B023",   # Function definition does not bind loop variable {name}
   "B024",   # `{name}` is an abstract base class, but it has no abstract methods or properties
+  "B025",   # try-except* block with duplicate exception {name}
   "B026",   # Star-arg unpacking after a keyword argument is strongly discouraged
   "B032",   # Possible unintentional type annotation (using :). Did you mean to assign (using =)?
   "B035",   # Dictionary comprehension uses static key
@@ -82,6 +83,7 @@ select = [
   "RUF032", # Decimal() called with float literal argument
   "RUF033", # __post_init__ method with argument defaults
   "RUF034", # Useless if-else condition
+  "RUF059", # unused-unpacked-variable
   "RUF100", # Unused `noqa` directive
   "RUF101", # noqa directives that use redirected rule codes
   "RUF200", # Failed to parse pyproject.toml: {message}
@@ -117,57 +119,69 @@ select = [
 ]
 
 ignore = [
-    "D202", # No blank lines allowed after function docstring
-    "D203", # 1 blank line required before class docstring
-    "D205", # 1 blank line required between summary line and description
-    "D213", # Multi-line docstring summary should start at the second line
-    "D400", # First line should end with a period
-    "D406", # Section name should end with a newline
-    "D407", # Section name underlining
-    "D415", # First line should end with a period
-    "E501", # line too long
+  "ASYNC109", # Async function definition with a `timeout` parameter Use `asyncio.timeout` instead
+  "ASYNC110", # Use `asyncio.Event` instead of awaiting `asyncio.sleep` in a `while` loop
+  "ASYNC240", # Use an async function for entering the file system
+  "D202",     # No blank lines allowed after function docstring
+  "D203",     # 1 blank line required before class docstring
+  "D205", # 1 blank line required between summary line and description"
+  "D213",     # Multi-line docstring summary should start at the second line
+  "D406",     # Section name should end with a newline
+  "D407",     # Section name underlining
+  "D417",     # Missing argument descriptions in docstring - to allow documenting only non-obvious parameters
+  "D415", # First line should end with a period, question mark, or exclamation point"
+  "E501",     # line too long
 
-    "PLC1901", # {existing} can be simplified to {replacement} as an empty string is falsey; too many false positives
-    "PLC0415", # import should be at the top-level of a file
-    "PLR0911", # Too many return statements ({returns} > {max_returns})
-    "PLR0912", # Too many branches ({branches} > {max_branches})
-    "PLR0913", # Too many arguments to function call ({c_args} > {max_args})
-    "PLR0915", # Too many statements ({statements} > {max_statements})
-    "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
-    "PLW2901", # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
-    "PT011", # pytest.raises({exception}) is too broad, set the `match` parameter or use a more specific exception
-    "PT018", # Assertion should be broken down into multiple parts
-    "RUF001", # String contains ambiguous unicode character.
-    "RUF002", # Docstring contains ambiguous unicode character.
-    "RUF003", # Comment contains ambiguous unicode character.
-    "RUF015", # Prefer next(...) over single element slice
-    "SIM102", # Use a single if statement instead of nested if statements
-    "SIM103", # Return the condition {condition} directly
-    "SIM108", # Use ternary operator {contents} instead of if-else-block
-    "SIM115", # Use context handler for opening files
+  "PLC0415", # `import` should be at the top-level of a file
+  "PLC1901", # {existing} can be simplified to {replacement} as an empty string is falsey; too many false positives
+  "PLR0911", # Too many return statements ({returns} > {max_returns})
+  "PLR0912", # Too many branches ({branches} > {max_branches})
+  "PLR0913", # Too many arguments to function call ({c_args} > {max_args})
+  "PLR0915", # Too many statements ({statements} > {max_statements})
+  "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
+  "PLW0108", # Unnecessary lambda wrapping a function call; can often be replaced by the function itself
+  "PLW1641", # __eq__ without __hash__
+  "PLW2901", # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
+  "PT011",   # pytest.raises({exception}) is too broad, set the `match` parameter or use a more specific exception
+  "PT018",   # Assertion should be broken down into multiple parts
+  "RUF001",  # String contains ambiguous unicode character.
+  "RUF002",  # Docstring contains ambiguous unicode character.
+  "RUF003",  # Comment contains ambiguous unicode character.
+  "RUF015",  # Prefer next(...) over single element slice
+  "SIM102",  # Use a single if statement instead of nested if statements
+  "SIM103",  # Return the condition {condition} directly
+  "SIM108",  # Use ternary operator {contents} instead of if-else-block
+  "SIM115",  # Use context handler for opening files
 
-    # Moving imports into type-checking blocks can mess with pytest.patch()
-    "TC001", # Move application import {} into a type-checking block
-    "TC002", # Move third-party import {} into a type-checking block
-    "TC003", # Move standard library import {} into a type-checking block
+  # Moving imports into type-checking blocks can mess with pytest.patch()
+  "TC001", # Move application import {} into a type-checking block
+  "TC002", # Move third-party import {} into a type-checking block
+  "TC003", # Move standard library import {} into a type-checking block
+  # Quotes for typing.cast generally not necessary, only for performance critical paths
+  "TC006", # Add quotes to type expression in typing.cast()
 
-    "TRY003", # Avoid specifying long messages outside the exception class
-    "TRY400", # Use `logging.exception` instead of `logging.error`
+  "TRY003", # Avoid specifying long messages outside the exception class
+  "TRY400", # Use `logging.exception` instead of `logging.error`
 
-    # May conflict with the formatter, https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
-    "W191",
-    "E111",
-    "E114",
-    "E117",
-    "D206",
-    "D300",
-    "Q",
-    "COM812",
-    "COM819",
-    "ISC001",
+  "UP046", # Non PEP 695 generic class
+  "UP047", # Non PEP 696 generic function
+  "UP049", # Avoid private type parameter names
 
-    # Disabled because ruff does not understand type of __all__ generated by a function
-    "PLE0605"
+  # May conflict with the formatter, https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+  "W191",
+  "E111",
+  "E114",
+  "E117",
+  "D206",
+  "D300",
+  "Q",
+  "COM812",
+  "COM819",
+
+  # Disabled because ruff does not understand type of __all__ generated by a function
+  "PLE0605",
+
+  "FURB116",
 ]
 
 [tool.ruff.lint.flake8-pytest-style]
@@ -209,15 +223,13 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Home Automation",
     "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.11"
+python = ">=3.14"
 aiohttp = ">=3.11.11,<4.0.0"
 aiofiles = ">=24.1.0,<25.0.0"
 pycryptodome = ">=3.19.1,<4.0.0"
@@ -226,8 +238,8 @@ tenacity = ">=9.1.2,<10.0.0"
 pydantic = ">=2.10.4,<3.0.0"
 
 [tool.poetry.group.dev.dependencies]
-pre-commit = "^4.0.1"
-ruff = "^0.15.0"
+pre-commit = "^4.5.1"
+ruff = "^0.15.4"
 black = "^26.0.0"
 
 [tool.poetry.group.typing.dependencies]
@@ -261,18 +273,18 @@ push = true
 ]
 
 [tool.tox]
-min_version = "4.20"
-requires = ["tox>=4.23.2"]
-env_list = ["3.11", "3.12", "precommit"]
+min_version = "4.46.3"
+requires = ["tox>=4.47.3"]
+env_list = ["3.14", "precommit"]
 
 [tool.tox.env_run_base]
 description = "Run test under {base_python}"
-deps = ["pytest>=8.3.4", "pytest-cov>=6.0.0"]
+deps = ["pytest>=9.0.2", "pytest-cov>=7.0.0"]
 commands = [["pytest", "--cov=pypetkitapi",  "--cov-config=.coveragerc",  "--cov-report=xml",  "--cov-branch"]]
 
 [tool.tox.env.precommit]
 description = "run pre-commit hooks"
-deps = ["pre-commit>=4.0.1"]
+deps = ["pre-commit>=4.5.1"]
 skip_install = true
 commands = [["pre-commit", "run", "--all-files"]]
 
