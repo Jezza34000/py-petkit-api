@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfoNotFoundError
 from pypetkitapi.utils import get_timezone_offset
 
 
-class TestUtils(unittest.TestCase):
+class TestUtils(unittest.IsolatedAsyncioTestCase):
 
     @patch("pypetkitapi.utils.ZoneInfo")
     @patch("pypetkitapi.utils.datetime")
@@ -31,7 +31,7 @@ class TestUtils(unittest.TestCase):
 
     @patch("pypetkitapi.utils.ZoneInfo", side_effect=ZoneInfoNotFoundError)
     async def test_get_timezone_offset_invalid_zone(self, mock_zoneinfo):
-        offset = get_timezone_offset("InvalidZone")
+        offset = await get_timezone_offset("InvalidZone")
         self.assertEqual(offset, "0.0")
 
     @patch("pypetkitapi.utils.ZoneInfo")
