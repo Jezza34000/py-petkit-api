@@ -1,7 +1,5 @@
 """Module to manage media files from PetKit devices."""
 
-from __future__ import annotations
-
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime
