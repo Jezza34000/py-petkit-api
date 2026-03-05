@@ -48,6 +48,8 @@ LITTER_WITH_CAMERA = [T5, T6, T7]
 LITTER_NO_CAMERA = [T3, T4]
 # Feeder
 FEEDER_WITH_CAMERA = [D4H, D4SH]
+# Devices that support temporary camera open (5-minute live streaming)
+TEMP_CAMERA_TYPES = [D4H, D4SH, T5, T6]
 DEVICES_FEEDER = [FEEDER, FEEDER_MINI, D3, D4, D4S, D4H, D4SH]
 # Water Fountain
 DEVICES_WATER_FOUNTAIN = [W4, W5, CTW2, CTW3]
@@ -166,6 +168,8 @@ class PetkitEndpoint(StrEnum):
     GET_LOGIN_CODE = "user/sendcodeforquicklogin"
     REFRESH_SESSION = "user/refreshsession"
     DETAILS = "user/details2"
+    IOT_DEVICE_INFO = "user/iotDeviceInfo"
+    IOT_DEVICE_INFO_V2 = "user/iotDeviceInfo_v2"
     UNREAD_STATUS = "user/unreadStatus"
     FAMILY_LIST = "group/family/list"
     REFRESH_HOME_V2 = "refreshHomeV2"

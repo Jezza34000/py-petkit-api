@@ -46,6 +46,7 @@ from pypetkitapi.const import (
     T4,
     T5,
     T6,
+    TEMP_CAMERA_TYPES,
     Header,
     PetkitDomain,
     PetkitEndpoint,
@@ -53,7 +54,9 @@ from pypetkitapi.const import (
 from pypetkitapi.containers import (
     AccountData,
     Device,
+    IotInfo,
     LiveFeed,
+    NewIotInfo,
     Pet,
     PetDetails,
     RegionInfo,
@@ -262,6 +265,67 @@ class PetKitClient:
         if self._session is None:
             raise PetkitSessionError("No session ID available")
         return {"F-Session": self._session.id, "X-Session": self._session.id}
+
+    async def get_iot_device_info(self) -> NewIotInfo:
+        """Fetch IoT/MQTT connection information for the current account.
+
+        The official Petkit app uses this to connect to an MQTT broker for near real-time
+        device event notifications.
+        """
+        _LOGGER.debug("Fetching IoT device info (v2)")
+        response = await self.req.request(
+            method=HTTPMethod.GET,
+            url=PetkitEndpoint.IOT_DEVICE_INFO_V2,
+            headers=await self.get_session_id(),
+        )
+        _LOGGER.debug(
+            "IoT device info raw response keys: %s",
+            list(response.keys()) if isinstance(response, dict) else type(response),
+        )
+        return NewIotInfo.model_validate(response)
+
+    async def get_iot_mqtt_config(self) -> IotInfo:
+        """Return the preferred IoT/MQTT configuration.
+
+        The v2 endpoint may return either:
+          - Nested: {"ali": {...}, "petkit": {...}}
+          - Flat: {"deviceName": ..., "mqttHost": ..., ...}  (same as v1)
+        We handle both shapes, preferring petkit > ali > flat.
+        """
+        for endpoint_name, endpoint_url in [
+            ("v2", PetkitEndpoint.IOT_DEVICE_INFO_V2),
+            ("v1", PetkitEndpoint.IOT_DEVICE_INFO),
+        ]:
+            try:
+                response = await self.req.request(
+                    method=HTTPMethod.GET,
+                    url=endpoint_url,
+                    headers=await self.get_session_id(),
+                )
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("IoT %s endpoint request failed: %s", endpoint_name, err)
+                continue
+
+            if not isinstance(response, dict):
+                continue
+
+            _LOGGER.debug(
+                "IoT %s raw response keys: %s", endpoint_name, list(response.keys())
+            )
+
+            # Nested shape: {ali: {...}, petkit: {...}}
+            if "ali" in response or "petkit" in response:
+                nested = NewIotInfo.model_validate(response)
+                if nested.petkit is not None:
+                    return nested.petkit
+                if nested.ali is not None:
+                    return nested.ali
+
+            # Flat shape: {deviceName: ..., mqttHost: ..., ...}
+            if "deviceName" in response or "mqttHost" in response:
+                return IotInfo.model_validate(response)
+
+        raise PypetkitError("No IoT MQTT configuration available from any endpoint")
 
     async def _get_pet_details(self) -> list[PetDetails]:
         """Fetch pet details from the PetKit API."""
@@ -490,7 +554,7 @@ class PetKitClient:
         query_param = data_class.query_param(device, device_cont)
 
         response = await self.req.request(
-            method=HTTPMethod.POST,
+            method=HTTPMethod.GET if data_class is LiveFeed else HTTPMethod.POST,
             url=f"{device_type}/{endpoint}",
             params=query_param,
             headers=await self.get_session_id(),
@@ -926,6 +990,26 @@ class PetKitClient:
         )
         _LOGGER.debug("Command execution success, API response : %s", res)
         return True
+
+    async def temporary_open_camera(self, device_type: str, device_id: int) -> None:
+        """Temporarily enable camera hardware (5-minute live streaming).
+
+        Only supported on device types listed in TEMP_CAMERA_TYPES.
+        Android calls this when cameraStatus == 0 (camera off).
+        """
+        dt = device_type.lower()
+        if dt not in TEMP_CAMERA_TYPES:
+            _LOGGER.debug(
+                "temporary_open_camera skipped: %s not in TEMP_CAMERA_TYPES", dt
+            )
+            return
+        await self.req.request(
+            method=HTTPMethod.POST,
+            url=f"{dt}/temporary/open/camera",
+            params={"deviceId": device_id},
+            headers=await self.get_session_id(),
+        )
+        _LOGGER.debug("temporary_open_camera requested for %s (id=%s)", dt, device_id)
 
 
 class PrepReq:

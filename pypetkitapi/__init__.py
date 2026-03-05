@@ -34,12 +34,13 @@ from .const import (
     T5,
     T6,
     T7,
+    TEMP_CAMERA_TYPES,
     W5,
     BluetoothState,
     MediaType,
     RecordType,
 )
-from .containers import LiveFeed, Pet
+from .containers import IotInfo, LiveFeed, NewIotInfo, Pet
 from .exceptions import (
     PetkitAuthenticationUnregisteredEmailError,
     PetkitRegionalServerNotFoundError,
@@ -54,7 +55,7 @@ from .media import DownloadDecryptMedia, MediaCloud, MediaFile, MediaManager
 from .purifier_container import Purifier
 from .water_fountain_container import WaterFountain
 
-__version__ = "1.22.4"
+__version__ = "1.3.0.dev7"
 
 __all__ = [
     "CTW3",
@@ -79,6 +80,7 @@ __all__ = [
     "T5",
     "T6",
     "T7",
+    "TEMP_CAMERA_TYPES",
     "W5",
     "BluetoothState",
     "DeviceAction",
@@ -87,6 +89,7 @@ __all__ = [
     "Feeder",
     "FeederCommand",
     "FountainCommand",
+    "IotInfo",
     "LBCommand",
     "Litter",
     "LitterCommand",
@@ -96,6 +99,7 @@ __all__ = [
     "MediaFile",
     "MediaManager",
     "MediaType",
+    "NewIotInfo",
     "Pet",
     "PetCommand",
     "PetKitClient",
