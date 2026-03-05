@@ -323,7 +323,7 @@ class PetKitClient:
                     exc_info=result,
                 )
 
-    async def get_devices_data(self) -> None:
+    async def get_devices_data(self, device_id: int | None = None) -> None:
         """Get the devices data from the PetKit servers."""
         start_time = datetime.now()
         if not self.account_data:
@@ -331,7 +331,7 @@ class PetKitClient:
 
         device_list = self._collect_devices()
         main_tasks, record_tasks, media_tasks, live_tasks = self._prepare_tasks(
-            device_list
+            device_list, device_id
         )
 
         await self._safe_gather(main_tasks, "main_tasks")
@@ -357,7 +357,7 @@ class PetKitClient:
         return device_list
 
     def _prepare_tasks(
-        self, device_list: list[Device]
+        self, device_list: list[Device], device_id: int | None
     ) -> tuple[list, list, list, list]:
         """Prepare main and record tasks based on device types.
         :param device_list: List of devices.
@@ -370,6 +370,9 @@ class PetKitClient:
 
         for device in device_list:
             device_type = device.device_type
+
+            if device_id is not None and device.device_id != device_id:
+                continue
 
             if device_type in DEVICES_FEEDER:
                 main_tasks.append(self._fetch_device_data(device, Feeder))
