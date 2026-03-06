@@ -53,6 +53,7 @@ from pypetkitapi.const import (
 from pypetkitapi.containers import (
     AccountData,
     Device,
+    DeviceModelInfo,
     IotInfo,
     LiveFeed,
     NewIotInfo,
@@ -123,6 +124,7 @@ class PetKitClient:
         self.petkit_entities: dict[
             int, Feeder | Litter | WaterFountain | Purifier | Pet
         ] = {}
+        self.available_device_models: list[DeviceModelInfo] = []
         self.req = PrepReq(
             base_url=PetkitDomain.PASSPORT_PETKIT,
             session=session,
@@ -326,6 +328,32 @@ class PetKitClient:
 
         raise PypetkitError("No IoT MQTT configuration available from any endpoint")
 
+    async def get_device_info(self) -> list[DeviceModelInfo]:
+        """Fetch all available models of devices from the brand.
+        Flattens the nested JSON structure.
+        """
+        _LOGGER.debug("Fetching available device models")
+
+        response = await self.req.request(
+            method=HTTPMethod.GET,
+            url=PetkitEndpoint.GET_DEVICE_INFO,
+            headers=await self.get_session_id(),
+        )
+
+        flattened_devices: list[DeviceModelInfo] = []
+
+        if isinstance(response, list):
+            for group in response:
+                devices = group.get("devices", [])
+                flattened_devices.extend(
+                    DeviceModelInfo(**device_data) for device_data in devices
+                )
+        else:
+            _LOGGER.warning("Unexpected response format for device info")
+
+        self.available_device_models = flattened_devices
+        return self.available_device_models
+
     async def _get_pet_details(self) -> list[PetDetails]:
         """Fetch pet details from the PetKit API."""
         _LOGGER.debug("Fetching user details")
@@ -347,6 +375,25 @@ class PetKitClient:
             headers=await self.get_session_id(),
         )
         self.account_data = [AccountData(**account) for account in response]
+
+        await self.get_device_info()
+
+        for account in self.account_data:
+            if account.device_list:
+                for device in account.device_list:
+                    for model_info in self.available_device_models:
+                        if (
+                            model_info.device_type_id == device.type
+                            and model_info.type_code == device.type_code
+                        ):
+                            _LOGGER.debug(
+                                "Found a match for type_id=%s type_code=%s => %s",
+                                model_info.device_type_id,
+                                model_info.type_code,
+                                model_info.label_name.title(),
+                            )
+                            device.modele_name = model_info.label_name.title()
+                            break
 
         # Add pets to device_list
         for account in self.account_data:

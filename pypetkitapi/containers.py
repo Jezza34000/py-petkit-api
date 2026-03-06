@@ -84,6 +84,20 @@ class NewIotInfo(BaseModel):
     petkit: IotInfo | None = None
 
 
+class DeviceModelInfo(BaseModel):
+    """Dataclass for available device models.
+    Fetched from the GET_DEVICE_INFO endpoint.
+    """
+
+    device_type_id: int = Field(alias="deviceTypeId")
+    type_id: int = Field(alias="typeId")
+    category: str
+    label_name: str = Field(alias="labelName")
+    label_url: str = Field(alias="labelUrl")
+    seq_id: int = Field(alias="seqId")
+    type_code: int = Field(alias="typeCode")
+
+
 class Device(BaseModel):
     """Dataclass for device data.
     Subclass of AccountData.
@@ -94,6 +108,7 @@ class Device(BaseModel):
     device_name: str | None = Field("unnamed_device", alias="deviceName")
     device_type: str = Field(alias="deviceType")
     group_id: int = Field(alias="groupId")
+    modele_name: str | None = None
     type: int
     type_code: int = Field(0, alias="typeCode")
     unique_id: str = Field(alias="uniqueId")
