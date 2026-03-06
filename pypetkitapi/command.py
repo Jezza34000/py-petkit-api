@@ -23,6 +23,7 @@ from pypetkitapi.const import (
     T5,
     T6,
     T7,
+    TEMP_CAMERA_TYPES,
     PetkitEndpoint,
 )
 
@@ -33,6 +34,7 @@ class DeviceCommand(StrEnum):
     POWER = "power_device"
     CONTROL_DEVICE = "control_device"
     UPDATE_SETTING = "update_setting"
+    OPEN_CAMERA = "open_camera"
 
 
 class FountainCommand(StrEnum):
@@ -184,6 +186,13 @@ ACTIONS_MAP = {
             "type": list(command.keys())[0].split("_")[0],
         },
         supported_device=[K2, K3, T3, T4, T5, T6, T7],
+    ),
+    DeviceCommand.OPEN_CAMERA: CmdData(
+        endpoint=PetkitEndpoint.TEMP_OPEN_CAMERA,
+        params=lambda device: {
+            "deviceId": device.id,
+        },
+        supported_device=TEMP_CAMERA_TYPES,
     ),
     FeederCommand.REMOVE_DAILY_FEED: CmdData(
         endpoint=PetkitEndpoint.REMOVE_DAILY_FEED,

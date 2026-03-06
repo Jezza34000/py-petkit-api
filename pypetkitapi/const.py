@@ -205,6 +205,7 @@ class PetkitEndpoint(StrEnum):
     GET_M3U8 = "getM3u8"
     CLOUD_VIDEO = "cloud/video"
     GET_DOWNLOAD_M3U8 = "getDownloadM3u8"
+    TEMP_OPEN_CAMERA = "temporary/open/camera"
 
     # Feeders
     REPLENISHED_FOOD = "added"

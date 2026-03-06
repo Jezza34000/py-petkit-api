@@ -46,7 +46,6 @@ from pypetkitapi.const import (
     T4,
     T5,
     T6,
-    TEMP_CAMERA_TYPES,
     Header,
     PetkitDomain,
     PetkitEndpoint,
@@ -990,26 +989,6 @@ class PetKitClient:
         )
         _LOGGER.debug("Command execution success, API response : %s", res)
         return True
-
-    async def temporary_open_camera(self, device_type: str, device_id: int) -> None:
-        """Temporarily enable camera hardware (5-minute live streaming).
-
-        Only supported on device types listed in TEMP_CAMERA_TYPES.
-        Android calls this when cameraStatus == 0 (camera off).
-        """
-        dt = device_type.lower()
-        if dt not in TEMP_CAMERA_TYPES:
-            _LOGGER.debug(
-                "temporary_open_camera skipped: %s not in TEMP_CAMERA_TYPES", dt
-            )
-            return
-        await self.req.request(
-            method=HTTPMethod.POST,
-            url=f"{dt}/temporary/open/camera",
-            params={"deviceId": device_id},
-            headers=await self.get_session_id(),
-        )
-        _LOGGER.debug("temporary_open_camera requested for %s (id=%s)", dt, device_id)
 
 
 class PrepReq:
