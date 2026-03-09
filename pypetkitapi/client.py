@@ -328,6 +328,45 @@ class PetKitClient:
 
         raise PypetkitError("No IoT MQTT configuration available from any endpoint")
 
+    async def get_live_feed(self, device_id: int) -> LiveFeed | None:
+        """Fetch live feed data on demand for a specific device.
+
+        This function is callable on demand and returns the LiveFeed container
+        at call time
+
+        :param device_id: ID of the device.
+        :return: LiveFeed container, or None if unavailable.
+        """
+        entity = self.petkit_entities.get(device_id)
+        if entity is None or entity.device_nfo is None:
+            raise PypetkitError(
+                f"Device with ID {device_id} not found, or has no device_nfo."
+            )
+
+        device_type = entity.device_nfo.device_type
+        endpoint = LiveFeed.get_endpoint(device_type)
+        if endpoint is None:
+            _LOGGER.debug("No LiveFeed endpoint for device type %s", device_type)
+            return None
+
+        query_param = LiveFeed.query_param(entity.device_nfo, entity)
+
+        _LOGGER.debug(
+            "Fetching live feed on demand for device %s (%s)", device_id, device_type
+        )
+        response = await self.req.request(
+            method=HTTPMethod.GET,
+            url=f"{device_type}/{endpoint}",
+            params=query_param,
+            headers=await self.get_session_id(),
+        )
+
+        if not isinstance(response, dict):
+            _LOGGER.error("Unexpected response type %s for live feed", type(response))
+            return None
+
+        return LiveFeed.model_validate(response)
+
     async def get_device_info(self) -> list[DeviceModelInfo]:
         """Fetch all available models of devices from the brand.
         Flattens the nested JSON structure.
@@ -440,14 +479,13 @@ class PetKitClient:
             await self._get_account_data()
 
         device_list = self._collect_devices()
-        main_tasks, record_tasks, media_tasks, live_tasks = self._prepare_tasks(
+        main_tasks, record_tasks, media_tasks = self._prepare_tasks(
             device_list, device_id
         )
 
         await self._safe_gather(main_tasks, "main_tasks")
         await self._safe_gather(record_tasks, "record_tasks")
         await self._safe_gather(media_tasks, "media_tasks")
-        await self._safe_gather(live_tasks, "live_tasks")
         await self._execute_stats_tasks()
 
         end_time = datetime.now()
@@ -468,14 +506,13 @@ class PetKitClient:
 
     def _prepare_tasks(
         self, device_list: list[Device], device_id: int | None
-    ) -> tuple[list, list, list, list]:
+    ) -> tuple[list, list, list]:
         """Prepare main and record tasks based on device types.
         :param device_list: List of devices.
         :return: Tuple of main tasks, record tasks and media tasks.
         """
         main_tasks: list = []
         record_tasks: list = []
-        live_tasks: list = []
         media_tasks: list = []
 
         for device in device_list:
@@ -487,15 +524,13 @@ class PetKitClient:
             if device_type in DEVICES_FEEDER:
                 main_tasks.append(self._fetch_device_data(device, Feeder))
                 record_tasks.append(self._fetch_device_data(device, FeederRecord))
-                self._add_feeder_task_by_type(
-                    media_tasks, live_tasks, device_type, device
-                )
+                self._add_feeder_task_by_type(media_tasks, device_type, device)
 
             elif device_type in DEVICES_LITTER_BOX:
                 main_tasks.append(self._fetch_device_data(device, Litter))
                 record_tasks.append(self._fetch_device_data(device, LitterRecord))
                 self._add_lb_task_by_type(
-                    record_tasks, media_tasks, live_tasks, device_type, device
+                    record_tasks, media_tasks, device_type, device
                 )
 
             elif device_type in DEVICES_WATER_FOUNTAIN:
@@ -507,12 +542,11 @@ class PetKitClient:
             elif device_type in DEVICES_PURIFIER:
                 main_tasks.append(self._fetch_device_data(device, Purifier))
 
-        return main_tasks, record_tasks, media_tasks, live_tasks
+        return main_tasks, record_tasks, media_tasks
 
     def _add_lb_task_by_type(
         self,
         record_tasks: list,
-        live_tasks: list,
         media_tasks: list,
         device_type: str,
         device: Device,
@@ -528,10 +562,9 @@ class PetKitClient:
         if device_type in LITTER_WITH_CAMERA:
             record_tasks.append(self._fetch_device_data(device, PetOutGraph))
             media_tasks.append(self._fetch_media(device))
-            live_tasks.append(self._fetch_device_data(device, LiveFeed))
 
     def _add_feeder_task_by_type(
-        self, media_tasks: list, live_tasks: list, device_type: str, device: Device
+        self, media_tasks: list, device_type: str, device: Device
     ) -> None:
         """Add specific tasks for feeder box devices.
         :param media_tasks: List of media tasks.
@@ -540,7 +573,6 @@ class PetKitClient:
         """
         if device_type in FEEDER_WITH_CAMERA:
             media_tasks.append(self._fetch_media(device))
-            live_tasks.append(self._fetch_device_data(device, LiveFeed))
 
     async def _execute_stats_tasks(self) -> None:
         """Execute tasks to populate pet stats."""
@@ -575,7 +607,6 @@ class PetKitClient:
             | WaterFountainRecord
             | PetOutGraph
             | LitterStats
-            | LiveFeed
         ],
     ) -> None:
         """Fetch the device data from the PetKit servers.
@@ -600,7 +631,7 @@ class PetKitClient:
         query_param = data_class.query_param(device, device_cont)
 
         response = await self.req.request(
-            method=HTTPMethod.GET if data_class is LiveFeed else HTTPMethod.POST,
+            method=HTTPMethod.POST,
             url=f"{device_type}/{endpoint}",
             params=query_param,
             headers=await self.get_session_id(),
