@@ -74,7 +74,7 @@ from pypetkitapi.exceptions import (
     PetkitTimeoutError,
     PypetkitError,
 )
-from pypetkitapi.feeder_container import Feeder, FeederRecord
+from pypetkitapi.feeder_container import Feeder, FeederRecord, SoundList
 from pypetkitapi.litter_container import Litter, LitterRecord, LitterStats, PetOutGraph
 from pypetkitapi.purifier_container import Purifier
 from pypetkitapi.utils import get_timezone_offset
@@ -328,6 +328,33 @@ class PetKitClient:
 
         raise PypetkitError("No IoT MQTT configuration available from any endpoint")
 
+    async def get_sound_list(self, device_id: int) -> list[SoundList] | None:
+        """Fetch a sound list.
+        :param device_id: ID of the device.
+        :return: list[SoundList] container, or None if unavailable.
+        """
+        entity = self.petkit_entities.get(device_id)
+        if entity is None or entity.device_nfo is None:
+            raise PypetkitError(
+                f"Device with ID {device_id} not found, or has no device_nfo."
+            )
+        device_type = entity.device_nfo.device_type
+        _LOGGER.debug(
+            "Fetching sound list on demand for device %s (%s)", device_id, device_type
+        )
+        response = await self.req.request(
+            method=HTTPMethod.POST,
+            url=f"{device_type}/{SoundList.get_endpoint(device_type)}",
+            params=SoundList.query_param(entity.device_nfo, entity),
+            headers=await self.get_session_id(),
+        )
+
+        if not isinstance(response, list):
+            _LOGGER.error("Unexpected response type %s for sound list", type(response))
+            return None
+        entity.sound_list = [SoundList.model_validate(item) for item in response]
+        return entity.sound_list
+
     async def get_live_feed(self, device_id: int) -> LiveFeed | None:
         """Fetch live feed data on demand for a specific device.
 
@@ -342,22 +369,14 @@ class PetKitClient:
             raise PypetkitError(
                 f"Device with ID {device_id} not found, or has no device_nfo."
             )
-
         device_type = entity.device_nfo.device_type
-        endpoint = LiveFeed.get_endpoint(device_type)
-        if endpoint is None:
-            _LOGGER.debug("No LiveFeed endpoint for device type %s", device_type)
-            return None
-
-        query_param = LiveFeed.query_param(entity.device_nfo, entity)
-
         _LOGGER.debug(
             "Fetching live feed on demand for device %s (%s)", device_id, device_type
         )
         response = await self.req.request(
             method=HTTPMethod.GET,
-            url=f"{device_type}/{endpoint}",
-            params=query_param,
+            url=f"{device_type}/{LiveFeed.get_endpoint(device_type)}",
+            params=LiveFeed.query_param(entity.device_nfo, entity),
             headers=await self.get_session_id(),
         )
 

@@ -55,6 +55,7 @@ class FeederCommand(StrEnum):
     RESET_DESICCANT = "desiccant_reset"
     REMOVE_DAILY_FEED = "remove_daily_feed"
     RESTORE_DAILY_FEED = "restore_daily_feed"
+    PLAY_SOUND = "play_sound"
 
 
 class LitterCommand(StrEnum):
@@ -263,12 +264,13 @@ ACTIONS_MAP = {
         },
         supported_device=DEVICES_FEEDER,
     ),
-    LitterCommand.RESET_N50_DEODORIZER: CmdData(
-        endpoint=PetkitEndpoint.DEODORANT_RESET,
-        params=lambda device: {
+    FeederCommand.PLAY_SOUND: CmdData(
+        endpoint=PetkitEndpoint.PLAY_SOUND,
+        params=lambda sound_id, device: {
+            "soundId": sound_id,
             "deviceId": device.id,
         },
-        supported_device=[T4, T5, T6],
+        supported_device=[D3, D4H, D4SH],
     ),
     FeederCommand.CALL_PET: CmdData(
         endpoint=PetkitEndpoint.CALL_PET,
@@ -276,6 +278,13 @@ ACTIONS_MAP = {
             "deviceId": device.id,
         },
         supported_device=[D3],
+    ),
+    LitterCommand.RESET_N50_DEODORIZER: CmdData(
+        endpoint=PetkitEndpoint.DEODORANT_RESET,
+        params=lambda device: {
+            "deviceId": device.id,
+        },
+        supported_device=[T4, T5, T6],
     ),
     PetCommand.PET_UPDATE_SETTING: CmdData(
         endpoint=PetkitEndpoint.PET_UPDATE_SETTING,

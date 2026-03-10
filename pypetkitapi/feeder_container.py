@@ -24,6 +24,34 @@ from pypetkitapi.containers import (
 )
 
 
+class SoundList(BaseModel):
+    """Dataclass for sound list."""
+
+    id: int | None = None
+    device_id: int | None = Field(None, alias="deviceId")
+    user_id: int | None = Field(None, alias="userId")
+    url: str | None = None
+    duration: int | None = None
+    name: str | None = None
+    digest: str | None = None
+    size: int | None = None
+    gmt_create: str | None = Field(None, alias="gmtCreate")
+
+    @classmethod
+    def get_endpoint(cls, device_type: str) -> str:
+        """Get the endpoint URL for the given device type."""
+        return PetkitEndpoint.SOUND_LIST
+
+    @classmethod
+    def query_param(
+        cls,
+        device: Device,
+        device_data: Any | None = None,
+    ) -> dict:
+        """Generate query parameters."""
+        return {"deviceId": int(device.device_id)}
+
+
 class FeedItem(BaseModel):
     """Dataclass for feed item data."""
 
@@ -350,6 +378,7 @@ class Feeder(BaseModel):
     user: UserDevice | None = None
     device_nfo: Device | None = None
     medias: list | None = None
+    sound_list: list[SoundList] | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
@@ -362,5 +391,5 @@ class Feeder(BaseModel):
         device: Device,
         device_data: Any | None = None,
     ) -> dict:
-        """Generate query parameters including request_date."""
+        """Generate query parameters."""
         return {"id": int(device.device_id)}

@@ -224,6 +224,13 @@ class PetkitEndpoint(StrEnum):
     RESTORE_DAILY_FEED = "restoreDailyFeed"
     SAVE_FEED = "saveFeed"  # For Feeding plan
 
+    # Feeders - Sounds (D3, D4H, D4SH)
+    SOUND_LIST = "soundList"
+    PLAY_SOUND = "playSound"
+    ADD_SOUND = "addSound"
+    UPDATE_SOUND = "updateSound"
+    REMOVE_SOUND = "removeSound"
+
     # Schedule
     SCHEDULE = "schedule/schedules"
     SCHEDULE_SAVE = "schedule/save"
