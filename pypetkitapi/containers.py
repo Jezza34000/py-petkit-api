@@ -2,7 +2,7 @@
 
 from typing import Any, ClassVar
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from pypetkitapi.const import LIVE_DATA, PetkitEndpoint
 
@@ -282,6 +282,17 @@ class LiveFeed(BaseModel):
     dev_rtm_user_id: str | None = Field(None, alias="devRtmUserId")
     rtc_token: str | None = Field(None, alias="rtcToken")
     rtm_token: str | None = Field(None, alias="rtmToken")
+    uid: int | None = None
+
+    @model_validator(mode="after")
+    def populate_rtc_uid(self):
+        """Populate rtc uid."""
+        if self.uid is None and self.app_rtm_user_id:
+            try:
+                self.uid = int(self.app_rtm_user_id.split("_")[1])
+            except (IndexError, ValueError):
+                pass
+        return self
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
