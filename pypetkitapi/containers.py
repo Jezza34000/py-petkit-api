@@ -1,5 +1,6 @@
 """Dataclasses container for petkit API."""
 
+from contextlib import suppress
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -288,10 +289,8 @@ class LiveFeed(BaseModel):
     def populate_rtc_uid(self):
         """Populate rtc uid."""
         if self.uid is None and self.app_rtm_user_id:
-            try:
+            with suppress(IndexError, ValueError):
                 self.uid = int(self.app_rtm_user_id.split("_")[1])
-            except (IndexError, ValueError):
-                pass
         return self
 
     @classmethod
