@@ -1021,7 +1021,7 @@ class PetKitClient:
         self,
         device_id: int,
         action: StrEnum,
-        setting: dict | None = None,
+        setting: dict | int | None = None,
     ) -> bool:
         """Control the device using the PetKit API.
         :param device_id: ID of the device.

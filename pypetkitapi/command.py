@@ -266,7 +266,7 @@ ACTIONS_MAP = {
     ),
     FeederCommand.PLAY_SOUND: CmdData(
         endpoint=PetkitEndpoint.PLAY_SOUND,
-        params=lambda  device, sound_id: {
+        params=lambda device, sound_id: {
             "soundId": sound_id,
             "deviceId": device.id,
         },
