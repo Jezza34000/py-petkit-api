@@ -84,6 +84,28 @@ class BluetoothManager:
             return False
         return True
 
+    async def _request_ble_api(
+        self,
+        endpoint: PetkitEndpoint,
+        fountain: "WaterFountain",
+        extra_data: dict | None = None,
+    ):
+        """API Bluetooth request method"""
+        data = {
+            "bleId": fountain.id,
+            "type": fountain.device_nfo.type,  # type: ignore[union-attr]
+            "mac": fountain.mac,
+        }
+        if extra_data:
+            data.update(extra_data)
+
+        return await self.client.req.request(
+            method=HTTPMethod.POST,
+            url=endpoint,
+            data=data,
+            headers=await self.client.get_session_id(),
+        )
+
     async def open_ble_connection(self, fountain_id: int) -> bool:
         """Open a BLE connection to the given fountain_id.
         :param fountain_id: The ID of the fountain to open the BLE connection for.
@@ -94,51 +116,44 @@ class BluetoothManager:
         if water_fountain.ble_connection_state == BluetoothState.CONNECTED:
             _LOGGER.debug("BLE connection already established (id %s)", fountain_id)
             return True
-        # ToDo : BluetoothState.CONNECTING must be managed
-        water_fountain.ble_connection_state = BluetoothState.NOT_CONNECTED
-        if not await self.check_relay_availability(fountain_id):
-            _LOGGER.debug("BLE relay not available (id: %s).", fountain_id)
-            return False
-        response = await self.client.req.request(
-            method=HTTPMethod.POST,
-            url=PetkitEndpoint.BLE_CONNECT,
-            data={
-                "bleId": fountain_id,
-                "type": water_fountain.device_nfo.type,  # type: ignore[union-attr]
-                "mac": water_fountain.mac,
-            },
-            headers=await self.client.get_session_id(),
-        )
-        if response != {"state": 1}:
-            _LOGGER.debug("Unable to open a BLE connection (id %s)", fountain_id)
-            return False
+
+        if water_fountain.ble_connection_state == BluetoothState.CONNECTING:
+            _LOGGER.debug("BLE connection already in progress (id %s).", fountain_id)
+        else:
+            if not await self.check_relay_availability(fountain_id):
+                _LOGGER.debug("BLE relay not available (id: %s).", fountain_id)
+                water_fountain.ble_connection_state = BluetoothState.NOT_CONNECTED
+                return False
+
+            response = await self._request_ble_api(
+                PetkitEndpoint.BLE_CONNECT, water_fountain
+            )
+            if response != {"state": 1}:
+                _LOGGER.debug("Unable to open a BLE connection (id %s)", fountain_id)
+                water_fountain.ble_connection_state = BluetoothState.NOT_CONNECTED
+                return False
+
+            water_fountain.ble_connection_state = BluetoothState.CONNECTING
+
         for attempt in range(BLE_CONNECT_ATTEMPT):
             _LOGGER.debug(
-                "BLE connection... %s/%s (id %s)",
+                "BLE connection... attempt: %s (id %s)",
                 attempt,
-                BLE_CONNECT_ATTEMPT,
                 fountain_id,
             )
-            response = await self.client.req.request(
-                method=HTTPMethod.POST,
-                url=PetkitEndpoint.BLE_POLL,
-                data={
-                    "bleId": fountain_id,
-                    "type": water_fountain.device_nfo.type,  # type: ignore[union-attr]
-                    "mac": water_fountain.mac,
-                },
-                headers=await self.client.get_session_id(),
+            response = await self._request_ble_api(
+                PetkitEndpoint.BLE_POLL, water_fountain
             )
-            if response == 0:
+            if response == BluetoothState.CONNECTING:
                 # Wait for 4 seconds before polling again, connection is still in progress
                 await asyncio.sleep(4)
-            elif response == -1:
+            elif response == BluetoothState.ERROR:
                 _LOGGER.debug("Failed to establish BLE connection (id %s)", fountain_id)
                 water_fountain.last_ble_poll = datetime.now().strftime(
                     "%Y-%m-%dT%H:%M:%S.%f"
                 )
                 return False
-            elif response == 1:
+            elif response == BluetoothState.CONNECTED:
                 _LOGGER.debug(
                     "BLE connection established successfully (id %s)", fountain_id
                 )
@@ -164,20 +179,14 @@ class BluetoothManager:
 
         if water_fountain.ble_connection_state != BluetoothState.CONNECTED:
             _LOGGER.debug(
-                "BLE connection not established. Cannot close (id %s)", fountain_id
+                "BLE connection not established. Cannot close (id %s) State is=%s",
+                fountain_id,
+                water_fountain.ble_connection_state,
             )
             return
 
-        await self.client.req.request(
-            method=HTTPMethod.POST,
-            url=PetkitEndpoint.BLE_CANCEL,
-            data={
-                "bleId": fountain_id,
-                "type": water_fountain.device_nfo.type,  # type: ignore[union-attr]
-                "mac": water_fountain.mac,
-            },
-            headers=await self.client.get_session_id(),
-        )
+        await self._request_ble_api(PetkitEndpoint.BLE_CANCEL, water_fountain)
+        water_fountain.ble_connection_state = BluetoothState.NOT_CONNECTED
         _LOGGER.debug("BLE connection closed successfully (id %s)", fountain_id)
 
     async def get_ble_cmd_data(
@@ -229,17 +238,10 @@ class BluetoothManager:
         cmd_code, cmd_data = await self.get_ble_cmd_data(
             list(command_data), water_fountain.ble_counter
         )
-        response = await self.client.req.request(
-            method=HTTPMethod.POST,
-            url=PetkitEndpoint.BLE_CONTROL_DEVICE,
-            data={
-                "bleId": water_fountain.id,
-                "cmd": cmd_code,
-                "data": cmd_data,
-                "mac": water_fountain.mac,
-                "type": water_fountain.device_nfo.type,  # type: ignore[union-attr]
-            },
-            headers=await self.client.get_session_id(),
+        response = await self._request_ble_api(
+            PetkitEndpoint.BLE_CONTROL_DEVICE,
+            water_fountain,
+            extra_data={"cmd": cmd_code, "data": cmd_data},
         )
         if response != 1:
             _LOGGER.error("Failed to send BLE command (id %s)", fountain_id)

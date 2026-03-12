@@ -151,13 +151,14 @@ RecordTypeLST = [
 
 
 class BluetoothState(IntEnum):
-    """Possible states of a Bluetooth connection."""
+    """Possible states of a Bluetooth connection.
+    Same value as returned by Petkit API
+    """
 
-    NO_STATE = 0
-    NOT_CONNECTED = 1
-    CONNECTING = 2
-    CONNECTED = 3
-    ERROR = 4
+    CONNECTING = 0
+    CONNECTED = 1
+    ERROR = -1
+    NOT_CONNECTED = 2
 
 
 class PetkitEndpoint(StrEnum):
