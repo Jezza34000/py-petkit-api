@@ -11,6 +11,8 @@ from pypetkitapi.const import (
     DEVICE_STATS,
     LITTER_NO_CAMERA,
     LITTER_WITH_CAMERA,
+    PACKAGE_INFO,
+    PACKAGE_LIST,
     T3,
     T4,
     T5,
@@ -488,6 +490,64 @@ class PetOutGraph(BaseModel):
         }
 
 
+class PackageInfoResult(BaseModel):
+    """Dataclass for T6 package info (last pack time + last replacement time).
+    Fetched from: t6/packageInfo?deviceId=...
+    """
+
+    data_type: ClassVar[str] = PACKAGE_INFO
+
+    package_record: str | None = Field(None, alias="packageRecord")
+    package_changed: str | None = Field(None, alias="packageChanged")
+
+    @classmethod
+    def get_endpoint(cls, device_type: str) -> str | None:
+        """Get the endpoint URL for the given device type."""
+        if device_type == T6:
+            return PetkitEndpoint.T6_PACKAGE_INFO
+        return None
+
+    @classmethod
+    def query_param(cls, device: Device, device_data: Any = None) -> dict:
+        """Generate query parameters."""
+        return {"deviceId": device.device_id}
+
+
+class PackageListItem(BaseModel):
+    """Single item in a T6 package list (packing or replacement record)."""
+
+    install_time: int | None = Field(None, alias="installTime")
+    package_time: int | None = Field(None, alias="packageTime")
+
+
+class PackageListResult(BaseModel):
+    """Dataclass for T6 package list result (packing/replacement history).
+    Fetched from: t6/packageList?deviceId=...&timestamp=...&type=0|1
+    """
+
+    data_type: ClassVar[str] = PACKAGE_LIST
+
+    total: int = 0
+    timestamp: int = 0
+    items: list[PackageListItem] | None = Field(None, alias="list")
+
+    @classmethod
+    def get_endpoint(cls, device_type: str) -> str | None:
+        """Get the endpoint URL for the given device type."""
+        if device_type == T6:
+            return PetkitEndpoint.T6_PACKAGE_LIST
+        return None
+
+    @classmethod
+    def query_param(cls, device: Device, device_data: Any = None) -> dict:
+        """Generate query parameters."""
+        return {
+            "deviceId": device.device_id,
+            "timestamp": str(int(datetime.now().timestamp())),
+            "type": "0",
+        }
+
+
 class Litter(BaseModel):
     """Dataclass for Litter Data.
     Supported devices = T3, T4, T5, T6
@@ -539,6 +599,10 @@ class Litter(BaseModel):
     total_time: int | None = Field(None, alias="totalTime")
     user: UserDevice | None = None
     with_k3: int | None = Field(None, alias="withK3")
+
+    # Extra data fetched from separate endpoints (not from device_detail)
+    package_info: PackageInfoResult | None = None
+    package_list: PackageListResult | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
