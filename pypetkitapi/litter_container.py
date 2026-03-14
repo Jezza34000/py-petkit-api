@@ -488,6 +488,32 @@ class PetOutGraph(BaseModel):
         }
 
 
+class PackageInfoResult(BaseModel):
+    """Dataclass for T6 package info (last pack time + last replacement time).
+    Fetched from: t6/packageInfo?deviceId=...
+    """
+
+    package_record: str | None = Field(None, alias="packageRecord")
+    package_changed: str | None = Field(None, alias="packageChanged")
+
+
+class PackageListItem(BaseModel):
+    """Single item in a T6 package list (packing or replacement record)."""
+
+    install_time: int | None = Field(None, alias="installTime")
+    package_time: int | None = Field(None, alias="packageTime")
+
+
+class PackageListResult(BaseModel):
+    """Dataclass for T6 package list result (packing/replacement history).
+    Fetched from: t6/packageList?deviceId=...&timestamp=...&type=0|1
+    """
+
+    total: int = 0
+    timestamp: int = 0
+    items: list[PackageListItem] | None = Field(None, alias="list")
+
+
 class Litter(BaseModel):
     """Dataclass for Litter Data.
     Supported devices = T3, T4, T5, T6
@@ -539,6 +565,10 @@ class Litter(BaseModel):
     total_time: int | None = Field(None, alias="totalTime")
     user: UserDevice | None = None
     with_k3: int | None = Field(None, alias="withK3")
+
+    # Extra data fetched from separate endpoints (not from device_detail)
+    package_info: PackageInfoResult | None = None
+    package_list: PackageListResult | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:

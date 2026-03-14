@@ -200,6 +200,8 @@ class PetkitEndpoint(StrEnum):
     STATISTIC = "statistic"
     STATISTIC_RELEASE = "statisticRelease"
     GET_PET_OUT_GRAPH = "getPetOutGraph"
+    T6_PACKAGE_INFO = "packageInfo"  # Last pack time + last replacement time
+    T6_PACKAGE_LIST = "packageList"  # Full packing/replacement history
 
     # Video features
     LIVE = "start/live"

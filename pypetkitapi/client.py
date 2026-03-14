@@ -75,7 +75,14 @@ from pypetkitapi.exceptions import (
     PypetkitError,
 )
 from pypetkitapi.feeder_container import Feeder, FeederRecord, SoundList
-from pypetkitapi.litter_container import Litter, LitterRecord, LitterStats, PetOutGraph
+from pypetkitapi.litter_container import (
+    Litter,
+    LitterRecord,
+    LitterStats,
+    PackageInfoResult,
+    PackageListResult,
+    PetOutGraph,
+)
 from pypetkitapi.purifier_container import Purifier
 from pypetkitapi.utils import get_timezone_offset
 from pypetkitapi.water_fountain_container import WaterFountain, WaterFountainRecord
@@ -581,6 +588,8 @@ class PetKitClient:
         if device_type in LITTER_WITH_CAMERA:
             record_tasks.append(self._fetch_device_data(device, PetOutGraph))
             media_tasks.append(self._fetch_media(device))
+        if device_type == T6:
+            record_tasks.append(self._fetch_t6_package_info(device))
 
     def _add_feeder_task_by_type(
         self, media_tasks: list, device_type: str, device: Device
@@ -601,6 +610,57 @@ class PetKitClient:
             if isinstance(entity, Litter)
         ]
         await self._safe_gather(stats_tasks, "stats_tasks")
+
+    async def _fetch_t6_package_info(self, device: Device) -> None:
+        """Fetch T6 package info and package list (packing/replacement records).
+        :param device: Device data.
+        """
+        entity = self.petkit_entities.get(device.device_id)
+        if not isinstance(entity, Litter):
+            return
+
+        headers = await self.get_session_id()
+        device_id = device.device_id
+
+        # Fetch packageInfo (last pack time + last replacement time)
+        try:
+            info_resp = await self.req.request(
+                method=HTTPMethod.POST,
+                url=f"{T6}/{PetkitEndpoint.T6_PACKAGE_INFO}",
+                params={"deviceId": device_id},
+                headers=headers,
+            )
+            if isinstance(info_resp, dict):
+                entity.package_info = PackageInfoResult(**info_resp)
+                _LOGGER.debug("T6 packageInfo fetched OK for device %s", device_id)
+        except Exception:  # noqa: BLE001
+            _LOGGER.debug(
+                "Failed to fetch T6 packageInfo for device %s",
+                device_id,
+                exc_info=True,
+            )
+
+        # Fetch packageList (packing history, type=0)
+        try:
+            list_resp = await self.req.request(
+                method=HTTPMethod.POST,
+                url=f"{T6}/{PetkitEndpoint.T6_PACKAGE_LIST}",
+                params={
+                    "deviceId": device_id,
+                    "timestamp": str(int(datetime.now().timestamp())),
+                    "type": "0",
+                },
+                headers=headers,
+            )
+            if isinstance(list_resp, dict):
+                entity.package_list = PackageListResult(**list_resp)
+                _LOGGER.debug("T6 packageList fetched OK for device %s", device_id)
+        except Exception:  # noqa: BLE001
+            _LOGGER.debug(
+                "Failed to fetch T6 packageList for device %s",
+                device_id,
+                exc_info=True,
+            )
 
     async def _fetch_media(self, device: Device) -> None:
         """Fetch media data from the PetKit servers.
