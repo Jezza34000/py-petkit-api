@@ -15,6 +15,8 @@ DEVICE_DATA = "deviceData"
 DEVICE_STATS = "deviceStats"
 PET_DATA = "petData"
 LIVE_DATA = "liveData"
+PACKAGE_INFO = "packageInfo"
+PACKAGE_LIST = "packageList"
 
 # Bluetooth
 BLE_CONNECT_ATTEMPT = 32
@@ -200,6 +202,8 @@ class PetkitEndpoint(StrEnum):
     STATISTIC = "statistic"
     STATISTIC_RELEASE = "statisticRelease"
     GET_PET_OUT_GRAPH = "getPetOutGraph"
+    T6_PACKAGE_INFO = "packageInfo"  # Last pack time + last replacement time
+    T6_PACKAGE_LIST = "packageList"  # Full packing/replacement history
 
     # Video features
     LIVE = "start/live"
