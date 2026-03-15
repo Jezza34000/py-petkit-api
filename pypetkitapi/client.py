@@ -671,7 +671,11 @@ class PetKitClient:
         )
 
         # Workaround for the litter box T6 (LitterRecord wraps items in {"list": [...]})
-        if isinstance(response, dict) and response.get("list", None) and data_class is LitterRecord:
+        if (
+            isinstance(response, dict)
+            and response.get("list", None)
+            and data_class is LitterRecord
+        ):
             response = response.get("list", [])
 
         # Check if the response is a list or a dict
