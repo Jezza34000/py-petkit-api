@@ -31,12 +31,12 @@ repos:
         exclude: ^tests/fixtures/|homeassistant/generated/|tests/components/.*/snapshots/|.github
 
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 26.3.0
+    rev: 26.3.1
     hooks:
       - id: black
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.5
+    rev: v0.15.6
     hooks:
       - id: ruff
         args:
@@ -44,7 +44,7 @@ repos:
     #      - id: ruff-format
 
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.30.0
+    rev: v8.30.1
     hooks:
       - id: gitleaks
 
@@ -76,7 +76,7 @@ repos:
           - types-m3u8
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 43.60.4
+    rev: 43.76.4
     hooks:
       - id: renovate-config-validator
 
