@@ -50,7 +50,13 @@ from .exceptions import (
     PypetkitError,
 )
 from .feeder_container import Feeder, RecordsItems
-from .litter_container import Litter, LitterRecord, WorkState
+from .litter_container import (
+    Litter,
+    LitterRecord,
+    PackageInfoResult,
+    PackageListResult,
+    WorkState,
+)
 from .media import DownloadDecryptMedia, MediaCloud, MediaFile, MediaManager
 from .purifier_container import Purifier
 from .water_fountain_container import WaterFountain
@@ -100,6 +106,8 @@ __all__ = [
     "MediaManager",
     "MediaType",
     "NewIotInfo",
+    "PackageInfoResult",
+    "PackageListResult",
     "Pet",
     "PetCommand",
     "PetKitClient",

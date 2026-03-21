@@ -39,6 +39,8 @@ from pypetkitapi.const import (
     LITTER_WITH_CAMERA,
     LIVE_DATA,
     LOGIN_DATA,
+    PACKAGE_INFO,
+    PACKAGE_LIST,
     PET,
     PTK_DBG,
     RES_KEY,
@@ -75,7 +77,14 @@ from pypetkitapi.exceptions import (
     PypetkitError,
 )
 from pypetkitapi.feeder_container import Feeder, FeederRecord, SoundList
-from pypetkitapi.litter_container import Litter, LitterRecord, LitterStats, PetOutGraph
+from pypetkitapi.litter_container import (
+    Litter,
+    LitterRecord,
+    LitterStats,
+    PackageInfoResult,
+    PackageListResult,
+    PetOutGraph,
+)
 from pypetkitapi.purifier_container import Purifier
 from pypetkitapi.utils import get_timezone_offset
 from pypetkitapi.water_fountain_container import WaterFountain, WaterFountainRecord
@@ -581,6 +590,9 @@ class PetKitClient:
         if device_type in LITTER_WITH_CAMERA:
             record_tasks.append(self._fetch_device_data(device, PetOutGraph))
             media_tasks.append(self._fetch_media(device))
+        if device_type == T6:
+            record_tasks.append(self._fetch_device_data(device, PackageInfoResult))
+            record_tasks.append(self._fetch_device_data(device, PackageListResult))
 
     def _add_feeder_task_by_type(
         self, media_tasks: list, device_type: str, device: Device
@@ -626,6 +638,8 @@ class PetKitClient:
             | WaterFountainRecord
             | PetOutGraph
             | LitterStats
+            | PackageInfoResult
+            | PackageListResult
         ],
     ) -> None:
         """Fetch the device data from the PetKit servers.
@@ -656,8 +670,12 @@ class PetKitClient:
             headers=await self.get_session_id(),
         )
 
-        # Workaround for the litter box T6
-        if isinstance(response, dict) and response.get("list", None):
+        # Workaround for the litter box T6 (LitterRecord wraps items in {"list": [...]})
+        if (
+            isinstance(response, dict)
+            and response.get("list", None)
+            and data_class is LitterRecord
+        ):
             response = response.get("list", [])
 
         # Check if the response is a list or a dict
@@ -731,6 +749,22 @@ class PetKitClient:
                 "Cannot assign live_data to entity of type %s",
                 type(entity),
             )
+
+    @data_handler(PACKAGE_INFO)
+    async def _handle_package_info(self, device: Device, device_data, device_type: str):
+        """Handle T6 package info."""
+        entity = self.petkit_entities.get(device.device_id)
+        if isinstance(entity, Litter):
+            entity.package_info = device_data
+            _LOGGER.debug("T6 packageInfo fetched OK for %s", device.device_id)
+
+    @data_handler(PACKAGE_LIST)
+    async def _handle_package_list(self, device: Device, device_data, device_type: str):
+        """Handle T6 package list."""
+        entity = self.petkit_entities.get(device.device_id)
+        if isinstance(entity, Litter):
+            entity.package_list = device_data
+            _LOGGER.debug("T6 packageList fetched OK for %s", device.device_id)
 
     async def get_pets_list(self) -> list[Pet]:
         """Extract and return the list of pets.
