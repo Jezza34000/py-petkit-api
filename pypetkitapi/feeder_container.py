@@ -58,17 +58,24 @@ class FeedItem(BaseModel):
     amount: int | None = None
     amount1: int | None = Field(None, alias="amount1")
     amount2: int | None = Field(None, alias="amount2")
-    id: str | None = None
+    device_id: int | None = Field(None, alias="deviceId")
+    device_type: int | None = Field(None, alias="deviceType")
+    id: str | int | None = None
     name: str | None = None
+    pet_amount: list | None = Field(None, alias="petAmount")
     time: int | None = None
 
 
 class FeedDailyList(BaseModel):
     """Dataclass for feed daily list data."""
 
+    count: int | None = None
     items: list[FeedItem] | None = None
-    repeats: int | None = None
+    repeats: int | str | None = None
     suspended: int | None = None
+    total_amount: int | None = Field(None, alias="totalAmount")
+    total_amount1: int | None = Field(None, alias="totalAmount1")
+    total_amount2: int | None = Field(None, alias="totalAmount2")
 
 
 class MultiFeedItem(BaseModel):

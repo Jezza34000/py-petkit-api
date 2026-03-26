@@ -55,6 +55,7 @@ class FeederCommand(StrEnum):
     RESET_DESICCANT = "desiccant_reset"
     REMOVE_DAILY_FEED = "remove_daily_feed"
     RESTORE_DAILY_FEED = "restore_daily_feed"
+    SAVE_FEED = "save_feed"
     PLAY_SOUND = "play_sound"
 
 
@@ -261,6 +262,14 @@ ACTIONS_MAP = {
         endpoint=get_endpoint_reset_desiccant,
         params=lambda device: {
             "deviceId": device.id,
+        },
+        supported_device=DEVICES_FEEDER,
+    ),
+    FeederCommand.SAVE_FEED: CmdData(
+        endpoint=PetkitEndpoint.SAVE_FEED,
+        params=lambda device, feed_daily_list: {
+            "deviceId": device.id,
+            "feedDailyList": json.dumps(feed_daily_list),
         },
         supported_device=DEVICES_FEEDER,
     ),

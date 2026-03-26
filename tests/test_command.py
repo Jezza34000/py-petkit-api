@@ -90,6 +90,15 @@ class TestCommandModule(unittest.TestCase):
         self.assertIn(DeviceCommand.UPDATE_SETTING, ACTIONS_MAP)
         self.assertIsInstance(ACTIONS_MAP[DeviceCommand.UPDATE_SETTING], CmdData)
 
+    def test_feeder_command_save_feed(self):
+        """Test that SAVE_FEED is defined in FeederCommand."""
+        self.assertEqual(FeederCommand.SAVE_FEED, "save_feed")
+
+    def test_actions_map_save_feed(self):
+        """Test that SAVE_FEED is registered in ACTIONS_MAP."""
+        self.assertIn(FeederCommand.SAVE_FEED, ACTIONS_MAP)
+        self.assertIsInstance(ACTIONS_MAP[FeederCommand.SAVE_FEED], CmdData)
+
 
 if __name__ == "__main__":
     unittest.main()
