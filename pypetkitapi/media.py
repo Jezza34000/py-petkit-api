@@ -252,8 +252,12 @@ class MediaManager:
         dl_types: list[MediaType],
     ) -> bool:
         """Check if any media type is missing."""
-        missing_image = self._is_media_type_missing(media_cloud, dl_types, MediaType.IMAGE)
-        missing_video = self._is_media_type_missing(media_cloud, dl_types, MediaType.VIDEO)
+        missing_image = self._is_media_type_missing(
+            media_cloud, dl_types, MediaType.IMAGE
+        )
+        missing_video = self._is_media_type_missing(
+            media_cloud, dl_types, MediaType.VIDEO
+        )
 
         if missing_image or missing_video:
             self._log_missing_details(media_cloud, missing_image, missing_video)
@@ -267,7 +271,9 @@ class MediaManager:
         media_type: MediaType,
     ) -> bool:
         """Check if a specific media type is missing for a given event."""
-        source = media_cloud.image if media_type == MediaType.IMAGE else media_cloud.video
+        source = (
+            media_cloud.image if media_type == MediaType.IMAGE else media_cloud.video
+        )
         return bool(
             source
             and media_type in dl_types
@@ -621,9 +627,7 @@ class DownloadDecryptMedia:
         """
         full_file_path = await self.get_fpath(file_name)
         if full_file_path.exists():
-            _LOGGER.debug(
-                "File already exists, skipping download: %s", full_file_path
-            )
+            _LOGGER.debug("File already exists, skipping download: %s", full_file_path)
             return False
         return True
 
@@ -653,13 +657,9 @@ class DownloadDecryptMedia:
         segment_files = []
         for index, result in enumerate(results):
             if isinstance(result, Exception):
-                _LOGGER.warning(
-                    "Segment %d download failed: %s", index + 1, result
-                )
+                _LOGGER.warning("Segment %d download failed: %s", index + 1, result)
             elif result:
-                segment_files.append(
-                    await self.get_fpath(f"{index + 1}_{file_name}")
-                )
+                segment_files.append(await self.get_fpath(f"{index + 1}_{file_name}"))
 
         if not segment_files:
             _LOGGER.warning("No segment files found")
