@@ -444,9 +444,7 @@ class PetKitClient:
         handle them identically.
         """
         today = datetime.now().strftime("%Y%m%d")
-        _LOGGER.debug(
-            "Fetching shared devices for group %s", account.group_id
-        )
+        _LOGGER.debug("Fetching shared devices for group %s", account.group_id)
         try:
             response = await self.req.request(
                 method=HTTPMethod.POST,
@@ -482,9 +480,7 @@ class PetKitClient:
                     device.device_id,
                 )
             except Exception:
-                _LOGGER.warning(
-                    "Failed to parse shared device: %s", dev, exc_info=True
-                )
+                _LOGGER.warning("Failed to parse shared device: %s", dev, exc_info=True)
         return devices
 
     async def _get_account_data(self) -> None:
