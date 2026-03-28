@@ -12,6 +12,7 @@ from pypetkitapi.command import FOUNTAIN_COMMAND, FountainAction
 from pypetkitapi.const import (
     BLE_CONNECT_ATTEMPT,
     BLE_END_TRAME,
+    BLE_POLL_INTERVAL_SECS,
     BLE_START_TRAME,
     PTK_DBG,
     BluetoothState,
@@ -145,8 +146,7 @@ class BluetoothManager:
                 PetkitEndpoint.BLE_POLL, water_fountain
             )
             if response == BluetoothState.CONNECTING:
-                # Wait for 4 seconds before polling again, connection is still in progress
-                await asyncio.sleep(4)
+                await asyncio.sleep(BLE_POLL_INTERVAL_SECS)
             elif response == BluetoothState.ERROR:
                 _LOGGER.debug("Failed to establish BLE connection (id %s)", fountain_id)
                 water_fountain.last_ble_poll = datetime.now().strftime(

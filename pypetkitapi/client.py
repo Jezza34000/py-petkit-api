@@ -265,9 +265,6 @@ class PetKitClient:
         if is_expired:
             _LOGGER.debug("Token expired, re-logging in")
             await self.login()
-        # elif (max_age / 2) < token_age < max_age:
-        #     _LOGGER.debug("Token still OK, but refreshing session")
-        #     await self.refresh_session()
 
     async def get_session_id(self) -> dict:
         """Return the session ID."""
@@ -312,8 +309,11 @@ class PetKitClient:
                     url=endpoint_url,
                     headers=await self.get_session_id(),
                 )
-            except Exception as err:  # noqa: BLE001
+            except PypetkitError as err:
                 _LOGGER.debug("IoT %s endpoint request failed: %s", endpoint_name, err)
+                continue
+            except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+                _LOGGER.debug("IoT %s endpoint network error: %s", endpoint_name, err)
                 continue
 
             if not isinstance(response, dict):
@@ -547,7 +547,7 @@ class PetKitClient:
             if pet_id in self.petkit_entities:
                 self.petkit_entities[pet_id].pet_details = pet_details
 
-    async def _safe_gather(self, tasks: list, label: str) -> None:
+    async def _safe_gather(self, tasks: list[Any], label: str) -> None:
         if not tasks:
             return
 
@@ -1232,9 +1232,9 @@ class PrepReq:
         method: str,
         url: str,
         full_url: bool = False,
-        params=None,
-        data=None,
-        headers=None,
+        params: dict | str | None = None,
+        data: dict | str | None = None,
+        headers: dict[str, str] | None = None,
     ) -> dict:
         """Make a request to the PetKit API.
         :param method: HTTP method.
@@ -1260,18 +1260,14 @@ class PrepReq:
                 headers=_headers,
             ) as resp:
                 return await self._handle_response(resp, _url)
-        except aiohttp.ClientConnectorError as e:
-            _LOGGER.warning("Connection error while reaching %s: %s", _url, e)
-            raise PetkitTimeoutError(f"Cannot connect to host: {e}") from e
-        except aiohttp.ClientOSError as e:
-            _LOGGER.warning("OS-level client error on %s: %s", _url, e)
-            raise PetkitTimeoutError(f"Client OS error: {e}") from e
-        except aiohttp.ServerDisconnectedError as e:
-            _LOGGER.warning("Server disconnected unexpectedly from %s: %s", _url, e)
-            raise PetkitTimeoutError(f"Server disconnected: {e}") from e
-        except asyncio.TimeoutError as e:
-            _LOGGER.warning("Timeout error while waiting for %s", _url)
-            raise PetkitTimeoutError(f"Request to {_url} timed out") from e
+        except (
+            aiohttp.ClientConnectorError,
+            aiohttp.ClientOSError,
+            aiohttp.ServerDisconnectedError,
+            asyncio.TimeoutError,
+        ) as e:
+            _LOGGER.warning("Network error reaching %s: %s", _url, e)
+            raise PetkitTimeoutError(f"Request to {_url} failed: {e}") from e
 
     @staticmethod
     async def _handle_response(response: aiohttp.ClientResponse, url: str) -> dict:

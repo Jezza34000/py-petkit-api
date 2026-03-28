@@ -30,6 +30,9 @@ from pypetkitapi.litter_container import LitterRecord
 
 _LOGGER = logging.getLogger(__name__)
 
+# Cache for compiled regex patterns keyed by device_id
+_MEDIA_FILENAME_PATTERNS: dict[int, re.Pattern] = {}
+
 
 @dataclass
 class MediaCloud:
@@ -65,7 +68,7 @@ class MediaFile:
 class MediaManager:
     """Class to manage media files from PetKit devices."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any):
         """Media Manager init"""
         self.media_table: list[MediaFile] = []
         self._media_index: dict[tuple[str, MediaType], MediaFile] = {}
@@ -136,9 +139,11 @@ class MediaManager:
 
         _LOGGER.debug("Populating files from directory %s", base_path)
 
-        valid_pattern = re.compile(
-            rf"^{device_id}_\d+\.({MediaType.IMAGE}|{MediaType.VIDEO})$"
-        )
+        if device_id not in _MEDIA_FILENAME_PATTERNS:
+            _MEDIA_FILENAME_PATTERNS[device_id] = re.compile(
+                rf"^{device_id}_\d+\.({MediaType.IMAGE}|{MediaType.VIDEO})$"
+            )
+        valid_pattern = _MEDIA_FILENAME_PATTERNS[device_id]
 
         for record_type in RecordType:
             record_path = base_path / record_type
@@ -247,32 +252,26 @@ class MediaManager:
         dl_types: list[MediaType],
     ) -> bool:
         """Check if any media type is missing."""
-        missing_image = self._is_image_missing(media_cloud, dl_types)
-        missing_video = self._is_video_missing(media_cloud, dl_types)
+        missing_image = self._is_media_type_missing(media_cloud, dl_types, MediaType.IMAGE)
+        missing_video = self._is_media_type_missing(media_cloud, dl_types, MediaType.VIDEO)
 
         if missing_image or missing_video:
             self._log_missing_details(media_cloud, missing_image, missing_video)
             return True
         return False
 
-    def _is_image_missing(
-        self, media_cloud: MediaCloud, dl_types: list[MediaType]
+    def _is_media_type_missing(
+        self,
+        media_cloud: MediaCloud,
+        dl_types: list[MediaType],
+        media_type: MediaType,
     ) -> bool:
-        """Check if image is missing"""
+        """Check if a specific media type is missing for a given event."""
+        source = media_cloud.image if media_type == MediaType.IMAGE else media_cloud.video
         return bool(
-            media_cloud.image
-            and MediaType.IMAGE in dl_types
-            and not self._media_exists(media_cloud.event_id, MediaType.IMAGE)
-        )
-
-    def _is_video_missing(
-        self, media_cloud: MediaCloud, dl_types: list[MediaType]
-    ) -> bool:
-        """Check if video is missing"""
-        return bool(
-            media_cloud.video
-            and MediaType.VIDEO in dl_types
-            and not self._media_exists(media_cloud.event_id, MediaType.VIDEO)
+            source
+            and media_type in dl_types
+            and not self._media_exists(media_cloud.event_id, media_type)
         )
 
     def _media_exists(self, event_id: str, media_type: MediaType) -> bool:
@@ -469,12 +468,14 @@ class MediaManager:
             # Gather Waste images if available
             if hasattr(record, "sub_content") and record.sub_content:
                 for sub_record in record.sub_content:
+                    # The waste check image is at index 2 in the shit_pictures array
+                    waste_image_idx = 2
                     if (
                         hasattr(sub_record, "shit_pictures")
                         and isinstance(sub_record.shit_pictures, list)
-                        and len(sub_record.shit_pictures) > 2
+                        and len(sub_record.shit_pictures) > waste_image_idx
                     ):
-                        waste_image_data = sub_record.shit_pictures[2]
+                        waste_image_data = sub_record.shit_pictures[waste_image_idx]
                         if (
                             waste_image_data.shit_picture
                             and waste_image_data.shit_aes_key
@@ -597,7 +598,7 @@ class DownloadDecryptMedia:
 
         if self.file_data.image and MediaType.IMAGE in file_type:
             full_filename = f"{file_data.event_id}.{MediaType.IMAGE}"
-            if await self.not_existing_file(full_filename):
+            if await self.needs_download(full_filename):
                 # Image download
                 _LOGGER.debug("Download image file (event id: %s)", file_data.event_id)
                 await self._get_file(
@@ -607,20 +608,21 @@ class DownloadDecryptMedia:
                 )
 
         if self.file_data.video and MediaType.VIDEO in file_type:
-            if await self.not_existing_file(f"{file_data.event_id}.{MediaType.VIDEO}"):
+            if await self.needs_download(f"{file_data.event_id}.{MediaType.VIDEO}"):
                 # Video download
                 _LOGGER.debug("Download video file (event id: %s)", file_data.event_id)
                 await self._get_video_m3u8()
 
-    async def not_existing_file(self, file_name: str) -> bool:
-        """Check if the file already exists.
-        :param file_name: Filename
-        :return: True if the file exists, False otherwise.
+    async def needs_download(self, file_name: str) -> bool:
+        """Check if a file needs to be downloaded (i.e. does not yet exist on disk).
+
+        :param file_name: Filename to check.
+        :return: True if the file does not exist and should be downloaded.
         """
         full_file_path = await self.get_fpath(file_name)
         if full_file_path.exists():
             _LOGGER.debug(
-                "File already exist : %s don't re-download it", full_file_path
+                "File already exists, skipping download: %s", full_file_path
             )
             return False
         return True
@@ -645,14 +647,19 @@ class DownloadDecryptMedia:
             self._get_file(segment, aes_key, f"{index}_{file_name}")
             for index, segment in enumerate(segments_lst, start=1)
         ]
-        results = await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # Collect successful downloads
-        segment_files = [
-            await self.get_fpath(f"{index + 1}_{file_name}")
-            for index, success in enumerate(results)
-            if success
-        ]
+        # Collect successful downloads (skip exceptions and failures)
+        segment_files = []
+        for index, result in enumerate(results):
+            if isinstance(result, Exception):
+                _LOGGER.warning(
+                    "Segment %d download failed: %s", index + 1, result
+                )
+            elif result:
+                segment_files.append(
+                    await self.get_fpath(f"{index + 1}_{file_name}")
+                )
 
         if not segment_files:
             _LOGGER.warning("No segment files found")
@@ -717,22 +724,12 @@ class DownloadDecryptMedia:
         """
         file_path = await self.get_fpath(filename)
         try:
-            # Ensure the directory exists
             file_path.parent.mkdir(parents=True, exist_ok=True)
-
             async with aio_open(file_path, "wb") as file:
                 await file.write(content)
             _LOGGER.debug("Save file OK : %s", file_path)
-        except PermissionError as e:
-            _LOGGER.error("Save file, permission denied %s: %s", file_path, e)
-        except FileNotFoundError as e:
-            _LOGGER.error("Save file, file/folder not found %s: %s", file_path, e)
         except OSError as e:
-            _LOGGER.error("Save file, error saving file %s: %s", file_path, e)
-        except Exception as e:  # noqa: BLE001
-            _LOGGER.error(
-                "Save file, unexpected error saving file %s: %s", file_path, e
-            )
+            _LOGGER.error("Failed to save file %s: %s", file_path, e)
         return file_path
 
     @staticmethod
