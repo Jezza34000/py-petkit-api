@@ -175,6 +175,7 @@ class PetkitEndpoint(StrEnum):
     IOT_DEVICE_INFO_V2 = "user/iotDeviceInfo_v2"
     UNREAD_STATUS = "user/unreadStatus"
     FAMILY_LIST = "group/family/list"
+    DEVICE_ROSTER = "discovery/device_roster_v2"
     REFRESH_HOME_V2 = "refreshHomeV2"
 
     # Common to many device

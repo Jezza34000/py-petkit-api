@@ -433,6 +433,60 @@ class PetKitClient:
         dogs = user_details.get("dogs", [])
         return [PetDetails(**dog) for dog in dogs]
 
+    async def _get_shared_devices(self, account: AccountData) -> list[Device]:
+        """Fetch shared devices from the device roster endpoint.
+
+        The ``group/family/list`` endpoint only returns devices **owned** by
+        the authenticated account.  Devices that have been *shared* with the
+        account are absent from that response but appear in
+        ``discovery/device_roster_v2``.  This helper converts the roster
+        response into ``Device`` objects so the rest of the pipeline can
+        handle them identically.
+        """
+        today = datetime.now().strftime("%Y%m%d")
+        _LOGGER.debug(
+            "Fetching shared devices for group %s", account.group_id
+        )
+        try:
+            response = await self.req.request(
+                method=HTTPMethod.POST,
+                url=PetkitEndpoint.DEVICE_ROSTER,
+                headers=await self.get_session_id(),
+                data=f"day={today}&groupId={account.group_id}",
+            )
+        except Exception:
+            _LOGGER.warning(
+                "Failed to fetch shared devices for group %s",
+                account.group_id,
+                exc_info=True,
+            )
+            return []
+
+        raw_devices = response.get("devices", [])
+        devices: list[Device] = []
+        for dev in raw_devices:
+            try:
+                device = Device(
+                    deviceType=dev["type"],
+                    deviceId=dev["id"],
+                    groupId=account.group_id or 0,
+                    uniqueId=dev.get("deviceTypeAndId", str(dev["id"])),
+                    createdAt=dev.get("createdAt", 0),
+                    type=dev.get("deviceTypeId", 0),
+                    typeCode=dev.get("typeCode", 0),
+                )
+                devices.append(device)
+                _LOGGER.debug(
+                    "Found shared device: type=%s id=%s",
+                    device.device_type,
+                    device.device_id,
+                )
+            except Exception:
+                _LOGGER.warning(
+                    "Failed to parse shared device: %s", dev, exc_info=True
+                )
+        return devices
+
     async def _get_account_data(self) -> None:
         """Get the account data from the PetKit service."""
         _LOGGER.debug("Fetching account data")
@@ -442,6 +496,18 @@ class PetKitClient:
             headers=await self.get_session_id(),
         )
         self.account_data = [AccountData(**account) for account in response]
+
+        # Fetch shared devices for groups with empty device lists
+        for account in self.account_data:
+            if not account.device_list:
+                shared_devices = await self._get_shared_devices(account)
+                if shared_devices:
+                    account.device_list = shared_devices
+                    _LOGGER.info(
+                        "Discovered %d shared device(s) in group %s",
+                        len(shared_devices),
+                        account.group_id,
+                    )
 
         await self.get_device_info()
 
