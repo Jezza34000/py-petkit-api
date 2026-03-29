@@ -288,21 +288,21 @@ class TestMediaManager(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(media_manager.is_subscription_active(feeder))
 
     @patch("pypetkitapi.media.DownloadDecryptMedia.get_fpath", new_callable=AsyncMock)
-    async def test_not_existing_file(self, mock_get_fpath):
-        """Test not_existing_file method"""
+    async def test_needs_download(self, mock_get_fpath):
+        """Test needs_download method"""
         # Mock the file path
         mock_file_path = AsyncMock(spec=Path)
         mock_get_fpath.return_value = mock_file_path
 
         # Test when file exists
         mock_file_path.exists.return_value = True
-        result = await self.dl_decrypt_media.not_existing_file("test_file.jpg")
+        result = await self.dl_decrypt_media.needs_download("test_file.jpg")
         self.assertFalse(result)
         mock_file_path.exists.assert_called_once()
 
         # Test when file does not exist
         mock_file_path.exists.return_value = False
-        result = await self.dl_decrypt_media.not_existing_file("test_file.jpg")
+        result = await self.dl_decrypt_media.needs_download("test_file.jpg")
         self.assertTrue(result)
         self.assertEqual(mock_file_path.exists.call_count, 2)
 
