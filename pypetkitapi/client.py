@@ -452,7 +452,7 @@ class PetKitClient:
                 headers=await self.get_session_id(),
                 data=f"day={today}&groupId={account.group_id}",
             )
-        except Exception:
+        except (PypetkitError, aiohttp.ClientError, TimeoutError):
             _LOGGER.warning(
                 "Failed to fetch shared devices for group %s",
                 account.group_id,
@@ -463,25 +463,33 @@ class PetKitClient:
         raw_devices = response.get("devices", [])
         devices: list[Device] = []
         for dev in raw_devices:
-            try:
-                device = Device(
-                    deviceType=dev["type"],
-                    deviceId=dev["id"],
-                    groupId=account.group_id or 0,
-                    uniqueId=dev.get("deviceTypeAndId", str(dev["id"])),
-                    createdAt=dev.get("createdAt", 0),
-                    type=dev.get("deviceTypeId", 0),
-                    typeCode=dev.get("typeCode", 0),
-                )
+            device = self._parse_shared_device(dev, account.group_id or 0)
+            if device is not None:
                 devices.append(device)
-                _LOGGER.debug(
-                    "Found shared device: type=%s id=%s",
-                    device.device_type,
-                    device.device_id,
-                )
-            except Exception:
-                _LOGGER.warning("Failed to parse shared device: %s", dev, exc_info=True)
         return devices
+
+    @staticmethod
+    def _parse_shared_device(dev: dict, group_id: int) -> Device | None:
+        """Parse a single shared device dict into a Device, or None on failure."""
+        try:
+            device = Device(
+                deviceType=dev["type"],
+                deviceId=dev["id"],
+                groupId=group_id,
+                uniqueId=dev.get("deviceTypeAndId", str(dev["id"])),
+                createdAt=dev.get("createdAt", 0),
+                type=dev.get("deviceTypeId", 0),
+                typeCode=dev.get("typeCode", 0),
+            )
+        except (KeyError, TypeError, ValueError):
+            _LOGGER.warning("Failed to parse shared device: %s", dev, exc_info=True)
+            return None
+        _LOGGER.debug(
+            "Found shared device: type=%s id=%s",
+            device.device_type,
+            device.device_id,
+        )
+        return device
 
     async def _get_account_data(self) -> None:
         """Get the account data from the PetKit service."""
