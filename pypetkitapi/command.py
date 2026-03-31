@@ -137,6 +137,10 @@ FOUNTAIN_COMMAND = {
     FountainAction.RESET_FILTER: [222, 1, 0, 0],
     FountainAction.POWER_OFF: [220, 1, 3, 0, 0, 1, 1],
     FountainAction.POWER_ON: [220, 1, 3, 0, 1, 1, 1],
+    FountainAction.MODE_NORMAL: [220, 1, 3, 0, 1, 1, 1],
+    FountainAction.MODE_SMART: [220, 1, 3, 0, 1, 2, 1],
+    FountainAction.MODE_STANDARD: [220, 1, 3, 0, 1, 1, 1],
+    FountainAction.MODE_INTERMITTENT: [220, 1, 3, 0, 1, 2, 1],
 }
 
 
