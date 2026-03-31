@@ -289,7 +289,9 @@ class RecordsType(BaseModel):
     add_amount2: int | None = Field(None, alias="addAmount2")
     day: int | None = None
     device_id: int | None = Field(
-        None, validation_alias=AliasChoices("deviceId", "device_id")
+        None,
+        alias="deviceId",
+        validation_alias=AliasChoices("deviceId", "device_id"),
     )
     eat_count: int | None = Field(None, alias="eatCount")
     eat_amount: int | None = Field(None, alias="eatAmount")  # D3
