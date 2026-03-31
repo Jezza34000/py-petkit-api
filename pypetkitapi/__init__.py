@@ -50,6 +50,12 @@ from .exceptions import (
     PypetkitError,
 )
 from .feeder_container import Feeder, RecordsItems
+from .local_bluetooth import (
+    BLE_FOUNTAIN_NAME_PREFIXES,
+    BLE_NOTIFY_UUID,
+    BLE_WRITE_UUID,
+    LocalFountainBleProtocol,
+)
 from .litter_container import (
     Litter,
     LitterRecord,
@@ -120,6 +126,10 @@ __all__ = [
     "Purifier",
     "PypetkitError",
     "RecordType",
+    "BLE_FOUNTAIN_NAME_PREFIXES",
+    "BLE_NOTIFY_UUID",
+    "BLE_WRITE_UUID",
+    "LocalFountainBleProtocol",
     "RecordsItems",
     "WaterFountain",
     "WorkState",
