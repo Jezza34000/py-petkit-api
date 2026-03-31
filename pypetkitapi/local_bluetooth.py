@@ -208,8 +208,12 @@ class LocalFountainBleProtocol:
                 "filter_percentage": data[13] / 100.0,
                 "running_status": data[14],
                 "pump_runtime_today": int.from_bytes(bytes(data[15:19]), "big"),
-                "supply_voltage": int.from_bytes(bytes(data[20:22]), "big", signed=True),
-                "battery_voltage": int.from_bytes(bytes(data[22:24]), "big", signed=True),
+                "supply_voltage": int.from_bytes(
+                    bytes(data[20:22]), "big", signed=True
+                ),
+                "battery_voltage": int.from_bytes(
+                    bytes(data[22:24]), "big", signed=True
+                ),
                 "battery_percentage": data[24],
             }
         return {
@@ -245,8 +249,12 @@ class LocalFountainBleProtocol:
             "do_not_disturb_switch": data[8],
             "led_light_time_on": int.from_bytes(bytes(data[4:6]), "big", signed=True),
             "led_light_time_off": int.from_bytes(bytes(data[6:8]), "big", signed=True),
-            "do_not_disturb_time_on": int.from_bytes(bytes(data[9:11]), "big", signed=True),
-            "do_not_disturb_time_off": int.from_bytes(bytes(data[11:13]), "big", signed=True),
+            "do_not_disturb_time_on": int.from_bytes(
+                bytes(data[9:11]), "big", signed=True
+            ),
+            "do_not_disturb_time_off": int.from_bytes(
+                bytes(data[11:13]), "big", signed=True
+            ),
         }
 
     def _parse_ctw3_full_status(self, data: list[int]) -> dict[str, Any]:
@@ -259,8 +267,13 @@ class LocalFountainBleProtocol:
         smart_time_on = data[26] if len(data) > 26 else 0
         smart_time_off = data[27] if len(data) > 27 else 0
         filter_days, water_total, water_today, energy = self._calculate_values(
-            mode, filter_pct, smart_time_on, smart_time_off,
-            "CTW3", pump_runtime_today, pump_runtime,
+            mode,
+            filter_pct,
+            smart_time_on,
+            smart_time_off,
+            "CTW3",
+            pump_runtime_today,
+            pump_runtime,
         )
         return {
             "power_status": data[0],
@@ -300,8 +313,13 @@ class LocalFountainBleProtocol:
         pump_runtime = int.from_bytes(bytes(data[6:10]), "big")
         pump_runtime_today = int.from_bytes(bytes(data[12:16]), "big")
         filter_days, water_total, water_today, energy = self._calculate_values(
-            mode, filter_pct, smart_time_on, smart_time_off,
-            self.device_alias, pump_runtime_today, pump_runtime,
+            mode,
+            filter_pct,
+            smart_time_on,
+            smart_time_off,
+            self.device_alias,
+            pump_runtime_today,
+            pump_runtime,
         )
         result: dict[str, Any] = {
             "power_status": data[0],
@@ -333,14 +351,18 @@ class LocalFountainBleProtocol:
     # -----------------------------------------------------------------------
 
     @staticmethod
-    def update_water_fountain(fountain: "WaterFountain", ble_status: dict[str, Any]) -> None:
+    def update_water_fountain(
+        fountain: WaterFountain, ble_status: dict[str, Any]
+    ) -> None:
         """Apply a BLE status dict to a WaterFountain entity in-place."""
         if fountain.status is None:
             from pypetkitapi.water_fountain_container import Status
+
             fountain.status = Status()
 
         if fountain.settings is None:
             from pypetkitapi.water_fountain_container import SettingsFountain
+
             fountain.settings = SettingsFountain()
 
         s = fountain.status
@@ -352,21 +374,39 @@ class LocalFountainBleProtocol:
         s.detect_status = ble_status.get("pet_drinking", s.detect_status)
 
         fountain.mode = ble_status.get("mode", fountain.mode)
-        fountain.is_night_no_disturbing = ble_status.get("dnd_state", fountain.is_night_no_disturbing)
-        fountain.breakdown_warning = ble_status.get("warning_breakdown", fountain.breakdown_warning)
-        fountain.lack_warning = ble_status.get("warning_water_missing", fountain.lack_warning)
-        fountain.filter_warning = ble_status.get("warning_filter", fountain.filter_warning)
+        fountain.is_night_no_disturbing = ble_status.get(
+            "dnd_state", fountain.is_night_no_disturbing
+        )
+        fountain.breakdown_warning = ble_status.get(
+            "warning_breakdown", fountain.breakdown_warning
+        )
+        fountain.lack_warning = ble_status.get(
+            "warning_water_missing", fountain.lack_warning
+        )
+        fountain.filter_warning = ble_status.get(
+            "warning_filter", fountain.filter_warning
+        )
         fountain.low_battery = ble_status.get("low_battery", fountain.low_battery)
 
         filter_pct = ble_status.get("filter_percentage")
         if filter_pct is not None:
             fountain.filter_percent = int(filter_pct * 100)
 
-        fountain.filter_expected_days = ble_status.get("filter_time_left", fountain.filter_expected_days)
-        fountain.water_pump_run_time = ble_status.get("pump_runtime", fountain.water_pump_run_time)
-        fountain.today_pump_run_time = ble_status.get("pump_runtime_today", fountain.today_pump_run_time)
-        fountain.expected_clean_water = ble_status.get("expected_clean_water", fountain.expected_clean_water)
-        fountain.today_clean_water = ble_status.get("today_clean_water", fountain.today_clean_water)
+        fountain.filter_expected_days = ble_status.get(
+            "filter_time_left", fountain.filter_expected_days
+        )
+        fountain.water_pump_run_time = ble_status.get(
+            "pump_runtime", fountain.water_pump_run_time
+        )
+        fountain.today_pump_run_time = ble_status.get(
+            "pump_runtime_today", fountain.today_pump_run_time
+        )
+        fountain.expected_clean_water = ble_status.get(
+            "expected_clean_water", fountain.expected_clean_water
+        )
+        fountain.today_clean_water = ble_status.get(
+            "today_clean_water", fountain.today_clean_water
+        )
 
         energy = ble_status.get("today_use_electricity")
         if energy is not None:
@@ -378,8 +418,12 @@ class LocalFountainBleProtocol:
         cfg.smart_working_time = ble_status.get("smart_time_on", cfg.smart_working_time)
         cfg.smart_sleep_time = ble_status.get("smart_time_off", cfg.smart_sleep_time)
         cfg.lamp_ring_switch = ble_status.get("led_switch", cfg.lamp_ring_switch)
-        cfg.lamp_ring_brightness = ble_status.get("led_brightness", cfg.lamp_ring_brightness)
-        cfg.no_disturbing_switch = ble_status.get("do_not_disturb_switch", cfg.no_disturbing_switch)
+        cfg.lamp_ring_brightness = ble_status.get(
+            "led_brightness", cfg.lamp_ring_brightness
+        )
+        cfg.no_disturbing_switch = ble_status.get(
+            "do_not_disturb_switch", cfg.no_disturbing_switch
+        )
 
         # CTW3 electricity
         battery_pct = ble_status.get("battery_percentage")
@@ -388,6 +432,7 @@ class LocalFountainBleProtocol:
         if any(v is not None for v in (battery_pct, battery_v, supply_v)):
             if fountain.electricity is None:
                 from pypetkitapi.water_fountain_container import Electricity
+
                 fountain.electricity = Electricity()
             if battery_pct is not None:
                 fountain.electricity.battery_percent = battery_pct
@@ -411,7 +456,11 @@ class LocalFountainBleProtocol:
         """Derive the BLE session secret from device ID bytes."""
         padded = ([0] * max(0, 8 - len(device_id_bytes)) + device_id_bytes)[:8]
         reversed_bytes = list(reversed(padded))
-        if len(reversed_bytes) >= 2 and reversed_bytes[-2] == 0 and reversed_bytes[-1] == 0:
+        if (
+            len(reversed_bytes) >= 2
+            and reversed_bytes[-2] == 0
+            and reversed_bytes[-1] == 0
+        ):
             reversed_bytes[-2] = 13
             reversed_bytes[-1] = 37
         return reversed_bytes
@@ -432,7 +481,9 @@ class LocalFountainBleProtocol:
         if time_on == 0:
             filter_days = math.ceil(filter_pct * 60)
         else:
-            filter_days = math.ceil(((filter_pct * 30.0) * (time_on + time_off)) / time_on)
+            filter_days = math.ceil(
+                ((filter_pct * 30.0) * (time_on + time_off)) / time_on
+            )
 
         flow_rate, divisor = 1.5, 2.0
         if alias == "W5C":

@@ -50,18 +50,18 @@ from .exceptions import (
     PypetkitError,
 )
 from .feeder_container import Feeder, RecordsItems
-from .local_bluetooth import (
-    BLE_FOUNTAIN_NAME_PREFIXES,
-    BLE_NOTIFY_UUID,
-    BLE_WRITE_UUID,
-    LocalFountainBleProtocol,
-)
 from .litter_container import (
     Litter,
     LitterRecord,
     PackageInfoResult,
     PackageListResult,
     WorkState,
+)
+from .local_bluetooth import (
+    BLE_FOUNTAIN_NAME_PREFIXES,
+    BLE_NOTIFY_UUID,
+    BLE_WRITE_UUID,
+    LocalFountainBleProtocol,
 )
 from .media import DownloadDecryptMedia, MediaCloud, MediaFile, MediaManager
 from .purifier_container import Purifier
@@ -70,6 +70,9 @@ from .water_fountain_container import WaterFountain
 __version__ = "1.25.1"
 
 __all__ = [
+    "BLE_FOUNTAIN_NAME_PREFIXES",
+    "BLE_NOTIFY_UUID",
+    "BLE_WRITE_UUID",
     "CTW3",
     "D3",
     "D4",
@@ -107,6 +110,7 @@ __all__ = [
     "LitterCommand",
     "LitterRecord",
     "LiveFeed",
+    "LocalFountainBleProtocol",
     "MediaCloud",
     "MediaFile",
     "MediaManager",
@@ -126,10 +130,6 @@ __all__ = [
     "Purifier",
     "PypetkitError",
     "RecordType",
-    "BLE_FOUNTAIN_NAME_PREFIXES",
-    "BLE_NOTIFY_UUID",
-    "BLE_WRITE_UUID",
-    "LocalFountainBleProtocol",
     "RecordsItems",
     "WaterFountain",
     "WorkState",
