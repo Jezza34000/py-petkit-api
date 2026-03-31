@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, ClassVar
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 from pypetkitapi.const import (
     D3,
@@ -223,7 +223,8 @@ class EventState(BaseModel):
     """Dataclass for event state data."""
 
     completed_at: str | None = Field(None, alias="completedAt")
-    err_code: int | None = Field(None, alias="errCode")
+    err_code: str | int | None = Field(None, alias="errCode")  # str on older models
+    err_msg: str | None = Field(None, alias="errMsg")
     media: int | None = None
     real_amount: int | None = Field(None, alias="realAmount")
     real_amount1: int | None = Field(None, alias="realAmount1")
@@ -287,7 +288,9 @@ class RecordsType(BaseModel):
     add_amount1: int | None = Field(None, alias="addAmount1")
     add_amount2: int | None = Field(None, alias="addAmount2")
     day: int | None = None
-    device_id: int | None = Field(None, alias="deviceId")
+    device_id: int | None = Field(
+        None, validation_alias=AliasChoices("deviceId", "device_id")
+    )
     eat_count: int | None = Field(None, alias="eatCount")
     eat_amount: int | None = Field(None, alias="eatAmount")  # D3
     items: list[RecordsItems] | None = None

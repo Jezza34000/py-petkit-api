@@ -678,8 +678,12 @@ class PetKitClient:
         ):
             response = response.get("list", [])
 
+        # Workaround for old FEEDER (Fresh Element): API returns a bare list of feed
+        # records instead of a dict with a "feed" key like newer models.
+        if isinstance(response, list) and data_class is FeederRecord:
+            device_data = FeederRecord(feed=response)
         # Check if the response is a list or a dict
-        if isinstance(response, list):
+        elif isinstance(response, list):
             device_data = [data_class(**item) for item in response]
         elif isinstance(response, dict):
             device_data = data_class(**response)
