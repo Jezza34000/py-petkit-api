@@ -265,9 +265,6 @@ class PetKitClient:
         if is_expired:
             _LOGGER.debug("Token expired, re-logging in")
             await self.login()
-        # elif (max_age / 2) < token_age < max_age:
-        #     _LOGGER.debug("Token still OK, but refreshing session")
-        #     await self.refresh_session()
 
     async def get_session_id(self) -> dict:
         """Return the session ID."""
@@ -312,8 +309,11 @@ class PetKitClient:
                     url=endpoint_url,
                     headers=await self.get_session_id(),
                 )
-            except Exception as err:  # noqa: BLE001
+            except PypetkitError as err:
                 _LOGGER.debug("IoT %s endpoint request failed: %s", endpoint_name, err)
+                continue
+            except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+                _LOGGER.debug("IoT %s endpoint network error: %s", endpoint_name, err)
                 continue
 
             if not isinstance(response, dict):
@@ -433,6 +433,64 @@ class PetKitClient:
         dogs = user_details.get("dogs", [])
         return [PetDetails(**dog) for dog in dogs]
 
+    async def _get_shared_devices(self, account: AccountData) -> list[Device]:
+        """Fetch shared devices from the device roster endpoint.
+
+        The ``group/family/list`` endpoint only returns devices **owned** by
+        the authenticated account.  Devices that have been *shared* with the
+        account are absent from that response but appear in
+        ``discovery/device_roster_v2``.  This helper converts the roster
+        response into ``Device`` objects so the rest of the pipeline can
+        handle them identically.
+        """
+        today = datetime.now().strftime("%Y%m%d")
+        _LOGGER.debug("Fetching shared devices for group %s", account.group_id)
+        try:
+            response = await self.req.request(
+                method=HTTPMethod.POST,
+                url=PetkitEndpoint.DEVICE_ROSTER,
+                headers=await self.get_session_id(),
+                data=f"day={today}&groupId={account.group_id}",
+            )
+        except (PypetkitError, aiohttp.ClientError, TimeoutError):
+            _LOGGER.warning(
+                "Failed to fetch shared devices for group %s",
+                account.group_id,
+                exc_info=True,
+            )
+            return []
+
+        raw_devices = response.get("devices", [])
+        devices: list[Device] = []
+        for dev in raw_devices:
+            device = self._parse_shared_device(dev, account.group_id or 0)
+            if device is not None:
+                devices.append(device)
+        return devices
+
+    @staticmethod
+    def _parse_shared_device(dev: dict, group_id: int) -> Device | None:
+        """Parse a single shared device dict into a Device, or None on failure."""
+        try:
+            device = Device(
+                deviceType=dev["type"],
+                deviceId=dev["id"],
+                groupId=group_id,
+                uniqueId=dev.get("deviceTypeAndId", str(dev["id"])),
+                createdAt=dev.get("createdAt", 0),
+                type=dev.get("deviceTypeId", 0),
+                typeCode=dev.get("typeCode", 0),
+            )
+        except (KeyError, TypeError, ValueError):
+            _LOGGER.warning("Failed to parse shared device: %s", dev, exc_info=True)
+            return None
+        _LOGGER.debug(
+            "Found shared device: type=%s id=%s",
+            device.device_type,
+            device.device_id,
+        )
+        return device
+
     async def _get_account_data(self) -> None:
         """Get the account data from the PetKit service."""
         _LOGGER.debug("Fetching account data")
@@ -442,6 +500,18 @@ class PetKitClient:
             headers=await self.get_session_id(),
         )
         self.account_data = [AccountData(**account) for account in response]
+
+        # Fetch shared devices for groups with empty device lists
+        for account in self.account_data:
+            if not account.device_list:
+                shared_devices = await self._get_shared_devices(account)
+                if shared_devices:
+                    account.device_list = shared_devices
+                    _LOGGER.info(
+                        "Discovered %d shared device(s) in group %s",
+                        len(shared_devices),
+                        account.group_id,
+                    )
 
         await self.get_device_info()
 
@@ -485,7 +555,7 @@ class PetKitClient:
             if pet_id in self.petkit_entities:
                 self.petkit_entities[pet_id].pet_details = pet_details
 
-    async def _safe_gather(self, tasks: list, label: str) -> None:
+    async def _safe_gather(self, tasks: list[Any], label: str) -> None:
         if not tasks:
             return
 
@@ -1170,9 +1240,9 @@ class PrepReq:
         method: str,
         url: str,
         full_url: bool = False,
-        params=None,
-        data=None,
-        headers=None,
+        params: dict | str | None = None,
+        data: dict | str | None = None,
+        headers: dict[str, str] | None = None,
     ) -> dict:
         """Make a request to the PetKit API.
         :param method: HTTP method.
@@ -1198,18 +1268,14 @@ class PrepReq:
                 headers=_headers,
             ) as resp:
                 return await self._handle_response(resp, _url)
-        except aiohttp.ClientConnectorError as e:
-            _LOGGER.warning("Connection error while reaching %s: %s", _url, e)
-            raise PetkitTimeoutError(f"Cannot connect to host: {e}") from e
-        except aiohttp.ClientOSError as e:
-            _LOGGER.warning("OS-level client error on %s: %s", _url, e)
-            raise PetkitTimeoutError(f"Client OS error: {e}") from e
-        except aiohttp.ServerDisconnectedError as e:
-            _LOGGER.warning("Server disconnected unexpectedly from %s: %s", _url, e)
-            raise PetkitTimeoutError(f"Server disconnected: {e}") from e
-        except asyncio.TimeoutError as e:
-            _LOGGER.warning("Timeout error while waiting for %s", _url)
-            raise PetkitTimeoutError(f"Request to {_url} timed out") from e
+        except (
+            aiohttp.ClientConnectorError,
+            aiohttp.ClientOSError,
+            aiohttp.ServerDisconnectedError,
+            asyncio.TimeoutError,
+        ) as e:
+            _LOGGER.warning("Network error reaching %s: %s", _url, e)
+            raise PetkitTimeoutError(f"Request to {_url} failed: {e}") from e
 
     @staticmethod
     async def _handle_response(response: aiohttp.ClientResponse, url: str) -> dict:

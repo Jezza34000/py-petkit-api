@@ -20,6 +20,7 @@ PACKAGE_LIST = "packageList"
 
 # Bluetooth
 BLE_CONNECT_ATTEMPT = 32
+BLE_POLL_INTERVAL_SECS = 4
 BLE_START_TRAME = [250, 252, 253]
 BLE_END_TRAME = [251]
 
@@ -175,6 +176,7 @@ class PetkitEndpoint(StrEnum):
     IOT_DEVICE_INFO_V2 = "user/iotDeviceInfo_v2"
     UNREAD_STATUS = "user/unreadStatus"
     FAMILY_LIST = "group/family/list"
+    DEVICE_ROSTER = "discovery/device_roster_v2"
     REFRESH_HOME_V2 = "refreshHomeV2"
 
     # Common to many device
