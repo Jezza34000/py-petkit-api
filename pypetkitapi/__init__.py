@@ -57,6 +57,12 @@ from .litter_container import (
     PackageListResult,
     WorkState,
 )
+from .local_bluetooth import (
+    BLE_FOUNTAIN_NAME_PREFIXES,
+    BLE_NOTIFY_UUID,
+    BLE_WRITE_UUID,
+    LocalFountainBleProtocol,
+)
 from .media import DownloadDecryptMedia, MediaCloud, MediaFile, MediaManager
 from .purifier_container import Purifier
 from .water_fountain_container import WaterFountain
@@ -64,6 +70,9 @@ from .water_fountain_container import WaterFountain
 __version__ = "1.26.0"
 
 __all__ = [
+    "BLE_FOUNTAIN_NAME_PREFIXES",
+    "BLE_NOTIFY_UUID",
+    "BLE_WRITE_UUID",
     "CTW3",
     "D3",
     "D4",
@@ -101,6 +110,7 @@ __all__ = [
     "LitterCommand",
     "LitterRecord",
     "LiveFeed",
+    "LocalFountainBleProtocol",
     "MediaCloud",
     "MediaFile",
     "MediaManager",
