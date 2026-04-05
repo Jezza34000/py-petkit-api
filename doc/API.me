@@ -1,0 +1,917 @@
+# PetKit API Reference
+
+> Unofficial API documentation reverse-engineered from the PetKit Android app (v13.4.1) using [`jadx`](https://github.com/skylot/jadx).
+> Source classes: `com.petkit.android.api.http.ApiTools` and device-specific service classes.
+
+> [!WARNING]
+> This is an **unofficial**, community-maintained reference. PetKit may change these endpoints at any time without notice. Use at your own risk.
+
+For the Python client library that implements this API, see the [main README](README.md).
+
+---
+
+## Table of Contents
+
+- [Base URLs](#base-urls)
+- [Request Conventions](#request-conventions)
+- [Device Type IDs](#device-type-ids)
+- [Common Device Endpoints](#common-device-endpoints)
+- [User & Account](#user--account)
+- [Passport / Auth](#passport--auth)
+- [Discovery & Home](#discovery--home)
+- [Device Management](#device-management)
+- [BLE (Bluetooth)](#ble-bluetooth)
+- [Family / Group](#family--group)
+- **Feeders**
+  - [Feeder (Original)](#feeder-original---feeder)
+  - [Feeder Mini (D2)](#feeder-mini-d2---feedermini)
+  - [Feeder D3](#feeder-d3---d3)
+  - [Feeder D4](#feeder-d4---d4)
+  - [Feeder D4s](#feeder-d4s---d4s)
+  - [YumShare Solo with Camera (D4H)](#yumshare-solo-with-camera-d4h---d4h)
+  - [YumShare Dual-hopper with Camera (D4SH)](#yumshare-dual-hopper-with-camera-d4sh---d4sh)
+- **Litter Boxes**
+  - [Pura X (T3)](#pura-x-t3---t3)
+  - [Pura Max (T4)](#pura-max-t4---t4)
+  - [Purobot Ultra (T5)](#purobot-ultra-t5---t5)
+  - [Purobot Max Pro 2 / PuraMax 2 (T6)](#purobot-max-pro-2--puramax-2-t6---t6)
+  - [Purobot Crystal Duo (T7)](#purobot-crystal-duo-t7---t7)
+- **Water Fountains**
+  - [EverSweet 3 Pro / Solo 2 (W5)](#eversweet-3-pro--solo-2-w5---w5)
+  - [EverSweet Max Cordless (CTW3)](#eversweet-max-cordless-ctw3---ctw3)
+  - [EverSweet Max 2 UVC (W7H)](#eversweet-max-2-uvc-w7h---w7h)
+- **Air Purifiers**
+  - [Air Purifier K2](#air-purifier-k2---k2)
+  - [Air Purifier K3](#air-purifier-k3---k3)
+- [Pet Management](#pet-management)
+- [Schedule](#schedule)
+- [Feeder Charts / Statistics](#feeder-charts--statistics)
+- [AI Creation](#ai-creation)
+- [AI Material](#ai-material)
+- [Medical Consultation](#medical-consultation)
+
+---
+
+## Base URLs
+
+| URL | Purpose |
+|-----|---------|
+| `https://api.petkit.com/6/` | Main API (overseas) |
+| `https://passport.petkt.com/v1/` | Authentication / passport |
+| `https://app.petkt.com/v1/` | Service updates |
+| `http://api-mate.petkt.com/6/` | Mate device API |
+
+The base URL can be overridden per-device via regional gateways (fetched from `v1/regionservers`).
+
+---
+
+## Request Conventions
+
+- Nearly all endpoints use **POST** (exceptions noted inline with GET)
+- Full URL pattern: `{base_url}{device_prefix}/{endpoint}`
+  - Example: `https://api.petkit.com/6/d4/saveFeed`
+- Older devices (`feeder/`, `feedermini/`) use `snake_case` endpoint names
+- Newer devices (`d3/`, `d4/`, `t5/`, etc.) use `camelCase`
+
+---
+
+## Device Type IDs
+
+| ID | Prefix | Device |
+|----|--------|--------|
+| 1 | `fit/` | Fitness Tracker |
+| 2 | `fit/` | Fitness Tracker 2 |
+| 3 | `mate/` | Mate |
+| 4 | `feeder/` | Feeder (Original) |
+| 5 | `cozy/` | Cozy Bed |
+| 6 | `feedermini/` | Feeder Mini (D2) |
+| 7 | `t3/` | Pura X (T3) |
+| 8 | `k2/` | Air Purifier K2 |
+| 9 | `d3/` | Feeder D3 |
+| 10 | `aq/` | Air Quality Monitor |
+| 11 | `d4/` | Feeder D4 |
+| 12 | `p3/` | P3 Tracker |
+| 14 | `w5/` | EverSweet 3 Pro / Solo 2 (W5) |
+| 15 | `t4/` | Pura Max (T4) |
+| 16 | `k3/` | Air Purifier K3 |
+| 17 | `aqr/` | Air Quality R |
+| 18 | `r2/` | R2 Device |
+| 19 | `aqh1/` | Aquarium AQH1 |
+| 20 | `d4s/` | Feeder D4s |
+| 21 | `t5/` | Purobot Ultra (T5) |
+| 22 | `hg/` | Humidifier HG |
+| 24 | `ctw3/` | EverSweet Max Cordless (CTW3) |
+| 25 | `d4sh/` | YumShare Dual-hopper with Camera (D4SH) |
+| 26 | `d4h/` | YumShare Solo with Camera (D4H) |
+| 27 | `t6/` | Purobot Max Pro 2 / PuraMax 2 (T6) |
+| 28 | `t7/` | Purobot Crystal Duo (T7) |
+| 29 | `w7h/` | EverSweet Max 2 UVC (W7H) |
+| 30 | `w7/` | W7 (newer variant) |
+
+---
+
+## Common Device Endpoints
+
+Most connected devices share a standard set of endpoints. These are listed once here using `{p}` as the device prefix (e.g., `d4`, `t5`, `w7h`). Individual device sections below only list **device-specific** endpoints.
+
+### Device Lifecycle
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `{p}/link` | Link (pair) device to account |
+| POST | `{p}/unlink` | Unlink device from account |
+| POST | `{p}/owndevices` | List owned devices of this type |
+| POST | `{p}/devicestate` | Get current device state |
+| POST | `{p}/device_detail` | Get device detail |
+| POST | `{p}/refreshHomeV2` | Refresh device home data |
+| POST | `{p}/updateSettings` | Update device settings |
+
+> **Note:** Older devices (`feeder/`, `feedermini/`) use `update` instead of `updateSettings`, and `signup` instead of `link`.
+
+### OTA (Firmware Updates)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `{p}/ota_check` | Check for firmware update |
+| POST | `{p}/ota_start` | Start firmware update |
+| POST | `{p}/ota_status` | Get OTA update status |
+| POST | `{p}/ota_reset` | Reset OTA state |
+| POST | `{p}/signup_status` | Get signup/registration status |
+
+### Sharing & Invitations
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `{p}/shareopen` | Enable sharing on device |
+| POST | `{p}/shareadd` | Add a share user |
+| POST | `{p}/shareremove` | Remove a share |
+| POST | `{p}/shareusers` | List share users |
+| POST | `{p}/shareInventUsers` | List pending invite users |
+| POST | `{p}/addInvent` | Send share invitation |
+| POST | `{p}/cancelInvent` | Cancel share invitation |
+| POST | `{p}/removemefromshare` | Remove self from shared device |
+| POST | `{p}/searchuser` | Search users for sharing |
+
+> **Note:** Newer devices (D4H, D4SH, T5+, W7H) drop `shareadd`, `shareusers`, and `searchuser`.
+
+### Network
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `{p}/network/lock` | Lock device to network |
+
+### Camera & Cloud Video (camera-equipped devices only)
+
+Applies to: D4H, D4SH, T5, T6, T7, W7H
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `{p}/bind/status` | Get cloud bind status |
+| POST | `{p}/cloud/bind/device` | Bind device to cloud |
+| POST | `{p}/start/live` | Start live video stream |
+| POST | `{p}/temporary/open/camera` | Open camera temporarily |
+| POST | `{p}/cloud/video` | Get cloud video recordings |
+| POST | `{p}/getHighlight` | Get video highlights |
+| POST | `{p}/getHighlightM3U8` | Get highlight stream URL |
+| POST | `{p}/uploadHighlight` | Upload a highlight clip |
+| POST | `{p}/removeHighlight` | Remove a highlight clip |
+| POST | `{p}/getEventMediaInfo` | Get event media info |
+| POST | `{p}/uploadUnreliableCloudVideo` | Upload unreliable cloud video |
+| POST | `{p}/getServiceInfo` | Get cloud service info |
+| POST | `{p}/getServiceByDeviceId` | Get service by device ID |
+
+---
+
+## User & Account
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `user/login` | Login |
+| POST | `user/sendcodeforquicklogin` | Get quick login code |
+| POST | `user/refreshsession` | Refresh session |
+| POST | `user/details2` | Get user details |
+| POST | `user/getUserInfo` | Get user info |
+| POST | `user/iotDeviceInfo` | Get IoT device info (v1) |
+| POST | `user/iotDeviceInfo_v2` | Get IoT device info (v2) |
+| POST | `user/unreadStatus` | Get unread status |
+| POST | `user/registerAccount` | Register account (verify code) |
+| POST | `user/verifyCode` | Verify code |
+| POST | `user/sendcodeforRegister` | Send code for registration |
+| POST | `user/sendcodeforsignup` | Send code for signup |
+| POST | `user/sendcodeforresetusername` | Send code for username reset |
+| POST | `user/sendcodeforbindmobile` | Send code to bind mobile |
+| POST | `user/sendCodeForDeleteAccount` | Send code for account deletion |
+| POST | `user/captcha/sendcodeforbindthirdparty` | Send code for third-party binding |
+| POST | `user/captcha/url` | Get captcha URL |
+| POST | `user/passwd` | Change password |
+| POST | `user/passwdWithNoOldPasswd` | Set password without old password |
+| POST | `user/bindmobile` | Bind mobile number |
+| POST | `user/bindthirdparty` | Bind third-party account |
+| POST | `user/bind_mobile_with_thirdparty` | Bind mobile with third-party |
+| POST | `user/third_party_login` | Third-party login |
+| POST | `user/updateusername` | Update username |
+| POST | `user/updateavatar2` | Update avatar |
+| POST | `user/updatebackimage` | Update background image |
+| POST | `user/updateprops` | Update user properties |
+| POST | `user/updateaddress` | Update address |
+| POST | `user/updatelocation` | Update location |
+| POST | `user/updateregion` | Update region |
+| POST | `user/save_gender` | Save gender |
+| POST | `user/custom_gender` | Custom gender |
+| POST | `user/deleteAccount` | Delete account (logoff) |
+| POST | `user/acceptPolicy` | Accept privacy policy |
+| POST | `user/privacyPolicy` | Get privacy policy |
+| POST | `user/getAppVersionState` | Get app version state |
+| POST | `user/getSystemSettings` | Get system settings |
+| POST | `user/careConfig` | Get care config |
+| POST | `user/get_push_setting` | Get push settings |
+| POST | `user/update_push_setting` | Update push settings |
+| POST | `user/registerPushToken` | Register push token |
+| POST | `user/unregisterPushToken` | Unregister push token |
+| POST | `user/messageList` | Get message list |
+| POST | `user/shareMessageList` | Get share message list |
+| POST | `user/searchuser` | Search users |
+| POST | `user/getPrivateChatUser` | Get private chat user |
+| POST | `user/default_pic` | Get default user pictures |
+| POST | `user/background` | Get background images |
+| POST | `user/diyBackground` | Get DIY backgrounds |
+| POST | `user/doctors` | Get doctors list |
+| POST | `user/suggest` | Submit suggestion |
+| POST | `user/saleHotline` | Get sale hotline |
+| POST | `user/agree_device_safety_clause` | Agree to device safety clause |
+| POST | `user/purchaseEntrance` | Get purchase entrance |
+| POST | `user/getCatTips` | Get cat tips |
+| POST | `user/deviceLog` | Get device log |
+| POST | `user/getWifiList` | Get WiFi list |
+| POST | `user/saveWifi` | Save WiFi |
+| POST | `user/deleteWifi` | Delete WiFi |
+| POST | `user/saveYZUserInfo` | Save Youzan user info |
+| POST | `user/medical/read` | Medical read |
+
+---
+
+## Passport / Auth
+
+Base: `https://passport.petkt.com/v1/`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `account/signup` | Signup |
+| POST | `account/resetpassword` | Reset password |
+| POST | `account/bindEmail` | Bind email |
+| POST | `account/sendCodeForBindEmail` | Send code for email binding |
+| POST | `account/refreshRegionServer` | Refresh region server |
+| GET | `regionservers` | Get region servers |
+| GET | `regionserver` | Find gateway |
+
+---
+
+## Discovery & Home
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `discovery/refreshHome` | Refresh home page |
+| POST | `discovery/homeCard` | Get home cards |
+| POST | `discovery/todoCard` | Get todo cards |
+| POST | `discovery/ignore` | Ignore todo item |
+| POST | `discovery/device_roster` | Get device roster |
+| POST | `discovery/device_roster_v2` | Get device roster v2 |
+| POST | `discovery/devices` | Get devices |
+| POST | `discovery/banners` | Get banners |
+| POST | `discovery/buylinks` | Get buy links |
+| POST | `discovery/nearbyusers` | Get nearby users |
+| POST | `discovery/available_device_types` | Get available device types |
+| POST | `discovery/search` | Search all |
+| POST | `discovery/searchpet` | Search pets |
+| POST | `discovery/searchuser` | Search users |
+| POST | `discovery/searchpost` | Search posts |
+| POST | `discovery/searchtopic` | Search topics |
+| POST | `discovery/getEquipmentConsumables` | Get equipment consumables |
+
+---
+
+## Device Management
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `device/getPetkitDevices` | Get all PetKit devices |
+| POST | `device/allCloudDevices` | Get all cloud devices |
+| POST | `device/latestUseCloudDevices` | Get recently used cloud devices |
+| POST | `device/cloudDeviceUrl` | Get cloud device URL |
+| POST | `device/getDeviceServers` | Get device servers |
+| POST | `device/linkStatus` | Get link status |
+| POST | `device/edit_device_name` | Edit device name |
+| POST | `device/edit_device_feed` | Edit device feed |
+| POST | `device/edit_device_relations` | Edit device relations |
+| POST | `device/serviceManage` | Manage service |
+| POST | `device/serviceChargeHistory` | Get service charge history |
+| POST | `device/deleteService` | Delete service |
+| POST | `device/cloudServiceTransfer` | Transfer cloud service |
+| POST | `device/renewalManageForBundle` | Renewal management for bundle |
+| POST | `device/relatedProductsInfo` | Get related products info |
+| POST | `device/transferDeviceInfo` | Transfer device info |
+| POST | `device/getConsumablesRecord` | Get consumables record |
+| POST | `device/getCopywritingGifVideo` | Get copywriting GIF/video |
+| POST | `device/disable/judge` | Judge device disable |
+| POST | `device/start/rtm` | Start RTM |
+
+---
+
+## BLE (Bluetooth)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `ble/ownSupportBleDevices` | Get BLE-supported devices |
+| POST | `ble/connect` | Start BLE connection |
+| POST | `ble/poll` | Poll BLE connection |
+| POST | `ble/cancel` | Cancel BLE connection |
+| POST | `ble/controlDevice` | Control device via BLE |
+| POST | `ble/products` | Get BLE products |
+| POST | `ble/update` | Update BLE device |
+
+---
+
+## Family / Group
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `group/family/list` | Get family list |
+| POST | `group/family/create` | Create family |
+| POST | `group/family/detail` | Get family detail |
+| POST | `group/family/modify` | Modify family |
+| POST | `group/family/dismiss` | Dismiss family |
+| POST | `group/family/quit` | Quit family |
+| POST | `group/family/accept` | Accept family invite |
+| POST | `group/family/refuse` | Refuse family invite |
+| POST | `group/family/user_remove` | Remove family user |
+| POST | `group/family/own_family_device` | Get own family devices |
+| POST | `group/family/own_share_device` | Get own shared devices |
+| POST | `group/family/device_accept` | Accept device share |
+| POST | `group/family/device_refuse` | Refuse device share |
+| POST | `group/family/device_share_info` | Get device share info |
+| POST | `group/invent/create` | Create invite |
+| POST | `group/invent/accept` | Accept invite |
+| POST | `group/invent/app/detail` | Get invite detail |
+| POST | `group/family/invent_detail` | Get family invite detail |
+
+---
+
+## Feeders
+
+### Feeder (Original) - `feeder/`
+
+Supports: [Device Lifecycle](#device-lifecycle) | [OTA](#ota-firmware-updates) | [Sharing](#sharing--invitations)
+
+> Uses `signup` instead of `link`, `update` instead of `updateSettings`, and `linkstatus` for link status.
+
+**Device-specific endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `feeder/dailyfeeds` | Get daily feeds |
+| POST | `feeder/save_feed` | Save feed plan |
+| POST | `feeder/save_dailyfeed` | Save daily feed (manual feed) |
+| POST | `feeder/remove_dailyfeed` | Remove daily feed |
+| POST | `feeder/restore_dailyfeed` | Restore daily feed |
+| POST | `feeder/cancel_realtime_feed` | Cancel realtime feed |
+| POST | `feeder/make_feed` | Dispense food |
+| POST | `feeder/suspend_feed` | Suspend entire feed plan |
+| POST | `feeder/restore_feed` | Restore entire feed plan |
+| POST | `feeder/save_repeats` | Save repeat schedule |
+| POST | `feeder/feed` | Feed |
+| POST | `feeder/desiccant_reset` | Reset desiccant |
+| POST | `feeder/food_reset` | Reset food level |
+| POST | `feeder/get_food_reset` | Get food reset info |
+| POST | `feeder/savelog` | Save log |
+| POST | `feeder/activeByMobile` | Activate by mobile |
+| POST | `feeder/find_food_by_barcode` | Find food by barcode |
+| POST | `feeder/get_feeder_serve_status` | Get feeder serve status |
+| POST | `feeder/recommend_foods` | Get recommended foods |
+| POST | `feeder/trade` | Trade |
+| POST | `feeder/get_trades` | Get trades |
+| POST | `feeder/cancel_trade` | Cancel trade |
+| POST | `feeder/add_address` | Add address |
+| POST | `feeder/get_address` | Get address |
+| POST | `feeder/repair_door` | Repair door |
+| POST | `feeder/device_package_and_trades` | Get device package and trades |
+
+### Feeder Mini (D2) - `feedermini/`
+
+Supports: [Device Lifecycle](#device-lifecycle) (partial) | [Sharing](#sharing--invitations) (partial)
+
+> Uses `devicestate` and `refreshHomeV2` but not full lifecycle set.
+
+**Device-specific endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `feedermini/make_feed` | Dispense food |
+| POST | `feedermini/save_dailyfeed` | Save daily feed |
+| POST | `feedermini/remove_dailyfeed` | Remove daily feed |
+| POST | `feedermini/restore_dailyfeed` | Restore daily feed |
+| POST | `feedermini/cancel_realtime_feed` | Cancel realtime feed |
+| POST | `feedermini/network/lock` | Network lock |
+| POST | `feedermini/add_address` | Add address |
+| POST | `feedermini/get_address` | Get address |
+| POST | `feedermini/get_feeder_serve_status` | Get feeder serve status |
+| POST | `feedermini/repair_door` | Repair door |
+
+### Feeder D3 - `d3/`
+
+Supports: [Device Lifecycle](#device-lifecycle) | [OTA](#ota-firmware-updates) | [Sharing](#sharing--invitations) | [Network](#network)
+
+**Device-specific endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `d3/feed` | Feed |
+| POST | `d3/saveFeed` | Save feed plan |
+| POST | `d3/saveDailyFeed` | Save daily feed |
+| POST | `d3/removeDailyFeed` | Remove daily feed |
+| POST | `d3/restoreDailyFeed` | Restore daily feed |
+| POST | `d3/restoreFeed` | Restore entire feed plan |
+| POST | `d3/suspendFeed` | Suspend entire feed plan |
+| POST | `d3/cancelRealtimeFeed` | Cancel realtime feed |
+| POST | `d3/saveRepeats` | Save repeat schedule |
+| POST | `d3/dailyFeedAndEat` | Get daily feed and eat data |
+| POST | `d3/feedAndEatStatistic` | Get feed and eat statistics |
+| POST | `d3/desiccantReset` | Reset desiccant |
+| POST | `d3/callPet` | Call pet |
+| POST | `d3/feed_remove` | Remove feed record |
+| POST | `d3/removeRecord` | Remove record |
+| POST | `d3/getTips` | Get tips |
+| POST | `d3/getSurplusControlTips` | Get surplus control tips |
+| POST | `d3/soundList` | Get sound list |
+| POST | `d3/playSound` | Play sound |
+| POST | `d3/addSound` | Add sound |
+| POST | `d3/removeSound` | Remove sound |
+
+### Feeder D4 - `d4/`
+
+Supports: [Device Lifecycle](#device-lifecycle) | [OTA](#ota-firmware-updates) | [Sharing](#sharing--invitations) | [Network](#network)
+
+**Device-specific endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `d4/feed` | Feed |
+| POST | `d4/saveFeed` | Save feed plan |
+| POST | `d4/saveDailyFeed` | Save daily feed |
+| POST | `d4/removeDailyFeed` | Remove daily feed |
+| POST | `d4/restoreDailyFeed` | Restore daily feed |
+| POST | `d4/restoreFeed` | Restore feed plan |
+| POST | `d4/suspendFeed` | Suspend feed plan |
+| POST | `d4/cancelRealtimeFeed` | Cancel realtime feed |
+| POST | `d4/saveRepeats` | Save repeat schedule |
+| POST | `d4/dailyFeeds` | Get daily feeds |
+| POST | `d4/feedStatistic` | Get feed statistics |
+| POST | `d4/added` | Food replenished |
+| POST | `d4/desiccantReset` | Reset desiccant |
+| POST | `d4/feed_remove` | Remove feed record |
+| POST | `d4/warranty` | Get warranty info |
+
+### Feeder D4s - `d4s/`
+
+Supports: [Device Lifecycle](#device-lifecycle) | [OTA](#ota-firmware-updates) | [Sharing](#sharing--invitations) | [Network](#network)
+
+**Device-specific endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `d4s/feed` | Feed |
+| POST | `d4s/saveFeed` | Save feed plan |
+| POST | `d4s/saveDailyFeed` | Save daily feed |
+| POST | `d4s/removeDailyFeed` | Remove daily feed |
+| POST | `d4s/restoreDailyFeed` | Restore daily feed |
+| POST | `d4s/restoreFeed` | Restore feed plan |
+| POST | `d4s/suspendFeed` | Suspend feed plan |
+| POST | `d4s/cancelRealtimeFeed` | Cancel realtime feed |
+| POST | `d4s/saveRepeats` | Save repeat schedule |
+| POST | `d4s/dailyFeeds` | Get daily feeds |
+| POST | `d4s/eatStatistic` | Get eat statistics |
+| POST | `d4s/added` | Food replenished |
+| POST | `d4s/desiccantReset` | Reset desiccant |
+| POST | `d4s/foodNoRemind` | Disable food reminder |
+| POST | `d4s/feed_remove` | Remove feed record |
+| POST | `d4s/removeRecord` | Remove record |
+
+### YumShare Solo with Camera (D4H) - `d4h/`
+
+Supports: [Device Lifecycle](#device-lifecycle) | [OTA](#ota-firmware-updates) | [Sharing](#sharing--invitations) | [Network](#network) | [Camera & Cloud Video](#camera--cloud-video-camera-equipped-devices-only)
+
+**Device-specific endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `d4h/feed` | Feed |
+| POST | `d4h/saveFeed` | Save feed plan |
+| POST | `d4h/saveDailyFeed` | Save daily feed |
+| POST | `d4h/removeDailyFeed` | Remove daily feed |
+| POST | `d4h/restoreDailyFeed` | Restore daily feed |
+| POST | `d4h/restoreFeed` | Restore feed plan |
+| POST | `d4h/suspendFeed` | Suspend feed plan |
+| POST | `d4h/cancelRealtimeFeed` | Cancel realtime feed |
+| POST | `d4h/saveRepeats` | Save repeat schedule |
+| POST | `d4h/added` | Food replenished |
+| POST | `d4h/desiccantReset` | Reset desiccant |
+| POST | `d4h/foodNoRemind` | Disable food reminder |
+| POST | `d4h/matchPet` | Match pet to feeder |
+| POST | `d4h/feed/remove` | Remove feed record |
+| POST | `d4h/removeRecord` | Remove record |
+| POST | `d4h/ota_complete` | OTA complete callback |
+| POST | `d4h/attire/list` | Get attire list |
+| POST | `d4h/soundList` | Get sound list |
+| POST | `d4h/playSound` | Play sound |
+| POST | `d4h/addSound` | Add sound |
+| POST | `d4h/updateSound` | Update sound |
+| POST | `d4h/removeSound` | Remove sound |
+| POST | `d4h/removeVideoEvent` | Remove video event |
+| POST | `d4h/oss_sts_info_v2` | Get OSS STS info v2 |
+| POST | `d4h/getDeviceRecord` | Get device record |
+| POST | `d4h/getDeviceXp2pInfo` | Get device XP2P info |
+| POST | `d4h/getEatOverGraph` | Get eat over graph |
+| GET | `d4h/timeline/{startDay}/{endDay}` | Get timeline |
+
+### YumShare Dual-hopper with Camera (D4SH) - `d4sh/`
+
+Supports: [Device Lifecycle](#device-lifecycle) | [OTA](#ota-firmware-updates) | [Sharing](#sharing--invitations) | [Network](#network) | [Camera & Cloud Video](#camera--cloud-video-camera-equipped-devices-only)
+
+Same API surface as D4H but with `d4sh/` prefix. Includes all feed management, camera/video, sound, and attire endpoints.
+
+---
+
+## Litter Boxes
+
+### Pura X (T3) - `t3/`
+
+Supports: [Device Lifecycle](#device-lifecycle) | [OTA](#ota-firmware-updates) | [Sharing](#sharing--invitations) | [Network](#network)
+
+> Also has `linkstatus` for checking link status.
+
+**Device-specific endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `t3/controlDevice` | Control device (clean, reset, etc.) |
+| POST | `t3/statistic` | Get usage statistics |
+| POST | `t3/toiletCompare` | Get toilet comparison |
+| POST | `t3/getDeviceRecord` | Get device record |
+| POST | `t3/removeRecord` | Remove record |
+| POST | `t3/getFixTimeSetting` | Get scheduled clean times |
+| POST | `t3/saveFixTimeSetting` | Save scheduled clean time |
+| POST | `t3/deleteFixTimeSetting` | Delete scheduled clean time |
+| POST | `t3/setAutoCleanTime` | Set auto clean time |
+| POST | `t3/addCleanRecord` | Add clean record |
+| POST | `t3/getCleanRecord` | Get clean record |
+| POST | `t3/removeCleanRecord` | Remove clean record |
+| POST | `t3/getGeneralConfig` | Get general config |
+| POST | `t3/getCorrectResult` | Get correct result |
+| POST | `t3/startCorrect` | Start calibration |
+| POST | `t3/recordUserAction` | Record user action |
+
+### Pura Max (T4) - `t4/`
+
+Supports: all T3 endpoints plus:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `t4/deodorantReset` | Reset deodorant |
+| POST | `t4/getCalibrationTips` | Get calibration tips |
+| POST | `t4/getDownPosGifs` | Get down position GIFs |
+| POST | `t4/getHallTips` | Get hall tips |
+| POST | `t4/getTips` | Get tips |
+| POST | `t4/petOutTip` | Pet out tip |
+| POST | `t4/relateT4AndK3` | Relate T4 to K3 air purifier |
+
+### Purobot Ultra (T5) - `t5/`
+
+Supports: [Device Lifecycle](#device-lifecycle) | [OTA](#ota-firmware-updates) | [Sharing](#sharing--invitations) | [Network](#network) | [Camera & Cloud Video](#camera--cloud-video-camera-equipped-devices-only)
+
+**Device-specific endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `t5/controlDevice` | Control device |
+| POST | `t5/getPetOutGraph` | Get pet out graph |
+| POST | `t5/getDeviceRecordRelease` | Get device records |
+| POST | `t5/getDeviceRecordWithVideoRelease` | Get records with video |
+| POST | `t5/removeRecord` | Remove record |
+| POST | `t5/statisticRelease` | Get statistics |
+| POST | `t5/getFixTimeSetting` | Get scheduled clean times |
+| POST | `t5/saveFixTimeSetting` | Save scheduled clean time |
+| POST | `t5/deleteFixTimeSetting` | Delete scheduled clean time |
+| POST | `t5/addCleanRecord` | Add clean record |
+| POST | `t5/getCleanRecord` | Get clean record |
+| POST | `t5/removeCleanRecord` | Remove clean record |
+| POST | `t5/deodorantReset` | Reset deodorant |
+| POST | `t5/resetWeightState` | Reset weight state |
+| POST | `t5/ignoreRemainingBags` | Ignore remaining bags alert |
+| POST | `t5/ignore/ph` | Ignore pH alert |
+| POST | `t5/ignoreState` | Ignore state alert |
+| POST | `t5/deletePicture` | Delete picture |
+| POST | `t5/getTips` | Get tips |
+| POST | `t5/getDownPosGifs` | Get down position GIFs |
+| POST | `t5/getCopywritingGifVideo` | Get copywriting GIF/video |
+| POST | `t5/recordUserAction` | Record user action |
+| POST | `t5/oss_sts_info` | Get OSS STS info |
+| POST | `t5/packageList` | Get package list |
+| POST | `t5/toilet/record/by/clean` | Get toilet record by clean |
+| GET | `t5/timeline/{startDay}/{endDay}` | Get timeline |
+
+### Purobot Max Pro 2 / PuraMax 2 (T6) - `t6/`
+
+Supports: all T5 endpoints plus:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `t6/oss_sts_info_v2` | Get OSS STS info v2 |
+| POST | `t6/packageInfo` | Get package info |
+| POST | `t6/purificationReset` | Reset purification |
+| POST | `t6/takeOffBag` | Take off bag |
+| POST | `t6/ignore/ph` | Ignore pH alert |
+
+### Purobot Crystal Duo (T7) - `t7/`
+
+Supports: [Device Lifecycle](#device-lifecycle) | [OTA](#ota-firmware-updates) | [Sharing](#sharing--invitations) | [Camera & Cloud Video](#camera--cloud-video-camera-equipped-devices-only)
+
+**Device-specific endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `t7/controlDevice` | Control device |
+| POST | `t7/getPetOutGraph` | Get pet out graph |
+| POST | `t7/getDeviceRecord` | Get device record |
+| POST | `t7/getDeviceRecordWithVideo` | Get records with video |
+| POST | `t7/removeRecord` | Remove record |
+| POST | `t7/statistic` | Get statistics |
+| POST | `t7/getFixTimeSetting` | Get scheduled clean times |
+| POST | `t7/saveFixTimeSetting` | Save scheduled clean time |
+| POST | `t7/deleteFixTimeSetting` | Delete scheduled clean time |
+| POST | `t7/clearSoftState` | Clear soft state |
+| POST | `t7/purificationReset` | Reset purification (N60) |
+| POST | `t7/sandTrayList` | Get sand tray list |
+| POST | `t7/ignore/ph` | Ignore pH alert |
+| POST | `t7/ignore/occult` | Ignore occult blood alert |
+| POST | `t7/ignoreState` | Ignore state alert |
+| POST | `t7/deletePicture` | Delete picture |
+| POST | `t7/getCopywritingGifVideo` | Get copywriting GIF/video |
+| POST | `t7/recordUserAction` | Record user action |
+| GET | `t7/timeline/{startDay}/{endDay}` | Get timeline |
+
+---
+
+## Water Fountains
+
+### EverSweet 3 Pro / Solo 2 (W5) - `w5/`
+
+Supports: [Device Lifecycle](#device-lifecycle) (uses `signup`, `update`, `deviceData` variants)
+
+> W5 uses older-style endpoints: `signup` instead of `link`, `update` instead of `updateSettings`, `deviceData` instead of `devicestate`.
+
+**Device-specific endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `w5/findSn` | Find serial number |
+| POST | `w5/saveLog` | Save log |
+| POST | `w5/recordFilterReplace` | Record filter replacement |
+| POST | `w5/addWaterRecord` | Add water record |
+| POST | `w5/saveAddWaterRecord` | Save add water record |
+| POST | `w5/removeAddWaterRecord` | Remove add water record |
+| POST | `w5/getCleanGuideVideo` | Get clean guide video |
+| POST | `w5/upgradeCheck` | Check firmware upgrade |
+| POST | `w5/upgradeReport` | Report firmware upgrade |
+
+### EverSweet Max Cordless (CTW3) - `ctw3/`
+
+Supports: [Device Lifecycle](#device-lifecycle) (uses `signup`, `update`, `deviceData` variants)
+
+**Device-specific endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `ctw3/saveLog` | Save log |
+| POST | `ctw3/recordFilterReplace` | Record filter replacement |
+| POST | `ctw3/addWaterRecord` | Add water record |
+| POST | `ctw3/saveAddWaterRecord` | Save add water record |
+| POST | `ctw3/removeAddWaterRecord` | Remove add water record |
+| POST | `ctw3/saveWorkRecord` | Save work record |
+| POST | `ctw3/getWorkRecord` | Get work record |
+| POST | `ctw3/removeWorkRecord` | Remove work record |
+| POST | `ctw3/getCleanGuideVideo` | Get clean guide video |
+| POST | `ctw3/getDistributionDiagram` | Get distribution diagram |
+| POST | `ctw3/getDistributionDiagramList` | Get distribution diagram list |
+| POST | `ctw3/getDrinkCompare` | Get drink comparison |
+| POST | `ctw3/getGifUrlAndVideoUrl` | Get GIF and video URLs |
+| POST | `ctw3/energyCalculation` | Energy calculation |
+| POST | `ctw3/upgradeCheck` | Check firmware upgrade |
+| POST | `ctw3/upgradeReport` | Report firmware upgrade |
+
+### EverSweet Max 2 UVC (W7H) - `w7h/`
+
+Supports: [Device Lifecycle](#device-lifecycle) | [OTA](#ota-firmware-updates) | [Sharing](#sharing--invitations) | [Camera & Cloud Video](#camera--cloud-video-camera-equipped-devices-only)
+
+**Device-specific endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `w7h/controlDevice` | Control device |
+| POST | `w7h/getConfigInfo` | Get config info |
+| POST | `w7h/getDistributionDiagram` | Get distribution diagram |
+| POST | `w7h/getPetDrinkGraph` | Get pet drink graph |
+| POST | `w7h/getDeviceRecord` | Get device record |
+| POST | `w7h/getDeviceRecordWithVideo` | Get records with video |
+| POST | `w7h/removeRecord` | Remove record |
+| POST | `w7h/getWaterResetRecord` | Get water reset record |
+| POST | `w7h/filterReset` | Reset filter |
+| POST | `w7h/resetCyclePump` | Reset cycle pump |
+| POST | `w7h/resetLiftValve` | Reset lift valve |
+| POST | `w7h/cwtLightWarnClear` | Clear CWT light warning |
+| POST | `w7h/matchPet` | Match pet |
+| POST | `w7h/tempReport` | Temperature report |
+| POST | `w7h/tempStatistic` | Temperature statistics |
+| POST | `w7h/statisticRelease` | Get statistics |
+| POST | `w7h/getCopywritingGifVideo` | Get copywriting GIF/video |
+| POST | `w7h/recordUserClickAction` | Record user click action |
+| POST | `w7h/temporary/open/cameraFlush` | Open camera for flush |
+| POST | `w7h/temporary/open/cameraAddWater` | Open camera for add water |
+| POST | `w7h/oss_sts_info_v2` | Get OSS STS info v2 |
+| GET | `w7h/timeline/{startDay}/{endDay}` | Get timeline |
+
+---
+
+## Air Purifiers
+
+### Air Purifier K2 - `k2/`
+
+Supports: [Device Lifecycle](#device-lifecycle) | [OTA](#ota-firmware-updates) | [Sharing](#sharing--invitations)
+
+> Also has `linkstatus` for checking link status.
+
+**Device-specific endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `k2/controlDevice` | Control device |
+| POST | `k2/getFixTimeSetting` | Get scheduled time settings |
+| POST | `k2/saveFixTimeSetting` | Save scheduled time setting |
+| POST | `k2/deleteFixTimeSetting` | Delete scheduled time setting |
+| POST | `k2/resetFixTimeSetting` | Reset scheduled time setting |
+
+### Air Purifier K3 - `k3/`
+
+Supports: [Device Lifecycle](#device-lifecycle) (uses `signup`, `update`, `deviceData` variants)
+
+**Device-specific endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `k3/getConfig` | Get config |
+| POST | `k3/findSn` | Find serial number |
+| POST | `k3/saveLog` | Save log |
+| POST | `k3/saveRecord` | Save record |
+| POST | `k3/statistic` | Get statistics |
+| POST | `k3/getFixTimeSetting` | Get scheduled time settings |
+| POST | `k3/saveFixTimeSetting` | Save scheduled time setting |
+| POST | `k3/deleteFixTimeSetting` | Delete scheduled time setting |
+| POST | `k3/relateT4` | Relate to T4 litter box |
+| POST | `k3/upgradeCheck` | Check firmware upgrade |
+| POST | `k3/upgradeReport` | Report firmware upgrade |
+
+---
+
+## Pet Management
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `pet/ownpets` | Get own pets |
+| POST | `pet/detail` | Get pet detail |
+| POST | `pet/signup2` | Sign up pet |
+| POST | `pet/updatename` | Update pet name |
+| POST | `pet/updateinfo` | Update pet info |
+| POST | `pet/updatepetprops` | Update pet properties |
+| POST | `pet/updatebackimage` | Update pet background image |
+| POST | `pet/updatbodyPic` | Update pet body picture |
+| POST | `pet/disable` | Disable pet |
+| POST | `pet/binddevice` | Bind device to pet |
+| POST | `pet/unbinddevice` | Unbind device from pet |
+| POST | `pet/categories` | Get pet categories |
+| POST | `pet/weightrange` | Get weight range |
+| POST | `pet/weightRecord` | Get weight record |
+| POST | `pet/recordWeight` | Record weight |
+| POST | `pet/deleteWeightRecord` | Delete weight record |
+| POST | `pet/weightAdvice` | Get weight advice |
+| POST | `pet/weightChart` | Get weight chart |
+| POST | `pet/weightCompare` | Get weight comparison |
+| POST | `pet/autoWeightPopup` | Auto weight popup |
+| POST | `pet/getPetRelationDevices` | Get pet's related devices |
+| POST | `pet/getPopularPets` | Get popular pets |
+| POST | `pet/block` | Block pet |
+| POST | `pet/error/info` | Get pet error info |
+| POST | `pet/error/ignore` | Ignore pet error |
+| POST | `pet/overseafoodbrands` | Get overseas food brands |
+| POST | `pet/foodproducts` | Get food products |
+| POST | `pet/privatefoods` | Get private foods |
+| POST | `pet/saveprivatefood` | Save private food |
+| POST | `pet/validprivatefood` | Validate private food |
+| POST | `pet/removeprivatefood` | Remove private food |
+| POST | `pet/validatedname` | Validate pet name |
+| POST | `pet/healthfeeding` | Get health feeding |
+| POST | `pet/healthfeedings` | Get health feedings |
+| POST | `pet/feedCalculator` | Feed calculator |
+| POST | `pet/saveFeed` | Save pet feed plan |
+| POST | `pet/resetFeed` | Reset pet feed |
+| POST | `pet/savefeeding` | Save feeding data |
+| POST | `pet/similarweight` | Get similar weight pets |
+| POST | `pet/mine_feedback` | Food advice feedback |
+| POST | `pet/wishes/info` | Get pet wishes info |
+| POST | `pet/wishes/save` | Save pet wish |
+| POST | `pet/data_pet_home` | Get pet home data |
+| POST | `pet/data_picker` | Get data picker |
+| POST | `pet/data_activity_graph` | Get activity graph |
+| POST | `pet/data_activity_compare` | Get activity comparison |
+| POST | `pet/data_activity_rank` | Get activity rank |
+| POST | `pet/data_activity_rank_list` | Get activity rank list |
+| POST | `pet/data_sleep_graph` | Get sleep graph |
+| POST | `pet/data_sleep_compare` | Get sleep comparison |
+| POST | `pet/data_sleep_rank` | Get sleep rank |
+| POST | `pet/data_sleep_rank_list` | Get sleep rank list |
+| POST | `pet/data_drink_graph` | Get drink graph |
+| POST | `pet/data_drink_compare` | Get drink comparison |
+| POST | `pet/data_toilet_graph` | Get toilet graph |
+| POST | `pet/data_toilet_compare` | Get toilet comparison |
+| POST | `pet/data_walkpet_graph` | Get walk graph |
+| POST | `pet/data_walk_pet_latestdata` | Get walk latest data |
+| POST | `pet/data_update_record` | Update data record |
+| POST | `pet/data_update_detect_record` | Update detect record |
+| POST | `pet/data_update_clean_record` | Update clean record |
+
+---
+
+## Schedule
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `schedule/schedules` | Get schedules |
+| POST | `schedule/save` | Save schedule |
+| POST | `schedule/remove` | Remove schedule |
+| POST | `schedule/complete` | Complete schedule |
+| POST | `schedule/get` | Get schedule |
+| POST | `schedule/types` | Get schedule types |
+| POST | `schedule/userTypes` | Get user schedule types |
+| POST | `schedule/createUserCustomType` | Create custom schedule type |
+| POST | `schedule/removeUserCustomType` | Remove custom schedule type |
+| POST | `schedule/scheduleshistory` | Get schedules history |
+| POST | `schedule/userHistorySchedules` | Get user history schedules |
+| POST | `schedule/getAppointSchedule` | Get appointment schedules |
+| POST | `schedule/scheduleTypesAppoint` | Get schedule type appointments |
+| POST | `schedule/getT4ChangeSand` | Get T4 sand change schedule |
+
+---
+
+## Feeder Charts / Statistics
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `feederchart/feedStatistic` | Get feed statistics |
+| POST | `feederchart/feedCopyWriting` | Get feed copy writing |
+| POST | `feederchart/feedOrEatCompare` | Get feed or eat comparison |
+| POST | `feederchart/getEatDayCompare` | Get eat day comparison |
+
+---
+
+## AI Creation
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `AICreation/device/info` | Get device info |
+| POST | `AICreation/device/upload` | Upload device data |
+| POST | `AICreation/check/detail` | Check detail |
+| POST | `AICreation/check/cancel` | Cancel check |
+| POST | `AICreation/award/receive` | Receive award |
+| POST | `AICreation/privacy/accept` | Accept privacy |
+| POST | `AICreation/privacy/refused` | Refuse privacy |
+| POST | `AICreation/oss_sts_info` | Get OSS STS info |
+
+---
+
+## AI Material
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `matter/info` | Get material info |
+| POST | `matter/detail` | Get material detail |
+| POST | `matter/exist` | Check material exists |
+| POST | `matter/upload` | Upload material |
+
+---
+
+## Medical Consultation
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `api/medical/conversation/create` | Create conversation |
+| POST | `api/medical/conversation/list` | List conversations |
+| POST | `api/medical/conversation/gray` | Gray conversation |
+| POST | `api/medical/conversation/privacy/accept` | Accept privacy |
+| POST | `api/medical/conversation/privacy/info` | Privacy info |
