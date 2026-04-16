@@ -497,8 +497,8 @@ class PackageInfoResult(BaseModel):
 
     data_type: ClassVar[str] = PACKAGE_INFO
 
-    package_record: str | None = Field(None, alias="packageRecord")
-    package_changed: str | None = Field(None, alias="packageChanged")
+    package_record: str | int | None = Field(None, alias="packageRecord")
+    package_changed: str | int | None = Field(None, alias="packageChanged")
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str | None:
