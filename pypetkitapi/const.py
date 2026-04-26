@@ -247,3 +247,21 @@ class PetkitEndpoint(StrEnum):
 
     # Pet
     PET_UPDATE_SETTING = "updatepetprops"
+
+
+# Valid feeding amounts per device type for MANUAL_FEED command
+MANUAL_FEED_VALID_VALUES: dict[str, list[int]] = {
+    D4: [10, 20, 30, 40, 50],
+    D4H: [10, 20, 30, 40, 50],
+    FEEDER_MINI: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+    D3: list(range(5, 201)),
+}
+
+# Default valid values for all other (FEEDER, D4S, D4SH,...)
+MANUAL_FEED_DEFAULT_VALID_VALUES: list[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+# Dual hopper device types (use amount1 / amount2)
+DUAL_HOPPER_DEVICES: list[str] = [D4S, D4SH]
+
+# Single hopper device types (use amount)
+SINGLE_HOPPER_DEVICES: list[str] = [FEEDER, FEEDER_MINI, D3, D4, D4H]

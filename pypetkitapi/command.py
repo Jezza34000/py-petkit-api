@@ -13,10 +13,13 @@ from pypetkitapi.const import (
     D4S,
     D4SH,
     DEVICES_FEEDER,
+    DUAL_HOPPER_DEVICES,
     FEEDER,
     FEEDER_MINI,
     K2,
     K3,
+    MANUAL_FEED_DEFAULT_VALID_VALUES,
+    MANUAL_FEED_VALID_VALUES,
     PET,
     T3,
     T4,
@@ -175,6 +178,64 @@ def get_endpoint_update_setting(device):
     return PetkitEndpoint.UPDATE_SETTING
 
 
+def validate_manual_feed_amount(
+    device,
+    setting: dict[str, int],
+) -> None:
+    """Validate the manual feed amount and parameter keys for the given device type.
+
+    Raises:
+        ValueError: If the amount is not valid for the device type.
+        ValueError: If the wrong amount key is used for the device type
+                    (amount vs amount1/amount2).
+    """
+    device_type = device.device_nfo.device_type
+
+    # --- Vérification des clés (hopper simple vs dual) ---
+    is_dual = device_type in DUAL_HOPPER_DEVICES
+    has_single_key = "amount" in setting
+    has_dual_keys = "amount1" in setting or "amount2" in setting
+
+    if is_dual and has_single_key:
+        raise ValueError(
+            f"Device type '{device_type}' is a dual hopper feeder: "
+            f"use 'amount1' and/or 'amount2', not 'amount'."
+        )
+    if not is_dual and has_dual_keys:
+        raise ValueError(
+            f"Device type '{device_type}' is a single hopper feeder: "
+            f"use 'amount', not 'amount1'/'amount2'."
+        )
+
+    # --- Vérification de la valeur ---
+    amount: int = (
+        setting.get("amount") or setting.get("amount1") or setting.get("amount2") or 0
+    )
+    valid_values = MANUAL_FEED_VALID_VALUES.get(
+        device_type, MANUAL_FEED_DEFAULT_VALID_VALUES
+    )
+    if amount not in valid_values:
+        raise ValueError(
+            f"Feeding amount '{amount}' is not valid for device type '{device_type}'. "
+            f"Valid values are: {valid_values}"
+        )
+
+
+def build_manual_feed_params(
+    device,
+    setting: dict[str, int],
+) -> dict[str, str]:
+    """Build and validate the manual feed params for the given device type."""
+    validate_manual_feed_amount(device, setting)
+    return {
+        "day": datetime.datetime.now().strftime("%Y%m%d"),
+        "deviceId": device.id,
+        "name": "",
+        "time": "-1",
+        **setting,
+    }
+
+
 ACTIONS_MAP = {
     DeviceCommand.UPDATE_SETTING: CmdData(
         endpoint=get_endpoint_update_setting,
@@ -220,13 +281,7 @@ ACTIONS_MAP = {
     ),
     FeederCommand.MANUAL_FEED: CmdData(
         endpoint=get_endpoint_manual_feed,
-        params=lambda device, setting: {
-            "day": datetime.datetime.now().strftime("%Y%m%d"),
-            "deviceId": device.id,
-            "name": "",
-            "time": "-1",
-            **setting,
-        },
+        params=build_manual_feed_params,
         supported_device=DEVICES_FEEDER,
     ),
     FeederCommand.CANCEL_MANUAL_FEED: CmdData(
