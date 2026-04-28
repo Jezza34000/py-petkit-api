@@ -18,6 +18,7 @@ UUIDs:
 
 from __future__ import annotations
 
+import contextlib
 from datetime import datetime, timezone
 import logging
 import math
@@ -86,7 +87,7 @@ class LocalFountainBleProtocol:
         """Build a BLE command frame."""
         seq = self._next_seq()
         length = len(data)
-        frame = self._HEADER + [cmd, cmd_type, seq, length, 0] + data + [self._END_BYTE]
+        frame = [*self._HEADER, cmd, cmd_type, seq, length, 0, *data, self._END_BYTE]
         return bytearray(frame)
 
     def get_init_commands(self) -> list[bytearray]:
@@ -111,11 +112,11 @@ class LocalFountainBleProtocol:
         cmds: list[bytearray] = []
 
         # CMD 73: Init / authenticate
-        init_data = [0, 0] + device_id_padded + self._secret
+        init_data = [0, 0, *device_id_padded, *self._secret]
         cmds.append(self.build_command(self.CMD_INIT, 1, init_data))
 
         # CMD 86: Sync (uses secret)
-        cmds.append(self.build_command(self.CMD_SYNC, 1, [0, 0] + self._secret))
+        cmds.append(self.build_command(self.CMD_SYNC, 1, [0, 0, *self._secret]))
 
         # CMD 84: Set device datetime (seconds since 2000-01-01 UTC)
         secs = self._seconds_since_2000()
@@ -136,8 +137,23 @@ class LocalFountainBleProtocol:
         return self.build_command(self.CMD_FULL_STATUS, 2, [1])
 
     def build_set_mode_command(self, power_state: int, mode: int) -> bytearray:
-        """Return CMD 220 — set operating mode."""
-        return self.build_command(self.CMD_SET_MODE, 1, [power_state, mode, 1])
+        """Return CMD 220 — set operating mode.
+
+        The third payload byte's semantics differ between fountain models:
+
+        * CTW3 (Eversweet Max 2): ``1`` is interpreted as an "apply" flag —
+          required for the mode change to take effect.
+        * CTW2 / W4 / W5 (Eversweet Max and earlier): the same byte is
+          interpreted as a "suspend" flag — sending ``1`` causes the device
+          to enter Pause and silently drop the mode change. We therefore
+          send ``0`` for these devices so a Standard ↔ Intermittent
+          transition is applied symmetrically (regression reported on PR
+          Jezza34000/homeassistant_petkit#203 by the project owner).
+        """
+        apply_or_suspend = 1 if self.device_alias.lower() == "ctw3" else 0
+        return self.build_command(
+            self.CMD_SET_MODE, 1, [power_state, mode, apply_or_suspend]
+        )
 
     def build_set_config_command(self, config_data: list[int]) -> bytearray:
         """Return CMD 221 — set device configuration."""
@@ -147,7 +163,9 @@ class LocalFountainBleProtocol:
     # Notification parsing
     # -----------------------------------------------------------------------
 
-    def handle_notification(self, data: bytearray) -> dict[str, Any] | None:
+    def handle_notification(
+        self, data: bytes | bytearray | memoryview
+    ) -> dict[str, Any] | None:
         """Parse an incoming BLE notification.
 
         Returns a status dict for CMD 210/211/230, or None for protocol /
@@ -187,12 +205,12 @@ class LocalFountainBleProtocol:
     # -----------------------------------------------------------------------
 
     def _parse_full_status(self, data: list[int]) -> dict[str, Any]:
-        if self.device_alias == "CTW3":
+        if self.device_alias.lower() == "ctw3":
             return self._parse_ctw3_full_status(data)
         return self._parse_generic_full_status(data)
 
     def _parse_state(self, data: list[int]) -> dict[str, Any]:
-        if self.device_alias == "CTW3":
+        if self.device_alias.lower() == "ctw3":
             if len(data) < 26:
                 return {}
             return {
@@ -216,6 +234,8 @@ class LocalFountainBleProtocol:
                 ),
                 "battery_percentage": data[24],
             }
+        if len(data) < 12:
+            return {}
         return {
             "power_status": data[0],
             "mode": data[1],
@@ -229,7 +249,7 @@ class LocalFountainBleProtocol:
         }
 
     def _parse_config(self, data: list[int]) -> dict[str, Any]:
-        if self.device_alias == "CTW3":
+        if self.device_alias.lower() == "ctw3":
             if len(data) < 9:
                 return {}
             return {
@@ -271,7 +291,7 @@ class LocalFountainBleProtocol:
             filter_pct,
             smart_time_on,
             smart_time_off,
-            "CTW3",
+            "ctw3",
             pump_runtime_today,
             pump_runtime,
         )
@@ -410,10 +430,8 @@ class LocalFountainBleProtocol:
 
         energy = ble_status.get("today_use_electricity")
         if energy is not None:
-            try:
+            with contextlib.suppress(ValueError, TypeError):
                 fountain.today_use_electricity = float(energy)
-            except (ValueError, TypeError):
-                pass
 
         cfg.smart_working_time = ble_status.get("smart_time_on", cfg.smart_working_time)
         cfg.smart_sleep_time = ble_status.get("smart_time_off", cfg.smart_sleep_time)
@@ -474,8 +492,21 @@ class LocalFountainBleProtocol:
         alias: str,
         pump_runtime_today: int,
         pump_runtime: int,
-    ) -> tuple[int, float, float, str]:
-        """Calculate filter days remaining, water purified (L), and energy (kWh)."""
+    ) -> tuple[int, int, int, float]:
+        """Calculate filter days remaining, water purified (L) and energy (kWh).
+
+        Returns:
+            (filter_days, water_total_liters, water_today_liters, energy_kwh_today)
+
+            ``water_total`` and ``water_today`` are rounded to ``int`` to match
+            ``WaterFountain.expected_clean_water`` and
+            ``WaterFountain.today_clean_water`` (both ``int | None``).
+
+            ``energy`` is the energy consumed *today* (``kWh``) computed from
+            ``pump_runtime_today``, returned as ``float`` to match
+            ``WaterFountain.today_use_electricity``.
+        """
+        alias_lc = alias.lower()
         time_on = 1 if mode == 1 else smart_time_on
         time_off = 0 if mode == 1 else smart_time_off
         if time_on == 0:
@@ -486,17 +517,17 @@ class LocalFountainBleProtocol:
             )
 
         flow_rate, divisor = 1.5, 2.0
-        if alias == "W5C":
+        if alias_lc == "w5c":
             flow_rate, divisor = 1.3, 1.0
-        elif alias == "W4X":
+        elif alias_lc == "w4x":
             divisor = 1.8
-        elif alias == "CTW3":
+        elif alias_lc == "ctw3":
             divisor = 3.0
 
-        water_today = (flow_rate * pump_runtime_today / 60.0) / divisor
-        water_total = (flow_rate * pump_runtime / 60.0) / divisor
+        water_today = round((flow_rate * pump_runtime_today / 60.0) / divisor)
+        water_total = round((flow_rate * pump_runtime / 60.0) / divisor)
 
-        power_coeff = 0.182 if alias == "W5C" else 0.75
-        energy = format(power_coeff * pump_runtime / 3_600_000.0, "f")
+        power_coeff = 0.182 if alias_lc == "w5c" else 0.75
+        energy = power_coeff * pump_runtime_today / 3_600_000.0
 
         return filter_days, water_total, water_today, energy
