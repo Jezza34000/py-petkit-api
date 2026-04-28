@@ -14,9 +14,7 @@ from pypetkitapi.local_bluetooth import (
 
 def _frame(cmd: int, cmd_type: int, seq: int, data: list[int]) -> bytearray:
     """Helper: build a raw BLE frame for tests (mirrors build_command)."""
-    return bytearray(
-        [0xFA, 0xFC, 0xFD, cmd, cmd_type, seq, len(data), 0, *data, 0xFB]
-    )
+    return bytearray([0xFA, 0xFC, 0xFD, cmd, cmd_type, seq, len(data), 0, *data, 0xFB])
 
 
 class TestConstants(unittest.TestCase):
@@ -178,7 +176,10 @@ class TestStateParsingGenericGuards(unittest.TestCase):
             0,  # warning_breakdown
             0,  # warning_water_missing
             0,  # warning_filter
-            0, 0, 0, 60,  # pump_runtime (big-endian)
+            0,
+            0,
+            0,
+            60,  # pump_runtime (big-endian)
             50,  # filter_percentage raw
             1,  # running_status
         ]
