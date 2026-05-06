@@ -25,6 +25,7 @@ BLE_START_TRAME = [250, 252, 253]
 BLE_END_TRAME = [251]
 
 # PetKit Models
+COZY = "cozy"
 FEEDER = "feeder"
 FEEDER_MINI = "feedermini"
 D3 = "d3"
@@ -230,6 +231,14 @@ class PetkitEndpoint(StrEnum):
     REMOVE_DAILY_FEED = "removeDailyFeed"
     RESTORE_DAILY_FEED = "restoreDailyFeed"
     SAVE_FEED = "saveFeed"  # For Feeding plan
+    SUSPEND_FEED_OLD = "suspend_feed"  # For Feeder/FeederMini
+    SUSPEND_FEED_NEW = "suspendFeed"  # For D3/D4/D4S/D4H/D4SH
+    RESTORE_FEED_OLD = "restore_feed"  # For Feeder/FeederMini
+    RESTORE_FEED_NEW = "restoreFeed"  # For D3/D4/D4S/D4H/D4SH
+    SAVE_REPEATS_OLD = "save_repeats"  # For Feeder/FeederMini
+    SAVE_REPEATS_NEW = "saveRepeats"  # For D3/D4/D4S/D4H/D4SH
+    EAT_STATISTIC = "eatStatistic"  # For D4S/D4H/D4SH
+    FEED_AND_EAT_STATISTIC = "feedAndEatStatistic"  # For D3
 
     # Feeders - Sounds (D3, D4H, D4SH)
     SOUND_LIST = "soundList"
