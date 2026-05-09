@@ -43,6 +43,7 @@ from pypetkitapi.const import (
     PACKAGE_LIST,
     PET,
     PTK_DBG,
+    REGION_SERVER_LABELS,
     RES_KEY,
     T3,
     T4,
@@ -62,6 +63,7 @@ from pypetkitapi.containers import (
     Pet,
     PetDetails,
     RegionInfo,
+    RegionServerGroup,
     SessionInfo,
 )
 from pypetkitapi.exceptions import (
@@ -103,6 +105,45 @@ def data_handler(data_type):
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _group_region_servers(payload: dict) -> list[RegionServerGroup]:
+    """Group raw /v1/regionservers entries by gateway.
+
+    Pure transformation kept separate from the HTTP fetch so it can be
+    unit tested without mocking aiohttp. Always appends the China
+    gateway since /v1/regionservers omits it.
+    """
+    countries_by_gateway: dict[str, list[str]] = {}
+    for entry in payload.get("list", []):
+        info = RegionInfo(**entry)
+        countries_by_gateway.setdefault(info.gateway, []).append(info.id)
+
+    groups: list[RegionServerGroup] = []
+    for gateway, countries in countries_by_gateway.items():
+        sorted_countries = sorted(countries)
+        groups.append(
+            RegionServerGroup(
+                gateway=gateway,
+                label=REGION_SERVER_LABELS.get(gateway, gateway),
+                countries=sorted_countries,
+                representative_country=sorted_countries[0],
+            )
+        )
+
+    if not any(g.gateway == PetkitDomain.CHINA_SRV for g in groups):
+        china_gateway = PetkitDomain.CHINA_SRV.value
+        groups.append(
+            RegionServerGroup(
+                gateway=china_gateway,
+                label=REGION_SERVER_LABELS.get(china_gateway, "China"),
+                countries=["CN"],
+                representative_country="CN",
+            )
+        )
+
+    groups.sort(key=lambda g: g.label)
+    return groups
 
 
 class PetKitClient:
@@ -183,6 +224,38 @@ class PetKitClient:
                 _LOGGER.debug("Found matching server: %s", server)
                 return
         raise PetkitRegionalServerNotFoundError(self.region)
+
+    @classmethod
+    async def fetch_region_servers(
+        cls,
+        session: aiohttp.ClientSession,
+        timezone: str = DEFAULT_TZ,
+    ) -> list[RegionServerGroup]:
+        """Return PetKit's regional gateways grouped with friendly labels.
+
+        Use during onboarding so the user can pick one of the ~5 real
+        PetKit clouds (Europe, International, Asia, Russia, China) instead
+        of being shown a 200+ country dropdown. Each resulting
+        :class:`RegionServerGroup` carries the underlying ``gateway``,
+        the list of ``countries`` routed to it and a stable
+        ``representative_country`` that callers can pass back as the
+        ``region`` argument of :class:`PetKitClient`.
+
+        Network failures raise the same exceptions as any other
+        :class:`PetKitClient` call (e.g. :class:`PetkitTimeoutError`); the
+        caller decides whether to surface the error or fall back to a
+        country list.
+        """
+        req = PrepReq(
+            base_url=PetkitDomain.PASSPORT_PETKIT,
+            session=session,
+            timezone=timezone,
+        )
+        response = await req.request(
+            method=HTTPMethod.GET,
+            url=PetkitEndpoint.REGION_SERVERS,
+        )
+        return _group_region_servers(response)
 
     async def request_login_code(self) -> bool:
         """Request a login code to be sent to the user's email."""

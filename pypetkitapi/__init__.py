@@ -40,7 +40,7 @@ from .const import (
     MediaType,
     RecordType,
 )
-from .containers import IotInfo, LiveFeed, NewIotInfo, Pet
+from .containers import IotInfo, LiveFeed, NewIotInfo, Pet, RegionServerGroup
 from .exceptions import (
     PetkitAuthenticationUnregisteredEmailError,
     PetkitRegionalServerNotFoundError,
@@ -121,6 +121,7 @@ __all__ = [
     "PypetkitError",
     "RecordType",
     "RecordsItems",
+    "RegionServerGroup",
     "WaterFountain",
     "WorkState",
 ]

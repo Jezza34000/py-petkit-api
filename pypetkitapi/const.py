@@ -75,6 +75,19 @@ class PetkitDomain(StrEnum):
     CHINA_SRV = "https://api.petkit.cn/6/"
 
 
+# Friendly English labels for the regional gateways returned by
+# /v1/regionservers, plus the China gateway (which is reached
+# directly via PetkitDomain.CHINA_SRV and is not listed by that
+# endpoint). Keys must match the `gateway` field byte-for-byte.
+REGION_SERVER_LABELS: dict[str, str] = {
+    "https://api.eu-pet.com/latest/": "Europe",
+    "https://api.petkt.com/latest/": "International (Americas, global)",
+    "https://api.petktasia.com/latest/": "Asia",
+    "https://api-ru.petkit.cn/latest/": "Russia",
+    PetkitDomain.CHINA_SRV.value: "China",
+}
+
+
 class Client(StrEnum):
     """Platform constants"""
 
