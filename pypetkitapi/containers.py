@@ -20,6 +20,22 @@ class RegionInfo(BaseModel):
     name: str
 
 
+class RegionServerGroup(BaseModel):
+    """A PetKit gateway and the countries it serves.
+
+    Aggregated from /v1/regionservers, with the China gateway added
+    manually because that endpoint omits it. ``representative_country``
+    is a stable ISO code (first alphabetically among ``countries``) that
+    callers can pass back as the ``region`` argument when constructing
+    :class:`PetKitClient`.
+    """
+
+    gateway: str
+    label: str
+    countries: list[str]
+    representative_country: str
+
+
 class BleRelay(BaseModel):
     """Dataclass for BLE relay devices
     Fetched from the API endpoint :
