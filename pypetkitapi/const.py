@@ -220,6 +220,7 @@ class PetkitEndpoint(StrEnum):
     GET_PET_OUT_GRAPH = "getPetOutGraph"
     T6_PACKAGE_INFO = "packageInfo"  # Last pack time + last replacement time
     T6_PACKAGE_LIST = "packageList"  # Full packing/replacement history
+    UPDATE_RECORD = "data_update_record"
 
     # Video features
     LIVE = "start/live"

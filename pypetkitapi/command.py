@@ -19,6 +19,7 @@ from pypetkitapi.const import (
     FEEDER_MINI,
     K2,
     K3,
+    LITTER_NO_CAMERA,
     MANUAL_FEED_DEFAULT_VALID_VALUES,
     MANUAL_FEED_VALID_VALUES,
     PET,
@@ -71,6 +72,7 @@ class LitterCommand(StrEnum):
 
     RESET_N50_DEODORIZER = "reset_deodorizer"
     # T5/T6 N60 does not have this command, must use control_device
+    UPDATE_USAGE_RECORD = "update_usage_record"
 
 
 class PetCommand(StrEnum):
@@ -400,6 +402,18 @@ ACTIONS_MAP = {
             "deviceId": device.id,
         },
         supported_device=[T4, T5, T6],
+    ),
+    LitterCommand.UPDATE_USAGE_RECORD: CmdData(
+        endpoint=PetkitEndpoint.UPDATE_RECORD,
+        params=lambda device, setting: {
+            "petId": setting["new_pet_id"],
+            "batch": 0,
+            "type": 15,
+            "oldPetId": setting["old_pet_id"],
+            "deviceId": device.id,
+            "timeOut": setting["time_out"],
+        },
+        supported_device=LITTER_NO_CAMERA,
     ),
     PetCommand.PET_UPDATE_SETTING: CmdData(
         endpoint=PetkitEndpoint.PET_UPDATE_SETTING,
