@@ -281,7 +281,6 @@ Resets the usage counter of the N50 odor eliminator cartridge after it has been 
 await client.send_api_request(device_id, LitterCommand.RESET_N50_DEODORIZER)
 ```
 
-
 ---
 
 ### `FountainAction.RESET_FILTER` _(need a BLE relay)_
@@ -340,11 +339,11 @@ await client.send_api_request(pet_id, PetCommand.UPDATE_USAGE_RECORD, {
 })
 ```
 
-| Payload key   | Values                         | Description                        |
-| ------------- | ------------------------------ | ---------------------------------- |
-| `old_pet_id`  | `ID_OLD` (string)              | The pet ID to replace              |
-| `device_id`   | `device_id` (string)           | The litter box device ID           |
-| `time_out`    | `TIME` (epoch timestamp)       | Out timestamp of the usage record  |
+| Payload key  | Values                   | Description                       |
+| ------------ | ------------------------ | --------------------------------- |
+| `old_pet_id` | `ID_OLD` (string)        | The pet ID to replace             |
+| `device_id`  | `device_id` (string)     | The litter box device ID          |
+| `time_out`   | `TIME` (epoch timestamp) | Out timestamp of the usage record |
 
 ---
 

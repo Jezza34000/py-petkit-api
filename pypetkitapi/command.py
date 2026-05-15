@@ -19,7 +19,6 @@ from pypetkitapi.const import (
     FEEDER_MINI,
     K2,
     K3,
-    LITTER_NO_CAMERA,
     MANUAL_FEED_DEFAULT_VALID_VALUES,
     MANUAL_FEED_VALID_VALUES,
     PET,
