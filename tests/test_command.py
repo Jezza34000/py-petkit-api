@@ -40,6 +40,7 @@ class TestCommandModule(unittest.TestCase):
         self.assertEqual(LitterCommand.RESET_N50_DEODORIZER, "reset_deodorizer")
 
     def test_pet_command(self):
+        self.assertEqual(PetCommand.UPDATE_USAGE_RECORD, "update_usage_record")
         self.assertEqual(PetCommand.PET_UPDATE_SETTING, "pet_update_setting")
 
     def test_lb_command(self):

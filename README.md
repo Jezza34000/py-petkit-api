@@ -327,6 +327,26 @@ await client.send_api_request(pet_id, PetCommand.PET_UPDATE_SETTING, {"weight": 
 
 ---
 
+### `PetCommand.UPDATE_USAGE_RECORD`
+
+Updates a litter box usage record with the correct pet ID.
+
+```python
+await client.send_api_request(pet_id, PetCommand.UPDATE_USAGE_RECORD, {
+    "old_pet_id": "ID_OLD",
+    "device_id": device_id,
+    "time_out": time,
+})
+```
+
+| Payload key  | Values                   | Description                       |
+| ------------ | ------------------------ | --------------------------------- |
+| `old_pet_id` | `ID_OLD` (string)        | The pet ID to replace             |
+| `device_id`  | `device_id` (string)     | The litter box device ID          |
+| `time_out`   | `TIME` (epoch timestamp) | Out timestamp of the usage record |
+
+---
+
 ## 💡 More example usage
 
 Check at all the usage in the Home Assistant integration's code : [here](https://github.com/Jezza34000/homeassistant_petkit)
