@@ -281,25 +281,6 @@ Resets the usage counter of the N50 odor eliminator cartridge after it has been 
 await client.send_api_request(device_id, LitterCommand.RESET_N50_DEODORIZER)
 ```
 
----
-
-### `LitterCommand.UPDATE_USAGE_RECORD`
-
-Updates a litter box usage record with the correct pet ID.
-
-```python
-await client.send_api_request(device_id, LitterCommand.UPDATE_USAGE_RECORD, {
-    "old_pet_id": "ID_OLD",
-    "new_pet_id": "ID_NEW",
-    "time_out": time,
-})
-```
-
-| Payload key   | Values                         | Description                        |
-| ------------- | ------------------------------ | ---------------------------------- |
-| `old_pet_id`  | `ID_OLD` (string)              | The pet ID to replace              |
-| `new_pet_id`  | `ID_NEW` (string)              | The correct pet ID                 |
-| `time_out`    | `TIME` (epoch timestamp) | Out timestamp of the usage record    |
 
 ---
 
@@ -344,6 +325,26 @@ await client.send_api_request(pet_id, PetCommand.PET_UPDATE_SETTING, {"weight": 
 | Payload key | Values      | Description                |
 | ----------- | ----------- | -------------------------- |
 | `weight`    | `N` (grams) | Pet's body weight in grams |
+
+---
+
+### `PetCommand.UPDATE_USAGE_RECORD`
+
+Updates a litter box usage record with the correct pet ID.
+
+```python
+await client.send_api_request(pet_id, PetCommand.UPDATE_USAGE_RECORD, {
+    "old_pet_id": "ID_OLD",
+    "device_id": device_id,
+    "time_out": time,
+})
+```
+
+| Payload key   | Values                         | Description                        |
+| ------------- | ------------------------------ | ---------------------------------- |
+| `old_pet_id`  | `ID_OLD` (string)              | The pet ID to replace              |
+| `device_id`   | `device_id` (string)           | The litter box device ID           |
+| `time_out`    | `TIME` (epoch timestamp)       | Out timestamp of the usage record  |
 
 ---
 

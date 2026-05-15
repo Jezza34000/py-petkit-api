@@ -72,12 +72,12 @@ class LitterCommand(StrEnum):
 
     RESET_N50_DEODORIZER = "reset_deodorizer"
     # T5/T6 N60 does not have this command, must use control_device
-    UPDATE_USAGE_RECORD = "update_usage_record"
 
 
 class PetCommand(StrEnum):
     """Specific PetCommand"""
 
+    UPDATE_USAGE_RECORD = "update_usage_record"
     PET_UPDATE_SETTING = "pet_update_setting"
 
 
@@ -403,17 +403,17 @@ ACTIONS_MAP = {
         },
         supported_device=[T4, T5, T6],
     ),
-    LitterCommand.UPDATE_USAGE_RECORD: CmdData(
+    PetCommand.UPDATE_USAGE_RECORD: CmdData(
         endpoint=PetkitEndpoint.UPDATE_RECORD,
-        params=lambda device, setting: {
-            "petId": setting["new_pet_id"],
+        params=lambda pet, setting: {
+            "petId": pet.pet_id,
             "batch": 0,
             "type": 15,
             "oldPetId": setting["old_pet_id"],
-            "deviceId": device.id,
+            "deviceId": setting["device_id"],
             "timeOut": setting["time_out"],
         },
-        supported_device=LITTER_NO_CAMERA,
+        supported_device=[PET],
     ),
     PetCommand.PET_UPDATE_SETTING: CmdData(
         endpoint=PetkitEndpoint.PET_UPDATE_SETTING,
