@@ -76,6 +76,7 @@ class LitterCommand(StrEnum):
 class PetCommand(StrEnum):
     """Specific PetCommand"""
 
+    UPDATE_USAGE_RECORD = "update_usage_record"
     PET_UPDATE_SETTING = "pet_update_setting"
 
 
@@ -400,6 +401,16 @@ ACTIONS_MAP = {
             "deviceId": device.id,
         },
         supported_device=[T4, T5, T6],
+    ),
+    PetCommand.UPDATE_USAGE_RECORD: CmdData(
+        endpoint=PetkitEndpoint.UPDATE_RECORD,
+        params=lambda pet, setting: {
+            "petId": pet.pet_id,
+            "batch": 0,
+            "type": 15,
+            **setting,
+        },
+        supported_device=[PET],
     ),
     PetCommand.PET_UPDATE_SETTING: CmdData(
         endpoint=PetkitEndpoint.PET_UPDATE_SETTING,
