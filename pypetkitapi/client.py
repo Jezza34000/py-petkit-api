@@ -91,7 +91,7 @@ from pypetkitapi.purifier_container import Purifier
 from pypetkitapi.utils import get_timezone_offset
 from pypetkitapi.water_fountain_container import WaterFountain, WaterFountainRecord
 
-data_handlers = {}
+data_handlers: dict[str, Any] = {}
 
 
 def data_handler(data_type):
