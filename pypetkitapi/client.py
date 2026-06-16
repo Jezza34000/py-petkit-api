@@ -385,7 +385,7 @@ class PetKitClient:
             except PypetkitError as err:
                 _LOGGER.debug("IoT %s endpoint request failed: %s", endpoint_name, err)
                 continue
-            except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            except (aiohttp.ClientError, TimeoutError) as err:
                 _LOGGER.debug("IoT %s endpoint network error: %s", endpoint_name, err)
                 continue
 
@@ -1350,7 +1350,7 @@ class PrepReq:
             aiohttp.ClientConnectorError,
             aiohttp.ClientOSError,
             aiohttp.ServerDisconnectedError,
-            asyncio.TimeoutError,
+            TimeoutError,
         ) as e:
             _LOGGER.warning("Network error reaching %s: %s", _url, e)
             raise PetkitTimeoutError(f"Request to {_url} failed: {e}") from e
