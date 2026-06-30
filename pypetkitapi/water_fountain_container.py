@@ -6,7 +6,14 @@ from typing import Any, ClassVar
 from pydantic import BaseModel, Field
 
 from pypetkitapi.const import CTW3, DEVICE_DATA, DEVICE_RECORDS, PetkitEndpoint
-from pypetkitapi.containers import Device
+from pypetkitapi.containers import (
+    CloudProduct,
+    Device,
+    FirmwareDetail,
+    LiveFeed,
+    UserDevice,
+    Wifi,
+)
 
 
 class Electricity(BaseModel):
@@ -55,8 +62,10 @@ class Schedule(BaseModel):
 class SettingsFountain(BaseModel):
     """Dataclass for settings.
     -> WaterFountainData subclass.
+    Supports both CTW3 and EVERSWEET ULTRA AI (W4).
     """
 
+    # Ble fountains fields
     battery_sleep_time: int | None = Field(None, alias="batterySleepTime")
     battery_working_time: int | None = Field(None, alias="batteryWorkingTime")
     distribution_diagram: int | None = Field(None, alias="distributionDiagram")
@@ -71,6 +80,73 @@ class SettingsFountain(BaseModel):
     no_disturbing_switch: int | None = Field(None, alias="noDisturbingSwitch")
     smart_sleep_time: int | None = Field(None, alias="smartSleepTime")
     smart_working_time: int | None = Field(None, alias="smartWorkingTime")
+
+    # EVERSWEET ULTRA AI (W4) fields
+    manual_lock: int | None = Field(None, alias="manualLock")
+    click_ok_enable: int | None = Field(None, alias="clickOkEnable")
+    language: str | None = None
+    languages: list[str] | None = None
+    disturb_mode: int | None = Field(None, alias="disturbMode")
+    distrub_multi_range: list[list[int]] | None = Field(None, alias="distrubMultiRange")
+    camera: int | None = None
+    camera_config: int | None = Field(None, alias="cameraConfig")
+    microphone: int | None = None
+    night: int | None = None
+    time_display: int | None = Field(None, alias="timeDisplay")
+    camera_light: int | None = Field(None, alias="cameraLight")
+    micro_light: int | None = Field(None, alias="microLight")
+    smart_frame: int | None = Field(None, alias="smartFrame")
+    highlight: int | None = None
+    auto_product: int | None = Field(None, alias="autoProduct")
+    upload: int | None = None
+    pre_live: int | None = Field(None, alias="preLive")
+    live_encrypt: int | None = Field(None, alias="liveEncrypt")
+    pet_detection: int | None = Field(None, alias="petDetection")
+    drink_detection: int | None = Field(None, alias="drinkDetection")
+    flush_notify: int | None = Field(None, alias="flushNotify")
+    water_change_notify: int | None = Field(None, alias="waterChangeNotify")
+    clean_water_lack_notify: int | None = Field(None, alias="cleanWaterLackNotify")
+    clean_water_empty_notify: int | None = Field(None, alias="cleanWaterEmptyNotify")
+    waste_water_full_notify: int | None = Field(None, alias="wasteWaterFullNotify")
+    pet_notify: int | None = Field(None, alias="petNotify")
+    pet_notify_interval: int | None = Field(None, alias="petNotifyInterval")
+    drink_notify: int | None = Field(None, alias="drinkNotify")
+    add_water_notify: int | None = Field(None, alias="addWaterNotify")
+    light_mode: int | None = Field(None, alias="lightMode")
+    light_multi_range: list[list[int]] | None = Field(None, alias="lightMultiRange")
+    light_assist: int | None = Field(None, alias="lightAssist")
+    tone_mode: int | None = Field(None, alias="toneMode")
+    tone_multi_range: list[list[int]] | None = Field(None, alias="toneMultiRange")
+    tone_config: int | None = Field(None, alias="toneConfig")
+    system_sound_enable: int | None = Field(None, alias="systemSoundEnable")
+    volume: int | None = None
+    flush_intensity: int | None = Field(None, alias="flushIntensity")
+    auto_flush: int | None = Field(None, alias="autoFlush")
+    flush_cycle: int | None = Field(None, alias="flushCycle")
+    flush_time: int | None = Field(None, alias="flushTime")
+    fountain_mode: int | None = Field(None, alias="fountainMode")
+    fountain_time: int | None = Field(None, alias="fountainTime")
+    sleep_time: int | None = Field(None, alias="sleepTime")
+    heater_switch: int | None = Field(None, alias="heaterSwitch")
+    heater_temp: int | None = Field(None, alias="heaterTemp")
+    auto_water_change: int | None = Field(None, alias="autoWaterChange")
+    water_change_cycle: int | None = Field(None, alias="waterChangeCycle")
+    water_change_time: int | None = Field(None, alias="waterChangeTime")
+    add_water_switch: int | None = Field(None, alias="addWaterSwitch")
+    add_water_mode: int | None = Field(None, alias="addWaterMode")
+    aw_disturb_mode: int | None = Field(None, alias="awDisturbMode")
+    aw_disturb_multi_range: list[list[int]] | None = Field(
+        None, alias="awDisturbMultiRange"
+    )
+    clean_water_lack_light: int | None = Field(None, alias="cleanWaterLackLight")
+    clean_water_empty_light: int | None = Field(None, alias="cleanWaterEmptyLight")
+    waste_water_full_light: int | None = Field(None, alias="wasteWaterFullLight")
+    wl_disturb_mode: int | None = Field(None, alias="wlDisturbMode")
+    wl_disturb_multi_range: list[list[int]] | None = Field(
+        None, alias="wlDisturbMultiRange"
+    )
+    control_settings: int | None = Field(None, alias="controlSettings")
+    log_switch: int | None = Field(None, alias="logSwitch")
 
 
 class Status(BaseModel):
@@ -120,50 +196,115 @@ class WaterFountainRecord(BaseModel):
         }
 
 
+class FountainState(BaseModel):
+    """Dataclass for device state.
+    -> WaterFountain subclass (EVERSWEET ULTRA AI).
+    """
+
+    wifi: Wifi | None = None
+    pim: int | None = None
+    ota: int | None = None
+    overall: int | None = None
+    power: int | None = None
+    heat_install: int | None = Field(None, alias="heatInstall")
+    stg_install: int | None = Field(None, alias="stgInstall")
+    cwt_install: int | None = Field(None, alias="cwtInstall")
+    wt_install: int | None = Field(None, alias="wtInstall")
+    heat_state: int | None = Field(None, alias="heatState")
+    lift_valve_state: int | None = Field(None, alias="liftValveState")
+    lift_live_state: int | None = Field(None, alias="liftLiveState")
+    pump_state: int | None = Field(None, alias="pumpState")
+    water_pump_state: int | None = Field(None, alias="waterPumpState")
+    cwt_state: int | None = Field(None, alias="cwtState")
+    wt_state: int | None = Field(None, alias="wtState")
+    add_water_state: int | None = Field(None, alias="addWaterState")
+    flush_state: int | None = Field(None, alias="flushState")
+    drink_time: int | None = Field(None, alias="drinkTime")
+    pet_time: int | None = Field(None, alias="petTime")
+    pet_close_time: int | None = Field(None, alias="petCloseTime")
+    lift_reset_state: int | None = Field(None, alias="liftResetState")
+    stg_full_state: int | None = Field(None, alias="stgFullState")
+    disinfect_time: int | None = Field(None, alias="disinfectTime")
+    heat_left_time: int | None = Field(None, alias="heatLeftTime")
+    heat_status_time: int | None = Field(None, alias="heatStatusTime")
+    disinfect_state: int | None = Field(None, alias="disinfectState")
+    filter_left_days: int | None = Field(None, alias="filterLeftDays")
+    filter_updated_at: int | None = Field(None, alias="filterUpdatedAt")
+    heat_real_temp: int | None = Field(None, alias="heatRealTemp")
+    add_water_frequent: int | None = Field(None, alias="addWaterFrequent")
+    camera_status: int | None = Field(None, alias="cameraStatus")
+
+
 class WaterFountain(BaseModel):
     """Dataclass for Water Fountain Data.
-    Supported devices = CTW3
+    Supported devices = CTW2, CTW3, W7H
     """
 
     data_type: ClassVar[str] = DEVICE_DATA
 
-    breakdown_warning: int | None = Field(None, alias="breakdownWarning")
+    id: int
+    mac: str | None = None
+    sn: str
+    secret: str | None = None
     created_at: str | None = Field(None, alias="createdAt")
+    name: str
+    hardware: int
+    firmware: float | str  # str pour "412" (W4), float pour CTW3
+    timezone: float | None = None
+    locale: str | None = None
+    settings: SettingsFountain | None = None
+    device_records: list[WaterFountainRecord] | None = None
+    device_nfo: Device | None = None
+    # --- Ble fountains fields ---
+    breakdown_warning: int | None = Field(None, alias="breakdownWarning")
     electricity: Electricity | None = None
     expected_clean_water: int | None = Field(None, alias="expectedCleanWater")
     expected_use_electricity: float | None = Field(None, alias="expectedUseElectricity")
     filter_expected_days: int | None = Field(None, alias="filterExpectedDays")
     filter_percent: int | None = Field(None, alias="filterPercent")
     filter_warning: int | None = Field(None, alias="filterWarning")
-    firmware: float
-    hardware: int
-    id: int
     is_night_no_disturbing: int | None = Field(None, alias="isNightNoDisturbing")
     lack_warning: int | None = Field(None, alias="lackWarning")
-    locale: str | None = None
     low_battery: int | None = Field(None, alias="lowBattery")
-    mac: str | None = None
     mode: int | None = None
     module_status: int | None = Field(None, alias="moduleStatus")
-    name: str
     record_automatic_add_water: int | None = Field(
         None, alias="recordAutomaticAddWater"
     )
     schedule: Schedule | None = None
-    secret: str | None = None
-    settings: SettingsFountain | None = None
-    sn: str
-    status: Status | None = None
     sync_time: str | None = Field(None, alias="syncTime")
-    timezone: float | None = None
     today_clean_water: int | None = Field(None, alias="todayCleanWater")
     today_pump_run_time: int | None = Field(None, alias="todayPumpRunTime")
     today_use_electricity: float | None = Field(None, alias="todayUseElectricity")
     update_at: str | None = Field(None, alias="updateAt")
     user_id: str | None = Field(None, alias="userId")
     water_pump_run_time: int | None = Field(None, alias="waterPumpRunTime")
-    device_records: list[WaterFountainRecord] | None = None
-    device_nfo: Device | None = None
+    status: Status | None = None
+
+    # --- EVERSWEET ULTRA AI fields ---
+    firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
+    signup_at: str | None = Field(None, alias="signupAt")
+    user: Any | None = None  # User existant
+    share_open: int | None = Field(None, alias="shareOpen")
+    auto_upgrade: int | None = Field(None, alias="autoUpgrade")
+    relation: Any | None = None  # Relation existante
+    model_code: int | None = Field(None, alias="modelCode")
+    bt_mac: str | None = Field(None, alias="btMac")
+    multi_config: bool | None = None
+    state: FountainState | None = None
+    cloud_product: CloudProduct | None = Field(None, alias="cloudProduct")
+    live_feed: LiveFeed | None = None
+    p2p_type: int | None = Field(None, alias="p2pType")
+    service_status: int | None = Field(None, alias="serviceStatus")
+    pet_drink_tips: list[Any] | None = Field(None, alias="petDrinkTips")
+    is_pet_drink_tips: int | None = Field(None, alias="isPetDrinkTips")
+    wt_tip: int | None = Field(None, alias="wtTip")
+    cwt_tip: int | None = Field(None, alias="cwtTip")
+    temp_range: list[int] | None = Field(None, alias="tempRange")
+    too_many_pets: int | None = Field(None, alias="tooManyPets")
+    frequency_pet_tip: int | None = Field(None, alias="frequencyPetTip")
+    user: UserDevice | None = None
+    # --- Internal tracking fields ---
     ble_connection_state: int = 2
     ble_counter: int = 0
     last_ble_poll: str | None = None

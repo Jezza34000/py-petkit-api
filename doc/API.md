@@ -707,7 +707,7 @@ Supports: [Device Lifecycle](#device-lifecycle) (uses `signup`, `update`, `devic
 | POST | `ctw3/upgradeCheck` | Check firmware upgrade |
 | POST | `ctw3/upgradeReport` | Report firmware upgrade |
 
-### EverSweet Max 2 UVC (W7H) - `w7h/`
+### Eversweet ULTRA AI (W7H) - `w7h/`
 
 Supports: [Device Lifecycle](#device-lifecycle) | [OTA](#ota-firmware-updates) | [Sharing](#sharing--invitations) | [Camera & Cloud Video](#camera--cloud-video-camera-equipped-devices-only)
 
