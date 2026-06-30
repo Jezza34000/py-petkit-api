@@ -284,7 +284,6 @@ class WaterFountain(BaseModel):
     # --- EVERSWEET ULTRA AI fields ---
     firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
     signup_at: str | None = Field(None, alias="signupAt")
-    user: Any | None = None  # User existant
     share_open: int | None = Field(None, alias="shareOpen")
     auto_upgrade: int | None = Field(None, alias="autoUpgrade")
     relation: Any | None = None  # Relation existante
