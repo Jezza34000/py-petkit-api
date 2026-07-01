@@ -153,6 +153,16 @@ FOUNTAIN_COMMAND = {
 }
 
 
+class FoutainCommand(IntEnum):
+    """FountainCommand
+    For W7H only
+    """
+
+    DRAIN_AND_FLUSH = 1
+    REFILL = 2
+    DRAIN = 3
+
+
 @dataclass
 class CmdData:
     """Command Info"""

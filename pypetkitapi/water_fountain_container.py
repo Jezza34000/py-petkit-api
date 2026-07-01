@@ -282,7 +282,7 @@ class WaterFountain(BaseModel):
     status: Status | None = None
 
     # --- EVERSWEET ULTRA AI fields ---
-    firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
+    firmware_details: list[FirmwareDetail] = Field(None, alias="firmwareDetails")
     signup_at: str | None = Field(None, alias="signupAt")
     share_open: int | None = Field(None, alias="shareOpen")
     auto_upgrade: int | None = Field(None, alias="autoUpgrade")
