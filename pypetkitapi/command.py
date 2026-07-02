@@ -28,6 +28,7 @@ from pypetkitapi.const import (
     T6,
     T7,
     TEMP_CAMERA_TYPES,
+    W7H,
     PetkitEndpoint,
 )
 
@@ -45,6 +46,7 @@ class FountainCommand(StrEnum):
     """Device Command"""
 
     CONTROL_DEVICE = "control_device"
+    RESET_FILTER = "reset_filter"
 
 
 class FeederCommand(StrEnum):
@@ -140,6 +142,18 @@ class FountainAction(StrEnum):
     LIGHT_OFF = "Light Off"
 
 
+class FountainActionWIFI(IntEnum):
+    """FountainCommand
+    For W7H only
+    """
+
+    # For W7H
+    DRAIN_AND_FLUSH = 1
+    REFILL = 2
+    DRAIN = 3
+    DEEP_CLEAN = 4
+
+
 FOUNTAIN_COMMAND = {
     FountainAction.PAUSE: [220, 1, 3, 0, 1, 0, 2],
     FountainAction.CONTINUE: [220, 1, 3, 0, 1, 1, 2],
@@ -151,16 +165,6 @@ FOUNTAIN_COMMAND = {
     FountainAction.MODE_STANDARD: [220, 1, 3, 0, 1, 1, 1],
     FountainAction.MODE_INTERMITTENT: [220, 1, 3, 0, 1, 2, 1],
 }
-
-
-class FoutainCommand(IntEnum):
-    """FountainCommand
-    For W7H only
-    """
-
-    DRAIN_AND_FLUSH = 1
-    REFILL = 2
-    DRAIN = 3
 
 
 @dataclass
@@ -429,5 +433,12 @@ ACTIONS_MAP = {
             "kv": json.dumps(setting),
         },
         supported_device=[PET],
+    ),
+    FountainCommand.RESET_FILTER: CmdData(
+        endpoint=PetkitEndpoint.RESET_FILTER_FOUNTAIN,
+        params=lambda device: {
+            "deviceId": device.id,
+        },
+        supported_device=[W7H],
     ),
 }

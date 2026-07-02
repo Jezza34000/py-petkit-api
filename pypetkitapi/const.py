@@ -214,6 +214,12 @@ class PetkitEndpoint(StrEnum):
     CONTROL_DEVICE = "controlDevice"
     GET_WORK_RECORD = "getWorkRecord"
 
+    # Fountain video AI
+    RESET_FILTER_FOUNTAIN = "filterReset"
+    RESET_PUMP_CYCLE = "resetCyclePump"
+    RESET_LIFT_VALVE = "resetLiftValve"
+    CLEAR_CWT_WARNING = "cwtLightWarnClear"
+
     # Litter Box
     DEODORANT_RESET = "deodorantReset"  # For N50 only
     STATISTIC = "statistic"
