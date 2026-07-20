@@ -20,7 +20,7 @@ repos:
       - id: requirements-txt-fixer
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.2
+    rev: v2.4.3
     hooks:
       - id: codespell
         args:
@@ -36,7 +36,7 @@ repos:
       - id: black
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.21
+    rev: v0.15.22
     hooks:
       - id: ruff
         args:
@@ -76,7 +76,7 @@ repos:
           - types-m3u8
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 43.261.4
+    rev: 43.272.4
     hooks:
       - id: renovate-config-validator
 
