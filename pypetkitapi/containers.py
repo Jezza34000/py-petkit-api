@@ -195,6 +195,12 @@ class Pet(BaseModel):
     device_nfo: Device | None = None
     pet_details: PetDetails | None = None
 
+    # Feeder stats
+    last_meal_time: int | None = None
+    last_meal_duration: int | None = None
+    last_feeder_used: str | None = None
+    meals_today: int | None = None
+
     # Litter stats
     last_litter_usage: int | None = None
     last_device_used: str | None = None

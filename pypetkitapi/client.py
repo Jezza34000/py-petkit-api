@@ -770,10 +770,15 @@ class PetKitClient:
 
     async def _execute_stats_tasks(self) -> None:
         """Execute tasks to populate pet stats."""
-        stats_tasks = [
+        stats_tasks: list = [
             self.populate_pet_stats(entity)
             for device_id, entity in self.petkit_entities.items()
             if isinstance(entity, Litter)
+        ]
+        stats_tasks += [
+            self.populate_pet_feeder_stats(entity)
+            for device_id, entity in self.petkit_entities.items()
+            if isinstance(entity, Feeder)
         ]
         await self._safe_gather(stats_tasks, "stats_tasks")
 
@@ -982,6 +987,82 @@ class PetKitClient:
             elif litter_data.device_nfo.device_type in [T5, T6]:
                 await self.init_pet_stats(pet, litter_data)
                 await self._process_litter_camera(pet, litter_data)
+
+    async def populate_pet_feeder_stats(self, feeder_data: Feeder) -> None:
+        """Collect data from feeder data to populate pet stats.
+
+        Feeders with pet recognition attribute each meal to a pet, in
+        `device_records.eat[].items[].pet_id`. That attribution already arrives on
+        every poll and was simply never surfaced.
+        :param feeder_data: Feeder data.
+        """
+        if not feeder_data.device_nfo:
+            _LOGGER.warning(
+                "No device info for %s can't populate pet infos", feeder_data
+            )
+            return
+
+        pets_list = await self.get_pets_list()
+        for pet in pets_list:
+            await self.init_pet_feeder_stats(pet)
+            await self._process_feeder_records(pet, feeder_data)
+
+    @staticmethod
+    async def init_pet_feeder_stats(pet: Pet) -> None:
+        """Initialize pet feeder stats.
+        Allow pet stats to be displayed in HA even if no data is available.
+        :param pet: Pet data.
+        """
+        if (
+            getattr(pet, "last_meal_time", None) is None
+            and getattr(pet, "last_meal_duration", None) is None
+            and getattr(pet, "last_feeder_used", None) is None
+            and getattr(pet, "meals_today", None) is None
+        ):
+            pet.last_meal_time = 0
+            pet.last_meal_duration = 0
+            pet.last_feeder_used = "Unknown"
+            pet.meals_today = 0
+
+    async def _process_feeder_records(self, pet: Pet, feeder_data: Feeder) -> None:
+        """Process feeder eat records to extract per-pet meal stats.
+        :param pet: Pet data.
+        :param feeder_data: Feeder data.
+        """
+        records = getattr(feeder_data, "device_records", None)
+        if records is None or not getattr(records, "eat", None):
+            return
+
+        device_name = getattr(feeder_data.device_nfo, "device_name", None)
+        meals_today = 0
+
+        for group in records.eat or []:
+            for item in getattr(group, "items", None) or []:
+                # The AI does not recognise every visit; unattributed items carry
+                # no pet_id and must not be counted against any pet.
+                if item.pet_id is None or str(item.pet_id) != str(pet.pet_id):
+                    continue
+                meals_today += 1
+
+                start = item.eat_start_time
+                if start is None:
+                    continue
+                if pet.last_meal_time is None or start > pet.last_meal_time:
+                    self.set_if_not_none(pet, "last_meal_time", start)
+                    # `duration` is a constant in the payload, not the meal length,
+                    # so derive it from the start/end pair instead.
+                    self.set_if_not_none(
+                        pet,
+                        "last_meal_duration",
+                        self.calculate_duration(start, item.eat_end_time),
+                    )
+                    self.set_if_not_none(
+                        pet,
+                        "last_feeder_used",
+                        device_name.capitalize() if device_name is not None else None,
+                    )
+
+        pet.meals_today = meals_today
 
     @staticmethod
     async def init_pet_stats(pet: Pet, litter_data: Litter) -> None:
