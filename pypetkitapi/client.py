@@ -1028,6 +1028,8 @@ class PetKitClient:
     def _feeder_has_pet_recognition(feeder_data: Feeder) -> bool:
         """Return True only for camera feeders exposing the AI/pet-recognition mode."""
         device_nfo = feeder_data.device_nfo
+        if device_nfo is None:
+            return False
         return (
             device_nfo.device_type in FEEDER_WITH_CAMERA and device_nfo.type_code == 2
         )

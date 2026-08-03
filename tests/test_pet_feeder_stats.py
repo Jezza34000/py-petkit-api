@@ -179,6 +179,7 @@ class TestNonAiFeederGuard(unittest.IsolatedAsyncioTestCase):
 
     async def test_camera_feeder_without_recognition_gets_no_stats(self) -> None:
         feeder = _feeder()
+        assert feeder.device_nfo is not None
         feeder.device_nfo.type_code = 1
         await self.client.populate_pet_feeder_stats(feeder)
         self.assertIsNone(self.pet_a.meals_today)
