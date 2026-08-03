@@ -308,7 +308,7 @@ ACTIONS_MAP = {
         params=lambda device, setting: {
             "deviceId": device.id,
             "day": datetime.datetime.now().strftime("%Y%m%d"),
-            **setting,  # Need the id of the feed to remove
+            "id": setting.feed_id,
         },
         supported_device=DEVICES_FEEDER,
     ),
@@ -317,7 +317,7 @@ ACTIONS_MAP = {
         params=lambda device, setting: {
             "deviceId": device.id,
             "day": datetime.datetime.now().strftime("%Y%m%d"),
-            **setting,  # Need the id of the feed to restore
+            "id": setting.feed_id,
         },
         supported_device=DEVICES_FEEDER,
     ),
@@ -424,7 +424,9 @@ ACTIONS_MAP = {
             "petId": pet.pet_id,
             "batch": 0,
             "type": 15,
-            **setting,
+            "old_pet_id": setting.old_pet_id,
+            "device_id": setting.device_id,
+            "time_out": setting.time_out,
         },
         supported_device=[PET],
     ),
