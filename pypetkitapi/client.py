@@ -1012,17 +1012,21 @@ class PetKitClient:
 
     @staticmethod
     def _feeder_has_pet_recognition(feeder_data: Feeder) -> bool:
-        """Return True only if the feeder payload contains at least one
-        eat record item attributed to a pet (i.e. has AI recognition).
+        """Return True if the feeder SUPPORTS pet recognition.
+
+        This is a capability test, not a data test. Looking for an already
+        attributed eat record conflates "cannot do this" with "has not done it
+        yet today": device_records.eat resets daily, and the AI does not
+        recognise every visit, so a data test leaves the stats uninitialised
+        for a window after every midnight.
+
+        `eatDetection` is the per-pet meal-event feature and is only present on
+        feeders that have it. `petDetection` is NOT usable here: it drives the
+        recognition overlay, and turning it off leaves per-pet attribution
+        working.
         """
-        records = getattr(feeder_data, "device_records", None)
-        if records is None or not getattr(records, "eat", None):
-            return False
-        for group in records.eat or []:
-            for item in getattr(group, "items", None) or []:
-                if item.pet_id is not None:
-                    return True
-        return False
+        settings = getattr(feeder_data, "settings", None)
+        return settings is not None and settings.eat_detection is not None
 
     @staticmethod
     async def init_pet_feeder_stats(pet: Pet) -> None:
