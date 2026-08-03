@@ -1012,21 +1012,12 @@ class PetKitClient:
 
     @staticmethod
     def _feeder_has_pet_recognition(feeder_data: Feeder) -> bool:
-        """Return True if the feeder SUPPORTS pet recognition.
-
-        This is a capability test, not a data test. Looking for an already
-        attributed eat record conflates "cannot do this" with "has not done it
-        yet today": device_records.eat resets daily, and the AI does not
-        recognise every visit, so a data test leaves the stats uninitialised
-        for a window after every midnight.
-
-        `eatDetection` is the per-pet meal-event feature and is only present on
-        feeders that have it. `petDetection` is NOT usable here: it drives the
-        recognition overlay, and turning it off leaves per-pet attribution
-        working.
-        """
-        settings = getattr(feeder_data, "settings", None)
-        return settings is not None and settings.eat_detection is not None
+        """Return True only for camera feeders exposing the AI/pet-recognition mode."""
+        device_nfo = feeder_data.device_nfo
+        return (
+                device_nfo.device_type in FEEDER_WITH_CAMERA
+                and getattr(device_nfo, "type_code", 0) == 2
+        )
 
     @staticmethod
     async def init_pet_feeder_stats(pet: Pet) -> None:
