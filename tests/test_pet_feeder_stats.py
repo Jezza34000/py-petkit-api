@@ -58,7 +58,10 @@ def _feeder() -> Feeder:
         deviceName="yumshare",
         deviceType="d4sh",
         groupId=1,
-        type=1,
+        # real values from a live D4SH-2: type 25, typeCode 2. The guard keys on
+        # typeCode, so a fixture that omits it silently fails every test.
+        type=25,
+        typeCode=2,
         uniqueId="u0001",
     )
     feeder.device_records = FeederRecord(**FAKE_EAT_RECORD)
@@ -130,15 +133,6 @@ class TestPetRecognitionGuard(unittest.IsolatedAsyncioTestCase):
         self.pet_a = _pet(101401310, "Pet A")
         self.client.petkit_entities = {101401310: self.pet_a}
 
-    async def test_non_ai_feeder_gets_no_stats(self) -> None:
-        """A feeder with no eatDetection never gains the four fields."""
-        feeder = _feeder()
-        feeder.settings = SettingsFeeder()
-        feeder.device_records = FeederRecord(**FAKE_EAT_RECORD)
-        await self.client.populate_pet_feeder_stats(feeder)
-        self.assertIsNone(self.pet_a.meals_today)
-        self.assertIsNone(self.pet_a.last_meal_time)
-
     async def test_ai_feeder_initialised_before_first_attributed_meal(self) -> None:
         """Just after the daily reset the AI feeder still reports 0, not None.
 
@@ -173,3 +167,19 @@ class TestPetRecognitionGuard(unittest.IsolatedAsyncioTestCase):
         )
         await self.client.populate_pet_feeder_stats(feeder)
         self.assertEqual(self.pet_a.meals_today, 0)
+
+
+class TestNonAiFeederGuard(unittest.IsolatedAsyncioTestCase):
+    """typeCode separates the recognising hardware from the rest."""
+
+    async def asyncSetUp(self) -> None:
+        self.client = PetKitClient.__new__(PetKitClient)
+        self.pet_a = _pet(101401310, "Pet A")
+        self.client.petkit_entities = {101401310: self.pet_a}
+
+    async def test_camera_feeder_without_recognition_gets_no_stats(self) -> None:
+        feeder = _feeder()
+        feeder.device_nfo.type_code = 1
+        await self.client.populate_pet_feeder_stats(feeder)
+        self.assertIsNone(self.pet_a.meals_today)
+        self.assertIsNone(self.pet_a.last_meal_time)
