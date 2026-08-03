@@ -1016,7 +1016,7 @@ class PetKitClient:
         device_nfo = feeder_data.device_nfo
         return (
             device_nfo.device_type in FEEDER_WITH_CAMERA
-            and getattr(device_nfo, "type_code", 0) == 2
+            and device_nfo.type_code == 2
         )
 
     @staticmethod
