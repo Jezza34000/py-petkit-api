@@ -13,6 +13,7 @@ import aiohttp
 from aiohttp import ContentTypeError
 import m3u8
 from tenacity import (
+    RetryCallState,
     retry,
     retry_if_exception_type,
     stop_after_attempt,
@@ -629,20 +630,23 @@ class PetKitClient:
             if pet_id in self.petkit_entities:
                 self.petkit_entities[pet_id].pet_details = pet_details
 
-    async def _safe_gather(self, tasks: list[Any], label: str) -> None:
+    async def _safe_gather(self, tasks: list[Any], label: str) -> bool:
         if not tasks:
-            return
+            return True
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
+        has_errors = False
 
         for result in results:
             if isinstance(result, Exception):
+                has_errors = True
                 _LOGGER.error(
                     "Task failure in %s: %s",
                     label,
                     repr(result),
                     exc_info=result,
                 )
+        return not has_errors
 
     async def get_devices_data(self, device_id: int | None = None) -> None:
         """Get the devices data from the PetKit servers."""
@@ -655,13 +659,23 @@ class PetKitClient:
             device_list, device_id
         )
 
-        await self._safe_gather(main_tasks, "main_tasks")
-        await self._safe_gather(record_tasks, "record_tasks")
-        await self._safe_gather(media_tasks, "media_tasks")
+        results = [
+            await self._safe_gather(main_tasks, "main_tasks"),
+            await self._safe_gather(record_tasks, "record_tasks"),
+            await self._safe_gather(media_tasks, "media_tasks"),
+        ]
         await self._execute_stats_tasks()
 
         end_time = datetime.now()
-        _LOGGER.debug("Petkit data fetched successfully in: %s", end_time - start_time)
+        elapsed = end_time - start_time
+
+        if all(results):
+            _LOGGER.debug("Petkit data fetched successfully in: %s", elapsed)
+        else:
+            _LOGGER.warning(
+                "Petkit data fetch completed with errors in: %s (check above for details)",
+                elapsed,
+            )
 
     def _collect_devices(self) -> list[Device]:
         """Collect all devices from account data.
@@ -1320,6 +1334,23 @@ class PrepReq:
             "X-Timezone": await get_timezone_offset(self.timezone),
         }
 
+    @staticmethod
+    def _log_retry_attempt(retry_state: RetryCallState) -> None:
+        """Retry attempt log"""
+        attempt = retry_state.attempt_number
+        max_attempts = 5
+        wait = retry_state.next_action.sleep
+        exc = retry_state.outcome.exception()
+        _LOGGER.debug(
+            "Retry %d/%d on %s (wait for %.1fs) — %s: %s",
+            attempt,
+            max_attempts,
+            retry_state.fn.__name__,
+            wait,
+            type(exc).__name__,
+            exc,
+        )
+
     @retry(
         stop=stop_after_attempt(5),
         wait=wait_exponential(multiplier=1, min=1, max=16),
@@ -1332,7 +1363,36 @@ class PrepReq:
             | retry_if_exception_type(asyncio.TimeoutError)
         ),
         reraise=True,
+        before_sleep=_log_retry_attempt,
     )
+    async def _request_with_retry(
+        self,
+        method: str,
+        url: str,
+        full_url: bool = False,
+        params: dict | str | None = None,
+        data: dict | str | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> dict:
+        """Internal retried method — lets raw network exceptions propagate up
+        to tenacity so the retry mechanism works correctly.
+        """
+        if not self.base_headers:
+            self.base_headers = await self._generate_header()
+
+        _url = url if full_url else "/".join(s.strip("/") for s in [self.base_url, url])
+        _headers = {**self.base_headers, **(headers or {})}
+        _LOGGER.debug("Request: %s %s", method, _url)
+
+        async with self.session.request(
+            method,
+            _url,
+            params=params,
+            data=data,
+            headers=_headers,
+        ) as resp:
+            return await self._handle_response(resp, _url)
+
     async def request(
         self,
         method: str,
@@ -1342,35 +1402,26 @@ class PrepReq:
         data: dict | str | None = None,
         headers: dict[str, str] | None = None,
     ) -> dict:
-        """Make a request to the PetKit API.
-        :param method: HTTP method.
-        :param url: URL of the API endpoint.
-        :param full_url: Use full URL.
-        :param params: Parameters to send.
-        :param data: Data to send.
-        :param headers: Headers to send.
-        :return: Response from the API.
+        """Public entry point. Calls _request_with_retry() and wraps
+        any residual network exceptions (after retries are exhausted)
+        into PetkitTimeoutError for a consistent API towards callers.
         """
-        if not self.base_headers:
-            self.base_headers = await self._generate_header()
-
         _url = url if full_url else "/".join(s.strip("/") for s in [self.base_url, url])
-        _headers = {**self.base_headers, **(headers or {})}
-        _LOGGER.debug("Request: %s %s", method, _url)
         try:
-            async with self.session.request(
-                method,
-                _url,
+            return await self._request_with_retry(
+                method=method,
+                url=url,
+                full_url=full_url,
                 params=params,
                 data=data,
-                headers=_headers,
-            ) as resp:
-                return await self._handle_response(resp, _url)
+                headers=headers,
+            )
         except (
             aiohttp.ClientConnectorError,
             aiohttp.ClientOSError,
             aiohttp.ServerDisconnectedError,
             TimeoutError,
+            asyncio.TimeoutError,
         ) as e:
             _LOGGER.warning("Network error reaching %s: %s", _url, e)
             raise PetkitTimeoutError(f"Request to {_url} failed: {e}") from e
@@ -1421,6 +1472,10 @@ class PrepReq:
                     )
                 case 125:
                     raise PetkitAuthenticationUnregisteredEmailError
+                case 703:
+                    raise PypetkitError(
+                        f"Device not found : {error_code}, details : {error_msg} url : {url}"
+                    )
                 case _:
                     raise PypetkitError(
                         f"Request failed code : {error_code}, details : {error_msg} url : {url}"
