@@ -155,7 +155,21 @@ class TestPetRecognitionGuard(unittest.IsolatedAsyncioTestCase):
     async def test_ai_feeder_with_only_unrecognised_meals(self) -> None:
         """Meals happened but the AI named nobody: still initialised, count 0."""
         feeder = _feeder()
-        feeder.device_records = FeederRecord(**{"eat": [{"deviceId": 300035322, "items": [
-            {"eatStartTime": 1753662133, "eatEndTime": 1753662301, "duration": 4}]}]})
+        feeder.device_records = FeederRecord(
+            **{
+                "eat": [
+                    {
+                        "deviceId": 300035322,
+                        "items": [
+                            {
+                                "eatStartTime": 1753662133,
+                                "eatEndTime": 1753662301,
+                                "duration": 4,
+                            }
+                        ],
+                    }
+                ]
+            }
+        )
         await self.client.populate_pet_feeder_stats(feeder)
         self.assertEqual(self.pet_a.meals_today, 0)
