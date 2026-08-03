@@ -760,6 +760,7 @@ Drain & Flush Cycle :
 kv: '{"flushCycle": 6}' (from 1 to 7)
 Drain and Refill :
 kv: '{"waterChangeCycle": 4}'(from 1 to 7)
+
 ---
 
 ## Air Purifiers
