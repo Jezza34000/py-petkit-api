@@ -1499,6 +1499,14 @@ class PrepReq:
         """Public entry point. Calls _request_with_retry() and wraps
         any residual network exceptions (after retries are exhausted)
         into PetkitTimeoutError for a consistent API towards callers.
+
+        :param method: HTTP method.
+        :param url: URL of the API endpoint.
+        :param full_url: Use full URL.
+        :param params: Parameters to send.
+        :param data: Data to send.
+        :param headers: Headers to send.
+        :return: Response from the API.
         """
         _url = url if full_url else "/".join(s.strip("/") for s in [self.base_url, url])
         try:
