@@ -1002,10 +1002,27 @@ class PetKitClient:
             )
             return
 
+        if not self._feeder_has_pet_recognition(feeder_data):
+            return
+
         pets_list = await self.get_pets_list()
         for pet in pets_list:
             await self.init_pet_feeder_stats(pet)
             await self._process_feeder_records(pet, feeder_data)
+
+    @staticmethod
+    def _feeder_has_pet_recognition(feeder_data: Feeder) -> bool:
+        """Return True only if the feeder payload contains at least one
+        eat record item attributed to a pet (i.e. has AI recognition).
+        """
+        records = getattr(feeder_data, "device_records", None)
+        if records is None or not getattr(records, "eat", None):
+            return False
+        for group in records.eat or []:
+            for item in getattr(group, "items", None) or []:
+                if item.pet_id is not None:
+                    return True
+        return False
 
     @staticmethod
     async def init_pet_feeder_stats(pet: Pet) -> None:
