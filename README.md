@@ -199,7 +199,7 @@ await client.send_api_request(device_id, DeviceCommand.CONTROL_DEVICE, {DeviceAc
 | `{DeviceAction.START: LBCommand.ODOR_REMOVAL}`     | Trigger deodorizing (T3, T4, T5, T7) |
 | `{DeviceAction.START: LBCommand.RESET_N60_DEODOR}` | Reset N60 deodorizer counter         |
 | `{DeviceAction.START: LBCommand.LEVELING}`         | Level the litter surface             |
-| `{DeviceAction.POWER: 0/1}`                        | Turn purifier on/off (K2)            |
+| `{DeviceAction.POWER: 0/1}`                        | Turn on/off device                   |
 | `{DeviceAction.MODE: N}`                           | Set purifier operating mode (K2)     |
 
 > **work_mode**: You need to pass the current working mode, which can be found in `client.petkit_entities[device_id].state.work_state.work_mode`
