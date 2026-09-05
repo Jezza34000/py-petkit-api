@@ -13,6 +13,7 @@ SUCCESS_KEY = "success"
 DEVICE_RECORDS = "deviceRecords"
 DEVICE_DATA = "deviceData"
 DEVICE_STATS = "deviceStats"
+DEVICE_FEED_PLAN = "feedPlan"
 PET_DATA = "petData"
 LIVE_DATA = "liveData"
 PACKAGE_INFO = "packageInfo"
@@ -255,9 +256,13 @@ class PetkitEndpoint(StrEnum):
     DAILY_FEED_AND_EAT = "dailyFeedAndEat"  # D3
     FEED_STATISTIC = "feedStatistic"  # D4
     DAILY_FEED = "dailyFeeds"  # D4S
+    FEED = "feed"  # GET/POST {prefix}/feed — recurring plan (wiki Shape A / B)
+    REMOVE_DAILY_FEED_OLD = "remove_dailyfeed"  # feeder/, feedermini/
     REMOVE_DAILY_FEED = "removeDailyFeed"
+    RESTORE_DAILY_FEED_OLD = "restore_dailyfeed"  # feeder/, feedermini/
     RESTORE_DAILY_FEED = "restoreDailyFeed"
-    SAVE_FEED = "saveFeed"  # For Feeding plan
+    SAVE_FEED_OLD = "save_feed"  # feeder/, feedermini/ (D2) — matches PetKit app
+    SAVE_FEED = "saveFeed"  # D3, D4, …
     SUSPEND_FEED_OLD = "suspend_feed"  # For Feeder/FeederMini
     SUSPEND_FEED_NEW = "suspendFeed"  # For D3/D4/D4S/D4H/D4SH
     RESTORE_FEED_OLD = "restore_feed"  # For Feeder/FeederMini
@@ -301,3 +306,14 @@ DUAL_HOPPER_DEVICES: list[str] = [D4S, D4SH]
 
 # Single hopper device types (use amount)
 SINGLE_HOPPER_DEVICES: list[str] = [FEEDER, FEEDER_MINI, D3, D4, D4H]
+
+# Cloud type_id written on each plan item's ``deviceType`` (wiki family map).
+FEEDER_TYPE_IDS: dict[str, int] = {
+    FEEDER: 4,
+    FEEDER_MINI: 6,
+    D3: 9,
+    D4: 11,
+    D4S: 20,
+    D4SH: 25,
+    D4H: 26,
+}

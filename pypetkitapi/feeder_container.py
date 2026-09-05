@@ -10,6 +10,7 @@ from pypetkitapi.const import (
     D4,
     D4S,
     DEVICE_DATA,
+    DEVICE_FEED_PLAN,
     DEVICE_RECORDS,
     FEEDER_MINI,
     PetkitEndpoint,
@@ -84,6 +85,40 @@ class MultiFeedItem(BaseModel):
     feed_daily_list: list[FeedDailyList] | None = Field(None, alias="feedDailyList")
     is_executed: int | None = Field(None, alias="isExecuted")
     user_id: str | None = Field(None, alias="userId")
+
+
+class FeedPlan(BaseModel):
+    """GET/POST ``{prefix}/feed`` result.
+
+    Shape A (feeder / feedermini): ``items`` + ``repeats`` + ``suspended``.
+    Shape B (D3+): ``feedDailyList`` of per-day ``FeedDailyList``.
+    Mini has no nested ``feed`` on ``device_detail``.
+    """
+
+    data_type: ClassVar[str] = DEVICE_FEED_PLAN
+
+    items: list[FeedItem] | None = None
+    repeats: int | str | None = None
+    suspended: int | None = None
+    count: int | None = None
+    total_amount: int | None = Field(None, alias="totalAmount")
+    is_executed: int | None = Field(None, alias="isExecuted")
+    feed_daily_list: list[FeedDailyList] | None = Field(None, alias="feedDailyList")
+    user_id: str | None = Field(None, alias="userId")
+
+    @classmethod
+    def get_endpoint(cls, device_type: str) -> str:
+        """Get the endpoint URL for the given device type."""
+        return PetkitEndpoint.FEED
+
+    @classmethod
+    def query_param(
+        cls,
+        device: Device,
+        device_data: Any | None = None,
+    ) -> dict:
+        """Generate query parameters."""
+        return {"deviceId": int(device.device_id)}
 
 
 class CameraMultiNew(BaseModel):
@@ -393,6 +428,7 @@ class Feeder(BaseModel):
     device_nfo: Device | None = None
     medias: list | None = None
     sound_list: list[SoundList] | None = None
+    feed_plan: FeedPlan | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:

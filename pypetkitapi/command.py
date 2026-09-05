@@ -17,6 +17,7 @@ from pypetkitapi.const import (
     DUAL_HOPPER_DEVICES,
     FEEDER,
     FEEDER_MINI,
+    FEEDER_TYPE_IDS,
     K2,
     K3,
     MANUAL_FEED_DEFAULT_VALID_VALUES,
@@ -192,6 +193,112 @@ def get_endpoint_reset_desiccant(device):
     return PetkitEndpoint.DESICCANT_RESET_NEW  # New endpoint camelcase
 
 
+def get_endpoint_save_feed(device):
+    """Full feeding plan save — feeder + Mini use snake_case, as the app does."""
+    if device.device_nfo.device_type in [FEEDER_MINI, FEEDER]:
+        return PetkitEndpoint.SAVE_FEED_OLD
+    return PetkitEndpoint.SAVE_FEED
+
+
+def _feeder_family_type_id(device) -> int:
+    """Cloud type_id written on plan items' ``deviceType`` (4/6/9/…)."""
+    nfo = getattr(device, "device_nfo", None)
+    if nfo is not None:
+        raw = getattr(nfo, "type", None)
+        if raw:
+            try:
+                return int(raw)
+            except (TypeError, ValueError):
+                pass
+        device_type = getattr(nfo, "device_type", None)
+        if device_type:
+            return FEEDER_TYPE_IDS.get(device_type, 0)
+    return 0
+
+
+def build_save_feed_params(device, feed_daily_list: list[dict]) -> dict:
+    """Build POST body/query params for SAVE_FEED.
+
+    The app uses ``feedDailyList`` JSON only for D3/D4-class feeders.
+    Legacy ``feeder`` + ``feedermini`` use flat ``items`` JSON + ``repeats``,
+    the way the app's plan save does.
+    """
+    if device.device_nfo.device_type not in (FEEDER, FEEDER_MINI):
+        return {
+            "deviceId": device.id,
+            "feedDailyList": json.dumps(feed_daily_list),
+        }
+
+    weekday_active: list[int] = []
+    for day in feed_daily_list:
+        if day.get("suspended", 0):
+            continue
+        raw = day.get("repeats", "")
+        try:
+            weekday_active.append(int(str(raw)))
+        except (TypeError, ValueError):
+            continue
+    weekday_active.sort()
+    repeats_str = (
+        ",".join(str(w) for w in weekday_active)
+        if weekday_active
+        else "1,2,3,4,5,6,7"
+    )
+
+    items_raw: list | None = None
+    for day in feed_daily_list:
+        slot = day.get("items") or []
+        if slot:
+            items_raw = slot
+            break
+    if items_raw is None:
+        items_raw = []
+
+    dev_id = int(device.id)
+    family_type_id = _feeder_family_type_id(device)
+    items_out: list[dict] = []
+    for it in items_raw:
+        tid = it.get("time", 0)
+        items_out.append(
+            {
+                "amount": int(it.get("amount", 0) or 0),
+                "amount1": int(it.get("amount1", 0) or 0),
+                "amount2": int(it.get("amount2", 0) or 0),
+                "deviceId": dev_id,
+                "deviceType": family_type_id,
+                "id": int(it.get("id", tid) or 0),
+                "name": it.get("name") or "",
+                "petAmount": it.get("petAmount") or [],
+                "time": int(tid or 0),
+            }
+        )
+
+    if not items_out:
+        # Same default ``repeats`` the app falls back to when the meal list
+        # is empty (user removed every slot in the plan editor).
+        repeats_str = "1,2,3,4,5,6,7"
+
+    return {
+        "deviceId": str(dev_id),
+        "items": json.dumps(items_out),
+        "repeats": repeats_str,
+    }
+
+
+def get_endpoint_remove_daily_feed(device):
+    """Skip-today cancel — feeder + Mini use snake_case."""
+    if device.device_nfo.device_type in [FEEDER_MINI, FEEDER]:
+        return PetkitEndpoint.REMOVE_DAILY_FEED_OLD
+    return PetkitEndpoint.REMOVE_DAILY_FEED
+
+
+def get_endpoint_restore_daily_feed(device):
+    """Skip-today restore — feeder + Mini use snake_case."""
+    if device.device_nfo.device_type in [FEEDER_MINI, FEEDER]:
+        return PetkitEndpoint.RESTORE_DAILY_FEED_OLD
+    return PetkitEndpoint.RESTORE_DAILY_FEED
+
+
 def get_endpoint_update_setting(device):
     """Get the endpoint for the device"""
     if device.device_nfo.device_type in [FEEDER_MINI, K3]:
@@ -324,20 +431,28 @@ ACTIONS_MAP = {
         supported_device=TEMP_CAMERA_TYPES,
     ),
     FeederCommand.REMOVE_DAILY_FEED: CmdData(
-        endpoint=PetkitEndpoint.REMOVE_DAILY_FEED,
+        endpoint=get_endpoint_remove_daily_feed,
         params=lambda device, setting: {
             "deviceId": device.id,
             "day": datetime.datetime.now().strftime("%Y%m%d"),
-            "id": setting.feed_id,
+            "id": (
+                setting["feed_id"]
+                if isinstance(setting, dict)
+                else setting.feed_id
+            ),
         },
         supported_device=DEVICES_FEEDER,
     ),
     FeederCommand.RESTORE_DAILY_FEED: CmdData(
-        endpoint=PetkitEndpoint.RESTORE_DAILY_FEED,
+        endpoint=get_endpoint_restore_daily_feed,
         params=lambda device, setting: {
             "deviceId": device.id,
             "day": datetime.datetime.now().strftime("%Y%m%d"),
-            "id": setting.feed_id,
+            "id": (
+                setting["feed_id"]
+                if isinstance(setting, dict)
+                else setting.feed_id
+            ),
         },
         supported_device=DEVICES_FEEDER,
     ),
@@ -379,11 +494,8 @@ ACTIONS_MAP = {
         supported_device=DEVICES_FEEDER,
     ),
     FeederCommand.SAVE_FEED: CmdData(
-        endpoint=PetkitEndpoint.SAVE_FEED,
-        params=lambda device, feed_daily_list: {
-            "deviceId": device.id,
-            "feedDailyList": json.dumps(feed_daily_list),
-        },
+        endpoint=get_endpoint_save_feed,
+        params=build_save_feed_params,
         supported_device=DEVICES_FEEDER,
     ),
     FeederCommand.SUSPEND_FEED: CmdData(

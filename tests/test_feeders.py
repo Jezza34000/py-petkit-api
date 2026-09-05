@@ -7,6 +7,7 @@ from pypetkitapi.feeder_container import (
     CloudProduct,
     MultiFeedItem,
     FeederRecord,
+    FeedPlan,
 )
 from pydantic import ValidationError
 
@@ -401,6 +402,68 @@ class TestFeederModel(unittest.TestCase):
         self.assertEqual(
             FeederRecord.query_param(device, request_date=request_date), expected_params
         )
+
+
+class TestFeedPlanModel(unittest.TestCase):
+    """Tests for GET {prefix}/feed Shape A / Shape B."""
+
+    def test_shape_a_weekly_plan(self):
+        """Mini / D1 FeederPlan: items + repeats + suspended."""
+        plan = FeedPlan(
+            items=[
+                {
+                    "amount": 15,
+                    "deviceId": 42,
+                    "deviceType": 6,
+                    "id": 100001,
+                    "name": "Breakfast",
+                    "time": 18000,
+                }
+            ],
+            repeats="1,3,5",
+            suspended=0,
+            count=1,
+            totalAmount=15,
+            isExecuted=0,
+        )
+        self.assertEqual(len(plan.items), 1)
+        self.assertEqual(plan.items[0].name, "Breakfast")
+        self.assertEqual(plan.repeats, "1,3,5")
+        self.assertEqual(plan.suspended, 0)
+        self.assertIsNone(plan.feed_daily_list)
+
+    def test_shape_b_per_day_plan(self):
+        """D3+ DifferentFeedPlan: feedDailyList."""
+        plan = FeedPlan(
+            feedDailyList=[
+                {
+                    "items": [{"amount": 20, "id": 21600, "name": "A", "time": 21600}],
+                    "repeats": "1",
+                    "suspended": 0,
+                    "count": 1,
+                    "totalAmount": 20,
+                },
+                {"items": [], "repeats": "2", "suspended": 0, "count": 0},
+            ],
+            isExecuted=0,
+        )
+        self.assertIsNone(plan.items)
+        self.assertEqual(len(plan.feed_daily_list), 2)
+        self.assertEqual(plan.feed_daily_list[0].items[0].amount, 20)
+
+    def test_get_endpoint_and_query(self):
+        device = Device(
+            createdAt=1672531200,
+            deviceId=12345,
+            deviceName="example_device",
+            deviceType="feedermini",
+            groupId=1,
+            type=6,
+            typeCode=0,
+            uniqueId="unique_12345",
+        )
+        self.assertEqual(FeedPlan.get_endpoint("feedermini"), PetkitEndpoint.FEED)
+        self.assertEqual(FeedPlan.query_param(device), {"deviceId": 12345})
 
 
 if __name__ == "__main__":

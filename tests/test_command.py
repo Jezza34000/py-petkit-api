@@ -1,3 +1,4 @@
+import json
 import unittest
 from pypetkitapi.command import (
     DeviceCommand,
@@ -13,6 +14,10 @@ from pypetkitapi.command import (
     CmdData,
     get_endpoint_manual_feed,
     get_endpoint_reset_desiccant,
+    get_endpoint_save_feed,
+    build_save_feed_params,
+    get_endpoint_remove_daily_feed,
+    get_endpoint_restore_daily_feed,
     get_endpoint_suspend_feed,
     get_endpoint_restore_feed,
     get_endpoint_save_repeats,
@@ -140,6 +145,150 @@ class TestCommandModule(unittest.TestCase):
             build_cancel_manual_feed_params,
         )
 
+    def test_get_endpoint_save_feed_snake_case_for_mini_and_legacy_feeder(self):
+        mini = type(
+            "Device",
+            (object,),
+            {
+                "device_nfo": type(
+                    "DeviceInfo", (object,), {"device_type": FEEDER_MINI}
+                )()
+            },
+        )
+        self.assertEqual(
+            get_endpoint_save_feed(mini), PetkitEndpoint.SAVE_FEED_OLD
+        )
+        legacy = type(
+            "Device",
+            (object,),
+            {"device_nfo": type("DeviceInfo", (object,), {"device_type": FEEDER})()},
+        )
+        self.assertEqual(
+            get_endpoint_save_feed(legacy), PetkitEndpoint.SAVE_FEED_OLD
+        )
+        d3 = type(
+            "Device",
+            (object,),
+            {"device_nfo": type("DeviceInfo", (object,), {"device_type": D3})()},
+        )
+        self.assertEqual(get_endpoint_save_feed(d3), PetkitEndpoint.SAVE_FEED)
+
+    def test_build_save_feed_legacy_feedermini_uses_items_and_repeats(self):
+        """Legacy families post a flat items list, not feedDailyList."""
+        device = type(
+            "Device",
+            (),
+            {
+                "id": 999,
+                "device_nfo": type(
+                    "Info", (), {"device_type": FEEDER_MINI}
+                )(),
+            },
+        )()
+        api_days = [
+            {
+                "count": 2,
+                "items": [
+                    {
+                        "amount": 15,
+                        "amount1": 0,
+                        "amount2": 0,
+                        "deviceId": 0,
+                        "deviceType": 0,
+                        "id": 18000,
+                        "name": "A",
+                        "petAmount": [],
+                        "time": 18000,
+                    },
+                    {
+                        "amount": 25,
+                        "amount1": 0,
+                        "amount2": 0,
+                        "deviceId": 0,
+                        "deviceType": 0,
+                        "id": 72000,
+                        "name": "B",
+                        "petAmount": [],
+                        "time": 72000,
+                    },
+                ],
+                "repeats": "1",
+                "suspended": 0,
+                "totalAmount": 40,
+                "totalAmount1": 0,
+                "totalAmount2": 0,
+            },
+            {
+                "count": 2,
+                "items": [
+                    {
+                        "amount": 15,
+                        "amount1": 0,
+                        "amount2": 0,
+                        "deviceId": 0,
+                        "deviceType": 0,
+                        "id": 18000,
+                        "name": "A",
+                        "petAmount": [],
+                        "time": 18000,
+                    },
+                    {
+                        "amount": 25,
+                        "amount1": 0,
+                        "amount2": 0,
+                        "deviceId": 0,
+                        "deviceType": 0,
+                        "id": 72000,
+                        "name": "B",
+                        "petAmount": [],
+                        "time": 72000,
+                    },
+                ],
+                "repeats": "3",
+                "suspended": 0,
+                "totalAmount": 40,
+                "totalAmount1": 0,
+                "totalAmount2": 0,
+            },
+        ]
+        params = build_save_feed_params(device, api_days)
+        self.assertNotIn("feedDailyList", params)
+        self.assertEqual(params["deviceId"], "999")
+        self.assertEqual(params["repeats"], "1,3")
+        items = json.loads(params["items"])
+        self.assertEqual(len(items), 2)
+        self.assertEqual(items[0]["amount"], 15)
+        self.assertEqual(items[0]["deviceId"], 999)
+        self.assertEqual(items[0]["deviceType"], 6)
+        self.assertEqual(items[1]["name"], "B")
+
+    def test_build_save_feed_legacy_empty_items_matches_app_clear(self):
+        """The app's plan editor still POSTs save_feed after removing every slot."""
+        device = type(
+            "Device",
+            (),
+            {
+                "id": 42,
+                "device_nfo": type(
+                    "Info", (), {"device_type": FEEDER_MINI}
+                )(),
+            },
+        )()
+        params = build_save_feed_params(device, [])
+        self.assertEqual(json.loads(params["items"]), [])
+        self.assertEqual(params["repeats"], "1,2,3,4,5,6,7")
+
+    def test_build_save_feed_d3_uses_feed_daily_list_json(self):
+        device = type(
+            "Device",
+            (),
+            {"id": 1, "device_nfo": type("Info", (), {"device_type": D3})()},
+        )()
+        blob = [{"count": 0, "items": [], "repeats": "1", "suspended": 0}]
+        params = build_save_feed_params(device, blob)
+        self.assertIn("feedDailyList", params)
+        self.assertEqual(json.loads(params["feedDailyList"]), blob)
+
     def test_actions_map(self):
         self.assertIn(DeviceCommand.UPDATE_SETTING, ACTIONS_MAP)
         self.assertIsInstance(ACTIONS_MAP[DeviceCommand.UPDATE_SETTING], CmdData)
@@ -185,6 +334,19 @@ class TestCommandModule(unittest.TestCase):
         """Test that SAVE_REPEATS is registered in ACTIONS_MAP."""
         self.assertIn(FeederCommand.SAVE_REPEATS, ACTIONS_MAP)
         self.assertIsInstance(ACTIONS_MAP[FeederCommand.SAVE_REPEATS], CmdData)
+
+    def test_actions_map_remove_restore_daily_feed(self):
+        """Skip-today commands stay registered with snake/camel endpoint callables."""
+        self.assertIn(FeederCommand.REMOVE_DAILY_FEED, ACTIONS_MAP)
+        self.assertIs(
+            ACTIONS_MAP[FeederCommand.REMOVE_DAILY_FEED].endpoint,
+            get_endpoint_remove_daily_feed,
+        )
+        self.assertIn(FeederCommand.RESTORE_DAILY_FEED, ACTIONS_MAP)
+        self.assertIs(
+            ACTIONS_MAP[FeederCommand.RESTORE_DAILY_FEED].endpoint,
+            get_endpoint_restore_daily_feed,
+        )
 
     def test_suspend_feed_endpoint_old_feeder(self):
         """Test suspend feed returns old endpoint for Feeder."""
@@ -260,6 +422,52 @@ class TestCommandModule(unittest.TestCase):
         self.assertEqual(
             get_endpoint_save_repeats(device),
             PetkitEndpoint.SAVE_REPEATS_NEW,
+        )
+
+    def test_remove_daily_feed_endpoint_old_feeder(self):
+        """D1/D2 skip-today uses snake_case remove_dailyfeed."""
+        mini = type(
+            "Device",
+            (object,),
+            {
+                "device_nfo": type(
+                    "DeviceInfo", (object,), {"device_type": FEEDER_MINI}
+                )()
+            },
+        )
+        self.assertEqual(
+            get_endpoint_remove_daily_feed(mini),
+            PetkitEndpoint.REMOVE_DAILY_FEED_OLD,
+        )
+        d3 = type(
+            "Device",
+            (object,),
+            {"device_nfo": type("DeviceInfo", (object,), {"device_type": D3})()},
+        )
+        self.assertEqual(
+            get_endpoint_remove_daily_feed(d3),
+            PetkitEndpoint.REMOVE_DAILY_FEED,
+        )
+
+    def test_restore_daily_feed_endpoint_old_feeder(self):
+        """D1/D2 skip-today uses snake_case restore_dailyfeed."""
+        feeder = type(
+            "Device",
+            (object,),
+            {"device_nfo": type("DeviceInfo", (object,), {"device_type": FEEDER})()},
+        )
+        self.assertEqual(
+            get_endpoint_restore_daily_feed(feeder),
+            PetkitEndpoint.RESTORE_DAILY_FEED_OLD,
+        )
+        d4h = type(
+            "Device",
+            (object,),
+            {"device_nfo": type("DeviceInfo", (object,), {"device_type": D4H})()},
+        )
+        self.assertEqual(
+            get_endpoint_restore_daily_feed(d4h),
+            PetkitEndpoint.RESTORE_DAILY_FEED,
         )
 
 
