@@ -52,7 +52,7 @@ from .exceptions import (
     PetkitTimeoutError,
     PypetkitError,
 )
-from .feeder_container import Feeder, RecordsItems
+from .feeder_container import Feeder, FeedPlan, RecordsItems
 from .litter_container import (
     Litter,
     LitterRecord,
@@ -99,6 +99,7 @@ __all__ = [
     "DownloadDecryptMedia",
     "Feeder",
     "FeederCommand",
+    "FeedPlan",
     "FountainActionWIFI",
     "FountainCommand",
     "IotInfo",
