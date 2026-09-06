@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 import datetime
 from enum import IntEnum, StrEnum
 import json
+from typing import Any
 
 from pypetkitapi.const import (
     ALL_DEVICES,
@@ -66,6 +67,7 @@ class FeederCommand(StrEnum):
     SUSPEND_FEED = "suspend_feed"
     RESTORE_FEED = "restore_feed"
     SAVE_REPEATS = "save_repeats"
+    SET_PLAN_REPEATS = "set_plan_repeats"
     PLAY_SOUND = "play_sound"
 
 
@@ -216,72 +218,171 @@ def _feeder_family_type_id(device) -> int:
     return 0
 
 
-def build_save_feed_params(device, feed_daily_list: list[dict]) -> dict:
-    """Build POST body/query params for SAVE_FEED.
+def _coerce_int(value, default: int = 0) -> int:
+    """Best-effort int; cloud models leave unused amount fields ``None``."""
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
-    The app uses ``feedDailyList`` JSON only for D3/D4-class feeders.
-    Legacy ``feeder`` + ``feedermini`` use flat ``items`` JSON + ``repeats``,
-    the way the app's plan save does.
-    """
-    if device.device_nfo.device_type not in (FEEDER, FEEDER_MINI):
-        return {
-            "deviceId": device.id,
-            "feedDailyList": json.dumps(feed_daily_list),
-        }
 
-    weekday_active: list[int] = []
-    for day in feed_daily_list:
-        if day.get("suspended", 0):
+def _parse_repeats(raw) -> list[int]:
+    """Weekday ints from an OEM ``repeats`` value (csv or single, 1=Sunday)."""
+    out: list[int] = []
+    for token in str(raw or "").split(","):
+        token = token.strip()
+        if not token:
             continue
-        raw = day.get("repeats", "")
         try:
-            weekday_active.append(int(str(raw)))
-        except (TypeError, ValueError):
+            value = int(token)
+        except ValueError:
             continue
-    weekday_active.sort()
-    repeats_str = (
-        ",".join(str(w) for w in weekday_active)
-        if weekday_active
-        else "1,2,3,4,5,6,7"
-    )
+        if 1 <= value <= 7:
+            out.append(value)
+    return out
 
-    items_raw: list | None = None
-    for day in feed_daily_list:
-        slot = day.get("items") or []
-        if slot:
-            items_raw = slot
-            break
-    if items_raw is None:
-        items_raw = []
 
+# (wire key, model attribute) for the fields a plan item carries.
+_PLAN_ITEM_FIELDS = (
+    ("amount", "amount"),
+    ("amount1", "amount1"),
+    ("amount2", "amount2"),
+    ("id", "id"),
+    ("name", "name"),
+    ("petAmount", "pet_amount"),
+    ("time", "time"),
+)
+
+
+def _as_item_dict(item: Any) -> dict:
+    """Accept a raw dict, a ``FeedItem``, or any attribute bag."""
+    if isinstance(item, dict):
+        return item
+    out: dict = {}
+    for wire, snake in _PLAN_ITEM_FIELDS:
+        value = getattr(item, snake, None)
+        if value is None and snake != wire:
+            value = getattr(item, wire, None)
+        out[wire] = value
+    return out
+
+
+def _normalize_plan_item(item: Any, dev_id: int, family_type_id: int) -> dict:
+    """One plan item shaped the way the app's editors write it.
+
+    ``deviceId`` is the real device id and ``deviceType`` the family type_id;
+    both editors (the shared-plan one for types 4/6/9/11 and the per-day one
+    for 9/11/20/25/26) set them before saving. A new item carries id 0 until
+    the per-day editor rewrites it from ``time``. ``petAmount`` is echoed back
+    untouched — the app never clears it.
+    """
+    item = _as_item_dict(item)
+    time_sec = _coerce_int(item.get("time"))
+    return {
+        "amount": _coerce_int(item.get("amount")),
+        "amount1": _coerce_int(item.get("amount1")),
+        "amount2": _coerce_int(item.get("amount2")),
+        "deviceId": dev_id,
+        "deviceType": family_type_id,
+        "id": _coerce_int(item.get("id")) or time_sec,
+        "name": item.get("name") or "",
+        "petAmount": item.get("petAmount") or [],
+        "time": time_sec,
+    }
+
+
+def build_save_feed_params(device, feed_daily_list: list[dict]) -> dict:
+    """Build the POST body/query params for SAVE_FEED.
+
+    D3-class feeders persist the 7-day ``feedDailyList`` JSON. Legacy ``feeder``
+    and ``feedermini`` collapse it to one flat ``items`` array plus a shared
+    weekday mask; the app's plan save sends ``deviceId``/``items``/``repeats``/
+    ``suspended`` for those.
+    """
     dev_id = int(device.id)
     family_type_id = _feeder_family_type_id(device)
-    items_out: list[dict] = []
-    for it in items_raw:
-        tid = it.get("time", 0)
-        items_out.append(
-            {
-                "amount": int(it.get("amount", 0) or 0),
-                "amount1": int(it.get("amount1", 0) or 0),
-                "amount2": int(it.get("amount2", 0) or 0),
-                "deviceId": dev_id,
-                "deviceType": family_type_id,
-                "id": int(it.get("id", tid) or 0),
-                "name": it.get("name") or "",
-                "petAmount": it.get("petAmount") or [],
-                "time": int(tid or 0),
-            }
-        )
 
-    if not items_out:
-        # Same default ``repeats`` the app falls back to when the meal list
-        # is empty (user removed every slot in the plan editor).
-        repeats_str = "1,2,3,4,5,6,7"
+    if device.device_nfo.device_type not in (FEEDER, FEEDER_MINI):
+        days_out = []
+        for day in feed_daily_list:
+            out_day = dict(day)
+            out_day["items"] = [
+                _normalize_plan_item(it, dev_id, family_type_id)
+                for it in day.get("items") or []
+            ]
+            days_out.append(out_day)
+        return {
+            "deviceId": device.id,
+            "feedDailyList": json.dumps(days_out),
+        }
+
+    # Shape A carries one meal list and one weekday mask. The mask is the set of
+    # days the caller tagged with a ``repeats`` value — NOT the days that happen
+    # to hold items, and never ``suspended``, which is the whole-plan pause the
+    # app sends alongside. Clearing every meal leaves ``repeats`` untouched
+    # (the app's plan editor posts items=[] with the mask intact).
+    mask: set[int] = set()
+    suspended = 0
+    items_raw: list | None = None
+    for day in feed_daily_list:
+        mask.update(_parse_repeats(day.get("repeats")))
+        if _coerce_int(day.get("suspended")):
+            suspended = 1
+        slot = day.get("items") or []
+        if slot and items_raw is None:
+            items_raw = slot
+
+    repeats_str = ",".join(str(w) for w in sorted(mask)) if mask else "1,2,3,4,5,6,7"
+    items_out = [
+        _normalize_plan_item(it, dev_id, family_type_id) for it in items_raw or []
+    ]
 
     return {
         "deviceId": str(dev_id),
         "items": json.dumps(items_out),
         "repeats": repeats_str,
+        "suspended": str(suspended),
+    }
+
+
+def build_set_plan_repeats_params(device, setting: dict | str) -> dict:
+    """Re-save the D1/Mini plan on a new weekday mask.
+
+    The one plan-level ``repeats`` is what the app's Repeat row edits, and
+    it saves the whole plan through ``save_feed`` afterwards. The API also
+    exposes ``{prefix}/save_repeats``, but the app (13.9.2) never calls it,
+    so this goes through ``save_feed`` the way the app does.
+
+    ``setting`` is ``{"repeats": "2,4,6"}`` or the csv itself, in **cloud**
+    weekday numbering (1=Sunday). Callers holding ISO weekdays convert first.
+    """
+    raw = setting.get("repeats") if isinstance(setting, dict) else setting
+    mask = sorted(set(_parse_repeats(raw)))
+    if not mask:
+        # The app refuses an empty selection with a "choose a repeat" prompt;
+        # an empty repeats would silently disable every meal.
+        raise ValueError(
+            "repeats must name at least one weekday, 1=Sunday to 7=Saturday"
+        )
+
+    plan = getattr(device, "feed_plan", None)
+    items = getattr(plan, "items", None) if plan is not None else None
+    if items is None:
+        raise ValueError(
+            "no feeding plan loaded for this device; fetch it before "
+            "changing the weekday mask"
+        )
+
+    dev_id = int(device.id)
+    family_type_id = _feeder_family_type_id(device)
+    items_out = [_normalize_plan_item(it, dev_id, family_type_id) for it in items]
+    return {
+        "deviceId": str(dev_id),
+        "items": json.dumps(items_out),
+        "repeats": ",".join(str(w) for w in mask),
+        "suspended": str(_coerce_int(getattr(plan, "suspended", 0))),
     }
 
 
@@ -436,9 +537,7 @@ ACTIONS_MAP = {
             "deviceId": device.id,
             "day": datetime.datetime.now().strftime("%Y%m%d"),
             "id": (
-                setting["feed_id"]
-                if isinstance(setting, dict)
-                else setting.feed_id
+                setting["feed_id"] if isinstance(setting, dict) else setting.feed_id
             ),
         },
         supported_device=DEVICES_FEEDER,
@@ -449,9 +548,7 @@ ACTIONS_MAP = {
             "deviceId": device.id,
             "day": datetime.datetime.now().strftime("%Y%m%d"),
             "id": (
-                setting["feed_id"]
-                if isinstance(setting, dict)
-                else setting.feed_id
+                setting["feed_id"] if isinstance(setting, dict) else setting.feed_id
             ),
         },
         supported_device=DEVICES_FEEDER,
@@ -497,6 +594,11 @@ ACTIONS_MAP = {
         endpoint=get_endpoint_save_feed,
         params=build_save_feed_params,
         supported_device=DEVICES_FEEDER,
+    ),
+    FeederCommand.SET_PLAN_REPEATS: CmdData(
+        endpoint=get_endpoint_save_feed,
+        params=build_set_plan_repeats_params,
+        supported_device=[FEEDER, FEEDER_MINI],
     ),
     FeederCommand.SUSPEND_FEED: CmdData(
         endpoint=get_endpoint_suspend_feed,

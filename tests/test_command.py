@@ -16,6 +16,7 @@ from pypetkitapi.command import (
     get_endpoint_reset_desiccant,
     get_endpoint_save_feed,
     build_save_feed_params,
+    build_set_plan_repeats_params,
     get_endpoint_remove_daily_feed,
     get_endpoint_restore_daily_feed,
     get_endpoint_suspend_feed,
@@ -155,17 +156,13 @@ class TestCommandModule(unittest.TestCase):
                 )()
             },
         )
-        self.assertEqual(
-            get_endpoint_save_feed(mini), PetkitEndpoint.SAVE_FEED_OLD
-        )
+        self.assertEqual(get_endpoint_save_feed(mini), PetkitEndpoint.SAVE_FEED_OLD)
         legacy = type(
             "Device",
             (object,),
             {"device_nfo": type("DeviceInfo", (object,), {"device_type": FEEDER})()},
         )
-        self.assertEqual(
-            get_endpoint_save_feed(legacy), PetkitEndpoint.SAVE_FEED_OLD
-        )
+        self.assertEqual(get_endpoint_save_feed(legacy), PetkitEndpoint.SAVE_FEED_OLD)
         d3 = type(
             "Device",
             (object,),
@@ -180,9 +177,7 @@ class TestCommandModule(unittest.TestCase):
             (),
             {
                 "id": 999,
-                "device_nfo": type(
-                    "Info", (), {"device_type": FEEDER_MINI}
-                )(),
+                "device_nfo": type("Info", (), {"device_type": FEEDER_MINI})(),
             },
         )()
         api_days = [
@@ -262,21 +257,113 @@ class TestCommandModule(unittest.TestCase):
         self.assertEqual(items[0]["deviceType"], 6)
         self.assertEqual(items[1]["name"], "B")
 
-    def test_build_save_feed_legacy_empty_items_matches_app_clear(self):
-        """The app's plan editor still POSTs save_feed after removing every slot."""
-        device = type(
+    def _mini(self, device_id=42):
+        return type(
             "Device",
             (),
             {
-                "id": 42,
-                "device_nfo": type(
-                    "Info", (), {"device_type": FEEDER_MINI}
-                )(),
+                "id": device_id,
+                "device_nfo": type("Info", (), {"device_type": FEEDER_MINI})(),
             },
         )()
-        params = build_save_feed_params(device, [])
+
+    @staticmethod
+    def _shape_a_week(items, mask, suspended=0):
+        """The 7-day list the HA layer hands us: out-of-mask days carry no repeats."""
+        return [
+            {
+                "repeats": str(oem) if oem in mask else "",
+                "suspended": suspended,
+                "count": len(items) if oem in mask else 0,
+                "items": [dict(it) for it in items] if oem in mask else [],
+            }
+            for oem in range(1, 8)
+        ]
+
+    def test_build_save_feed_legacy_empty_items_matches_app_clear(self):
+        """The app's plan editor still POSTs save_feed after removing every slot."""
+        params = build_save_feed_params(self._mini(), [])
         self.assertEqual(json.loads(params["items"]), [])
         self.assertEqual(params["repeats"], "1,2,3,4,5,6,7")
+
+    def test_build_save_feed_legacy_clearing_meals_keeps_the_mask(self):
+        """The shared-plan editor posts items=[] with ``repeats`` untouched."""
+        params = build_save_feed_params(self._mini(), self._shape_a_week([], {2, 4, 6}))
+        self.assertEqual(json.loads(params["items"]), [])
+        self.assertEqual(params["repeats"], "2,4,6")
+
+    def test_build_save_feed_legacy_week_collapses_without_widening_mask(self):
+        """A Mon/Wed/Fri plan must not come back as every day."""
+        item = {"time": 28800, "name": "A", "amount": 10, "id": 100001}
+        params = build_save_feed_params(
+            self._mini(), self._shape_a_week([item], {2, 4, 6})
+        )
+        self.assertEqual(params["repeats"], "2,4,6")
+        items = json.loads(params["items"])
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["time"], 28800)
+
+    def test_build_save_feed_legacy_sends_suspended(self):
+        """The app's plan save posts deviceId+items+repeats+suspended."""
+        item = {"time": 28800, "name": "A", "amount": 10, "id": 100001}
+        params = build_save_feed_params(
+            self._mini(), self._shape_a_week([item], {2, 4, 6}, suspended=1)
+        )
+        self.assertEqual(params["suspended"], "1")
+        self.assertEqual(params["repeats"], "2,4,6")
+
+    def test_build_save_feed_coerces_unset_amounts(self):
+        """Cloud models leave the unused hopper fields None."""
+        item = {
+            "time": 28800,
+            "name": "A",
+            "amount": 10,
+            "amount1": None,
+            "amount2": None,
+            "id": 100001,
+        }
+        params = build_save_feed_params(self._mini(), self._shape_a_week([item], {2}))
+        sent = json.loads(params["items"])[0]
+        self.assertEqual(sent["amount1"], 0)
+        self.assertEqual(sent["amount2"], 0)
+
+    def test_build_save_feed_d3_items_carry_device_identity(self):
+        """The per-day editor sets the real id and family type_id."""
+        device = type(
+            "Device",
+            (),
+            {"id": 777, "device_nfo": type("Info", (), {"device_type": D3})()},
+        )()
+        days = [
+            {
+                "repeats": str(oem),
+                "suspended": 0,
+                "count": 1 if oem == 2 else 0,
+                "items": (
+                    [
+                        {
+                            "time": 28800,
+                            "name": "B",
+                            "amount": 30,
+                            "amount1": None,
+                            "id": 0,
+                            "petAmount": [{"petId": "p1", "amount": 30}],
+                        }
+                    ]
+                    if oem == 2
+                    else []
+                ),
+            }
+            for oem in range(1, 8)
+        ]
+        sent = json.loads(build_save_feed_params(device, days)["feedDailyList"])
+        item = sent[1]["items"][0]
+        self.assertEqual(item["deviceId"], 777)
+        self.assertEqual(item["deviceType"], 9)
+        # id 0 is rewritten from time, as the per-day editor does.
+        self.assertEqual(item["id"], 28800)
+        self.assertEqual(item["petAmount"], [{"petId": "p1", "amount": 30}])
+        self.assertEqual(item["amount1"], 0)
 
     def test_build_save_feed_d3_uses_feed_daily_list_json(self):
         device = type(
@@ -473,3 +560,84 @@ class TestCommandModule(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSetPlanRepeats(unittest.TestCase):
+    """The D1/Mini plan-level Repeat control, saved the way the app saves it."""
+
+    class _Item:
+        """Attribute bag, like the pydantic FeedItem the client attaches."""
+
+        def __init__(self, **kw):
+            self.__dict__.update(kw)
+
+    def _device(self, device_type=FEEDER_MINI, repeats="2,4,6", suspended=0):
+        item = self._Item(
+            time=28800,
+            name="Breakfast",
+            amount=60,
+            amount1=None,
+            amount2=None,
+            id=100001,
+            pet_amount=None,
+        )
+        return type(
+            "Device",
+            (),
+            {
+                "id": 999,
+                "device_nfo": type("Info", (), {"device_type": device_type})(),
+                "feed_plan": type(
+                    "Plan",
+                    (),
+                    {"items": [item], "repeats": repeats, "suspended": suspended},
+                )(),
+            },
+        )()
+
+    def test_saves_through_save_feed_not_save_repeats(self):
+        """The app (13.9.2) never calls save_repeats, so neither do we."""
+        params = build_set_plan_repeats_params(self._device(), {"repeats": "2,3,4,5,6"})
+        self.assertEqual(params["repeats"], "2,3,4,5,6")
+        self.assertEqual(params["deviceId"], "999")
+        self.assertIn("items", params)
+        self.assertIn("suspended", params)
+
+    def test_keeps_the_existing_meals(self):
+        params = build_set_plan_repeats_params(self._device(), "1,7")
+        items = json.loads(params["items"])
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["time"], 28800)
+        self.assertEqual(items[0]["amount"], 60)
+        self.assertEqual(items[0]["id"], 100001)
+        self.assertEqual(items[0]["deviceType"], 6)
+
+    def test_sorts_and_deduplicates_the_mask(self):
+        params = build_set_plan_repeats_params(self._device(), "7,2,2,4")
+        self.assertEqual(params["repeats"], "2,4,7")
+
+    def test_preserves_a_paused_plan(self):
+        params = build_set_plan_repeats_params(
+            self._device(suspended=1), {"repeats": "3"}
+        )
+        self.assertEqual(params["suspended"], "1")
+
+    def test_rejects_an_empty_mask(self):
+        """The app refuses an empty mask rather than saving one."""
+        for bad in ("", "0", "8,9", None):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ValueError):
+                    build_set_plan_repeats_params(self._device(), {"repeats": bad})
+
+    def test_rejects_a_device_with_no_plan_loaded(self):
+        device = type(
+            "Device",
+            (),
+            {
+                "id": 999,
+                "device_nfo": type("Info", (), {"device_type": FEEDER_MINI})(),
+                "feed_plan": None,
+            },
+        )()
+        with self.assertRaises(ValueError):
+            build_set_plan_repeats_params(device, {"repeats": "2"})

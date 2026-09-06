@@ -12,6 +12,7 @@ from pypetkitapi.const import (
     DEVICE_DATA,
     DEVICE_FEED_PLAN,
     DEVICE_RECORDS,
+    FEEDER,
     FEEDER_MINI,
     PetkitEndpoint,
 )
@@ -366,10 +367,12 @@ class FeederRecord(BaseModel):
             return PetkitEndpoint.DAILY_FEED_AND_EAT
         if device_type == D4:
             return PetkitEndpoint.FEED_STATISTIC
-        if device_type in D4S:
+        if device_type == D4S:
             return PetkitEndpoint.DAILY_FEED
-        if device_type in FEEDER_MINI:
-            return PetkitEndpoint.DAILY_FEED.lower()  # Workaround for Feeder Mini
+        if device_type in (FEEDER, FEEDER_MINI):
+            # feeder/ and feedermini/ expose dailyfeeds; neither has a
+            # getDeviceRecord route (only d4h, d4sh and the litter families do).
+            return PetkitEndpoint.DAILY_FEED.lower()
         return PetkitEndpoint.GET_DEVICE_RECORD
 
     @classmethod
