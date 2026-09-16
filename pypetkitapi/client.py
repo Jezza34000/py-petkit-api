@@ -177,10 +177,12 @@ class PetKitClient:
             int, Feeder | Litter | WaterFountain | Purifier | Pet
         ] = {}
         self.available_device_models: list[DeviceModelInfo] = []
+        self._login_lock = asyncio.Lock()
         self.req = PrepReq(
             base_url=PetkitDomain.PASSPORT_PETKIT,
             session=session,
             timezone=self.timezone,
+            on_session_expired=self._invalidate_session,
             **kwargs,
         )
         self.bluetooth_manager = BluetoothManager(self, **kwargs)
@@ -201,6 +203,10 @@ class PetKitClient:
             packages = utils.get_installed_packages()
             for pkg in packages:
                 _LOGGER.info(pkg)
+
+    def _invalidate_session(self) -> None:
+        """Invalidate the current session."""
+        self._session = None
 
     async def _get_base_url(self) -> None:
         """Get the list of API servers, filter by region, and return the matching server."""
@@ -327,19 +333,22 @@ class PetKitClient:
 
     async def validate_session(self) -> None:
         """Check if the session is still valid and refresh or re-login if necessary."""
-        if self._session is None:
-            _LOGGER.debug("No token, logging in")
-            await self.login()
-            return
+        async with self._login_lock:
+            if self._session is None:
+                _LOGGER.debug("No token, logging in")
+                await self.login()
+                return
 
-        created = datetime.strptime(self._session.created_at, "%Y-%m-%dT%H:%M:%S.%f%z")
-        is_expired = datetime.now(tz=created.tzinfo) - created >= timedelta(
-            seconds=self._session.expires_in
-        )
+            created = datetime.strptime(
+                self._session.created_at, "%Y-%m-%dT%H:%M:%S.%f%z"
+            )
+            is_expired = datetime.now(tz=created.tzinfo) - created >= timedelta(
+                seconds=self._session.expires_in
+            )
 
-        if is_expired:
-            _LOGGER.debug("Token expired, re-logging in")
-            await self.login()
+            if is_expired:
+                _LOGGER.debug("Token expired, re-logging in")
+                await self.login()
 
     async def get_session_id(self) -> dict:
         """Return the session ID."""
@@ -1410,6 +1419,7 @@ class PrepReq:
         self.timezone = timezone
         self.base_headers: dict[str, str] = {}
         self._debug_test = kwargs.pop(PTK_DBG, False)
+        self.on_session_expired = kwargs.pop("on_session_expired", None)
 
     async def _generate_header(self) -> dict[str, str]:
         """Create header for interaction with API endpoint."""
@@ -1528,8 +1538,9 @@ class PrepReq:
             _LOGGER.warning("Network error reaching %s: %s", _url, e)
             raise PetkitTimeoutError(f"Request to {_url} failed: {e}") from e
 
-    @staticmethod
-    async def _handle_response(response: aiohttp.ClientResponse, url: str) -> dict:
+    async def _handle_response(
+        self, response: aiohttp.ClientResponse, url: str
+    ) -> dict:
         """Handle the response from the PetKit API.
         :param response: Response from the API.
         :param url: URL of the API endpoint.
@@ -1565,6 +1576,8 @@ class PrepReq:
                 case 1:
                     raise PetkitServerBusyError(f"Server busy: {error_msg}")
                 case 5:
+                    if self.on_session_expired:
+                        self.on_session_expired()
                     raise PetkitSessionExpiredError(
                         f"Session expired: {error_msg}. WARNING : Make sure you're not using your main PetKit app account. Use a separate one for Home Assistant. Refer to the documentation for more details."
                     )
