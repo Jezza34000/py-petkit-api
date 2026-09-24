@@ -16,9 +16,20 @@ from pypetkitapi.command import (
     get_endpoint_suspend_feed,
     get_endpoint_restore_feed,
     get_endpoint_save_repeats,
+    build_cancel_manual_feed_params,
     ACTIONS_MAP,
 )
-from pypetkitapi.const import PetkitEndpoint, FEEDER_MINI, FEEDER, D3, D4H, W7H
+from pypetkitapi.const import (
+    PetkitEndpoint,
+    FEEDER_MINI,
+    FEEDER,
+    D3,
+    D4H,
+    D4S,
+    D4SH,
+    W7H,
+)
+from pypetkitapi.feeder_container import ManualFeed
 
 
 class TestCommandModule(unittest.TestCase):
@@ -88,6 +99,45 @@ class TestCommandModule(unittest.TestCase):
         self.assertEqual(
             get_endpoint_reset_desiccant(device),
             PetkitEndpoint.DESICCANT_RESET_OLD,
+        )
+
+    def test_build_cancel_manual_feed_params(self):
+        """Test the manual feed id is sent only where it exists and is used."""
+        cases = [
+            # device_type, manual_feed, expected "id" in the params
+            (FEEDER, ManualFeed(id="feed-1"), None),
+            (FEEDER_MINI, ManualFeed(id="feed-1"), None),
+            (D3, ManualFeed(id="feed-1"), None),
+            (D4H, ManualFeed(id="feed-1"), "feed-1"),
+            (D4S, ManualFeed(id="feed-2"), "feed-2"),
+            (D4SH, ManualFeed(id="feed-3"), "feed-3"),
+            (D4H, ManualFeed(id=None), None),
+            (D4H, None, None),
+        ]
+        for device_type, manual_feed, expected_id in cases:
+            with self.subTest(device_type=device_type, manual_feed=manual_feed):
+                device = type(
+                    "Device",
+                    (object,),
+                    {
+                        "device_nfo": type(
+                            "DeviceInfo", (object,), {"device_type": device_type}
+                        )(),
+                        "id": 10197308,
+                        "manual_feed": manual_feed,
+                    },
+                )
+                params = build_cancel_manual_feed_params(device)
+                self.assertEqual(params["deviceId"], 10197308)
+                self.assertIn("day", params)
+                self.assertEqual(params.get("id"), expected_id)
+
+    def test_actions_map_cancel_manual_feed_uses_builder(self):
+        """Test CANCEL_MANUAL_FEED is wired to the params builder."""
+        self.assertIn(FeederCommand.CANCEL_MANUAL_FEED, ACTIONS_MAP)
+        self.assertIs(
+            ACTIONS_MAP[FeederCommand.CANCEL_MANUAL_FEED].params,
+            build_cancel_manual_feed_params,
         )
 
     def test_actions_map(self):

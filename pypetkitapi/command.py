@@ -278,6 +278,26 @@ def build_manual_feed_params(
     }
 
 
+def build_cancel_manual_feed_params(device) -> dict[str, str]:
+    """Build the cancel manual feed params for the given device type.
+
+    D4H, D4S and D4SH identify which feed to cancel by id. That id is carried
+    on Feeder.manual_feed, which is None whenever no manual feed is pending.
+    """
+    params = {
+        "day": datetime.datetime.now().strftime("%Y%m%d"),
+        "deviceId": device.id,
+    }
+    manual_feed = device.manual_feed
+    if (
+        device.device_nfo.device_type in [D4H, D4S, D4SH]
+        and manual_feed is not None
+        and manual_feed.id is not None
+    ):
+        params["id"] = manual_feed.id
+    return params
+
+
 ACTIONS_MAP = {
     DeviceCommand.UPDATE_SETTING: CmdData(
         endpoint=get_endpoint_update_setting,
@@ -332,15 +352,7 @@ ACTIONS_MAP = {
             if device.device_nfo.device_type == FEEDER
             else PetkitEndpoint.CANCEL_FEED
         ),
-        params=lambda device: {
-            "day": datetime.datetime.now().strftime("%Y%m%d"),
-            "deviceId": device.id,
-            **(
-                {"id": device.manual_feed_id}
-                if device.device_nfo.device_type in [D4H, D4S, D4SH]
-                else {}
-            ),
-        },
+        params=build_cancel_manual_feed_params,
         supported_device=DEVICES_FEEDER,
     ),
     FeederCommand.FOOD_REPLENISHED: CmdData(
