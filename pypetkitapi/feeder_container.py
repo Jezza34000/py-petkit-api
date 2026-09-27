@@ -106,7 +106,7 @@ class SettingsFeeder(BaseModel):
     camera_config: int | None = Field(None, alias="cameraConfig")
     camera_multi_new: list[CameraMultiNew] | None = Field(None, alias="cameraMultiNew")
     camera_multi_range: list | None = Field(None, alias="cameraMultiRange")
-    color_setting: int | None = None
+    color_setting: int | None = Field(None, alias="colorSetting")
     conservation: int | None = None
     control_settings: int | None = Field(None, alias="controlSettings")
     desiccant_notify: int | None = Field(None, alias="desiccantNotify")
@@ -121,6 +121,7 @@ class SettingsFeeder(BaseModel):
     feed_notify: int | None = Field(None, alias="feedNotify")
     feed_picture: int | None = Field(None, alias="feedPicture")
     feed_sound: int | None = Field(None, alias="feedSound")
+    feed_tone: int | None = Field(None, alias="feedTone")
     food_notify: int | None = Field(None, alias="foodNotify")
     food_warn: int | None = Field(None, alias="foodWarn")
     food_warn_range: list[int] | None = Field(None, alias="foodWarnRange")
@@ -206,6 +207,7 @@ class StateFeeder(BaseModel):
     food2: int | None = Field(None, alias="food2")
     ota: int | None = None
     overall: int | None = None
+    percent: int | None = None
     pim: int | None = None
     runtime: int | None = None
     weight: int | None = None

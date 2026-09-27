@@ -369,6 +369,10 @@ class WaterFountain(BaseModel):
     status: Status | None = None
 
     # --- EVERSWEET ULTRA AI fields ---
+    drink_count: int | None = Field(None, alias="drinkCount")
+    drink_time_avg: int | None = Field(None, alias="drinkTimeAvg")
+    next_flush_time: str | None = Field(None, alias="nextFlushTime")
+    next_water_change_time: str | None = Field(None, alias="nextWaterChangeTime")
     firmware_details: list[FirmwareDetail] = Field(None, alias="firmwareDetails")
     signup_at: str | None = Field(None, alias="signupAt")
     share_open: int | None = Field(None, alias="shareOpen")
