@@ -39,6 +39,7 @@ class SettingsLitter(BaseModel):
     auto_interval_min: int | None = Field(None, alias="autoIntervalMin")
     auto_interval_spray: int | None = Field(None, alias="autoIntervalSpray")
     auto_product: int | None = Field(None, alias="autoProduct")
+    auto_refresh: int | None = Field(None, alias="autoRefresh")
     auto_spray: int | None = Field(None, alias="autoSpray")
     auto_work: int | None = Field(None, alias="autoWork")
     avoid_repeat: int | None = Field(None, alias="avoidRepeat")
