@@ -329,8 +329,10 @@ class FeederRecord(BaseModel):
         """Get the endpoint URL for the given device type."""
         if device_type == D3:
             return PetkitEndpoint.DAILY_FEED_AND_EAT
+        # D4: dailyFeeds, as the app's home screen loads it. feedStatistic only
+        # carries totals, none of which this model holds.
         if device_type == D4:
-            return PetkitEndpoint.FEED_STATISTIC
+            return PetkitEndpoint.DAILY_FEED
         if device_type in D4S:
             return PetkitEndpoint.DAILY_FEED
         if device_type in FEEDER_MINI:
@@ -347,13 +349,6 @@ class FeederRecord(BaseModel):
         """Generate query parameters including request_date."""
         if request_date is None:
             request_date = datetime.now().strftime("%Y%m%d")
-
-        if device.device_type == D4:
-            return {
-                "date": request_date,
-                "type": device.type_code,
-                "deviceId": device.device_id,
-            }
         return {"days": request_date, "deviceId": device.device_id}
 
 
