@@ -262,7 +262,6 @@ class TestCommandModule(unittest.TestCase):
             PetkitEndpoint.SAVE_REPEATS_NEW,
         )
 
-
     def _daily_feed_params(self, command, setting):
         device = type("Device", (object,), {"id": 42})()
         return ACTIONS_MAP[command].params(device, setting)
@@ -283,6 +282,7 @@ class TestCommandModule(unittest.TestCase):
         setting = type("Setting", (object,), {"feed_id": "s21600"})()
         params = self._daily_feed_params(FeederCommand.REMOVE_DAILY_FEED, setting)
         self.assertEqual(params["id"], "s21600")
+
 
 if __name__ == "__main__":
     unittest.main()
