@@ -262,6 +262,27 @@ class TestCommandModule(unittest.TestCase):
             PetkitEndpoint.SAVE_REPEATS_NEW,
         )
 
+    def _daily_feed_params(self, command, setting):
+        device = type("Device", (object,), {"id": 42})()
+        return ACTIONS_MAP[command].params(device, setting)
+
+    def test_daily_feed_accepts_dict(self):
+        """send_api_request types setting as dict, so a dict must work."""
+        for command in (
+            FeederCommand.REMOVE_DAILY_FEED,
+            FeederCommand.RESTORE_DAILY_FEED,
+        ):
+            params = self._daily_feed_params(command, {"feed_id": "s75600"})
+            self.assertEqual(params["deviceId"], 42)
+            self.assertEqual(params["id"], "s75600")
+            self.assertRegex(params["day"], r"^\d{8}$")
+
+    def test_daily_feed_accepts_object_with_feed_id(self):
+        """Callers passing an object with a feed_id attribute keep working."""
+        setting = type("Setting", (object,), {"feed_id": "s21600"})()
+        params = self._daily_feed_params(FeederCommand.REMOVE_DAILY_FEED, setting)
+        self.assertEqual(params["id"], "s21600")
+
 
 if __name__ == "__main__":
     unittest.main()

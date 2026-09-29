@@ -213,6 +213,17 @@ def get_endpoint_restore_feed(device):
     return PetkitEndpoint.RESTORE_FEED_NEW
 
 
+def get_daily_feed_id(setting):
+    """Get the scheduled feed id for remove/restore daily feed.
+
+    Accepts a dict ({"feed_id": ...}), which is what send_api_request is typed
+    to pass, or any object exposing a feed_id attribute.
+    """
+    if isinstance(setting, dict):
+        return setting["feed_id"]
+    return setting.feed_id
+
+
 def get_endpoint_save_repeats(device):
     """Get the save repeats endpoint for the device."""
     if device.device_nfo.device_type in [FEEDER_MINI, FEEDER]:
@@ -328,7 +339,7 @@ ACTIONS_MAP = {
         params=lambda device, setting: {
             "deviceId": device.id,
             "day": datetime.datetime.now().strftime("%Y%m%d"),
-            "id": setting.feed_id,
+            "id": get_daily_feed_id(setting),
         },
         supported_device=DEVICES_FEEDER,
     ),
@@ -337,7 +348,7 @@ ACTIONS_MAP = {
         params=lambda device, setting: {
             "deviceId": device.id,
             "day": datetime.datetime.now().strftime("%Y%m%d"),
-            "id": setting.feed_id,
+            "id": get_daily_feed_id(setting),
         },
         supported_device=DEVICES_FEEDER,
     ),
