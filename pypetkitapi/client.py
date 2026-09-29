@@ -28,6 +28,7 @@ from pypetkitapi.const import (
     DEFAULT_COUNTRY,
     DEFAULT_TZ,
     DEVICE_DATA,
+    DEVICE_FEED_PLAN,
     DEVICE_RECORDS,
     DEVICE_STATS,
     DEVICES_FEEDER,
@@ -80,7 +81,7 @@ from pypetkitapi.exceptions import (
     PetkitTimeoutError,
     PypetkitError,
 )
-from pypetkitapi.feeder_container import Feeder, FeederRecord, SoundList
+from pypetkitapi.feeder_container import Feeder, FeederRecord, FeedPlan, SoundList
 from pypetkitapi.litter_container import (
     Litter,
     LitterRecord,
@@ -719,6 +720,7 @@ class PetKitClient:
             if device_type in DEVICES_FEEDER:
                 main_tasks.append(self._fetch_device_data(device, Feeder))
                 record_tasks.append(self._fetch_device_data(device, FeederRecord))
+                record_tasks.append(self._fetch_device_data(device, FeedPlan))
                 self._add_feeder_task_by_type(media_tasks, device_type, device)
 
             elif device_type in DEVICES_LITTER_BOX:
@@ -825,6 +827,7 @@ class PetKitClient:
             | WaterFountain
             | Purifier
             | FeederRecord
+            | FeedPlan
             | LitterRecord
             | WaterFountainRecord
             | PetOutGraph
@@ -914,6 +917,19 @@ class PetKitClient:
         else:
             _LOGGER.warning(
                 "Cannot assign device_records to entity of type %s",
+                type(entity),
+            )
+
+    @data_handler(DEVICE_FEED_PLAN)
+    async def _handle_feed_plan(self, device: Device, device_data, device_type: str):
+        """Attach GET ``{prefix}/feed`` onto the feeder entity."""
+        entity = self.petkit_entities.get(device.device_id)
+        if entity and isinstance(entity, Feeder):
+            entity.feed_plan = device_data
+            _LOGGER.debug("Feed plan fetched OK for %s", device_type)
+        else:
+            _LOGGER.warning(
+                "Cannot assign feed_plan to entity of type %s",
                 type(entity),
             )
 
