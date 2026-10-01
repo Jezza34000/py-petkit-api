@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, ClassVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from pypetkitapi.const import CTW3, DEVICE_DATA, DEVICE_RECORDS, W7H, PetkitEndpoint
 from pypetkitapi.containers import (
@@ -399,6 +399,16 @@ class WaterFountain(BaseModel):
     ble_connection_state: int = 2
     ble_counter: int = 0
     last_ble_poll: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def status_from_top_level(cls, data: Any) -> Any:
+        """W5 sends powerStatus/runStatus at the top level, with no status object."""
+        if isinstance(data, dict) and data.get("status") is None:
+            top = {k: data[k] for k in ("powerStatus", "runStatus") if k in data}
+            if top:
+                data = {**data, "status": top}
+        return data
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
