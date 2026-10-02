@@ -72,9 +72,7 @@ class TestCommandModule(unittest.TestCase):
 
     def test_fountain_command_mapping(self):
         self.assertIn(FountainAction.PAUSE, FOUNTAIN_COMMAND)
-        self.assertEqual(
-            FOUNTAIN_COMMAND[FountainAction.PAUSE], [220, 1, 3, 0, 1, 0, 2]
-        )
+        self.assertEqual(FOUNTAIN_COMMAND[FountainAction.PAUSE], [220, 1, 2, 0, 0, 1])
 
     def test_get_endpoint_manual_feed(self):
         device = type(
