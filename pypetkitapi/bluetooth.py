@@ -8,13 +8,19 @@ import logging
 from typing import TYPE_CHECKING
 import urllib.parse
 
-from pypetkitapi.command import FOUNTAIN_COMMAND, FountainAction
+from pypetkitapi.command import (
+    FOUNTAIN_COMMAND,
+    FOUNTAIN_COMMAND_W5,
+    FOUNTAIN_KEEP_MODE,
+    FountainAction,
+)
 from pypetkitapi.const import (
     BLE_CONNECT_ATTEMPT,
     BLE_END_TRAME,
     BLE_POLL_INTERVAL_SECS,
     BLE_START_TRAME,
     PTK_DBG,
+    W5,
     BluetoothState,
     PetkitEndpoint,
 )
@@ -229,14 +235,21 @@ class BluetoothManager:
             )
             return False
 
-        command_data = FOUNTAIN_COMMAND.get(command)
+        is_w5 = (
+            water_fountain.device_nfo is not None
+            and water_fountain.device_nfo.device_type == W5
+        )
+        command_data = (FOUNTAIN_COMMAND_W5 if is_w5 else FOUNTAIN_COMMAND).get(command)
         if command_data is None:
             _LOGGER.error(
                 "BLE fountain command '%s' not found (id %s)", command, fountain_id
             )
             return False
+        command_data = list(command_data)
+        if is_w5 and command in FOUNTAIN_KEEP_MODE and water_fountain.mode in (1, 2):
+            command_data[-1] = water_fountain.mode
         cmd_code, cmd_data = await self.get_ble_cmd_data(
-            list(command_data), water_fountain.ble_counter
+            command_data, water_fountain.ble_counter
         )
         response = await self._request_ble_api(
             PetkitEndpoint.BLE_CONTROL_DEVICE,

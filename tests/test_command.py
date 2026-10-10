@@ -10,6 +10,7 @@ from pypetkitapi.command import (
     DeviceAction,
     FountainAction,
     FOUNTAIN_COMMAND,
+    FOUNTAIN_COMMAND_W5,
     CmdData,
     get_endpoint_manual_feed,
     get_endpoint_reset_desiccant,
@@ -74,6 +75,9 @@ class TestCommandModule(unittest.TestCase):
         self.assertIn(FountainAction.PAUSE, FOUNTAIN_COMMAND)
         self.assertEqual(
             FOUNTAIN_COMMAND[FountainAction.PAUSE], [220, 1, 3, 0, 1, 0, 2]
+        )
+        self.assertEqual(
+            FOUNTAIN_COMMAND_W5[FountainAction.PAUSE], [220, 1, 2, 0, 0, 1]
         )
 
     def test_get_endpoint_manual_feed(self):
