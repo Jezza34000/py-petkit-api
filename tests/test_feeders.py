@@ -369,13 +369,55 @@ class TestFeederModel(unittest.TestCase):
         self.assertEqual(
             FeederRecord.get_endpoint(D3), PetkitEndpoint.DAILY_FEED_AND_EAT
         )
-        self.assertEqual(FeederRecord.get_endpoint(D4), PetkitEndpoint.FEED_STATISTIC)
+        self.assertEqual(FeederRecord.get_endpoint(D4), PetkitEndpoint.DAILY_FEED)
         self.assertEqual(FeederRecord.get_endpoint(D4S), PetkitEndpoint.DAILY_FEED)
         self.assertEqual(
             FeederRecord.get_endpoint(FEEDER_MINI), PetkitEndpoint.DAILY_FEED.lower()
         )
         self.assertEqual(
             FeederRecord.get_endpoint("unknown_type"), PetkitEndpoint.GET_DEVICE_RECORD
+        )
+
+    def test_feeder_record_from_d4_daily_feeds(self):
+        """Parse a d4/dailyFeeds result as captured from a live D4."""
+        result = {
+            "feed": [
+                {
+                    "items": [
+                        {
+                            "id": "s39600",
+                            "time": 39600,
+                            "amount": 20,
+                            "name": "Lunch",
+                            "src": 1,
+                            "status": 2,
+                            "isExecuted": 1,
+                        },
+                        {
+                            "id": "s57600",
+                            "time": 57600,
+                            "amount": 20,
+                            "name": "Dessert",
+                            "src": 1,
+                            "status": 2,
+                            "isExecuted": 1,
+                        },
+                    ],
+                    "day": 20260930,
+                    "planAmount": 40,
+                    "addAmount": 0,
+                    "realAmount": 0,
+                    "deviceId": 0,
+                    "amount": 40,
+                }
+            ]
+        }
+        record = FeederRecord(**result)
+        self.assertEqual(record.feed[0].day, 20260930)
+        self.assertEqual(record.feed[0].plan_amount, 40)
+        self.assertEqual(
+            [(i.id, i.time, i.status) for i in record.feed[0].items],
+            [("s39600", 39600, 2), ("s57600", 57600, 2)],
         )
 
     def test_query_param_feeder_record(self):
@@ -391,7 +433,7 @@ class TestFeederModel(unittest.TestCase):
             uniqueId="unique_12345",
         )
         request_date = "20240101"
-        expected_params = {"date": request_date, "type": 0, "deviceId": 12345}
+        expected_params = {"days": request_date, "deviceId": 12345}
         self.assertEqual(
             FeederRecord.query_param(device, request_date=request_date), expected_params
         )
