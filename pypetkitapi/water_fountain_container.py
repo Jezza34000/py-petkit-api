@@ -283,6 +283,18 @@ class WaterFountainRecord(BaseModel):
         }
 
 
+class WorkState(BaseModel):
+    """Sub-Sub-dataclass for state of Litter.
+    Litter -> state ->  [STATE] -> WorkState
+    """
+
+    safe_warn: int | None = Field(None, alias="safeWarn")
+    stop_time: int | None = Field(None, alias="stopTime")
+    work_mode: int | None = Field(None, alias="workMode")
+    work_process: int | None = Field(None, alias="workProcess")
+    work_reason: int | None = Field(None, alias="workReason")
+
+
 class FountainState(BaseModel):
     """Dataclass for device state.
     -> WaterFountain subclass (EVERSWEET ULTRA AI).
@@ -320,6 +332,7 @@ class FountainState(BaseModel):
     heat_real_temp: int | None = Field(None, alias="heatRealTemp")
     add_water_frequent: int | None = Field(None, alias="addWaterFrequent")
     camera_status: int | None = Field(None, alias="cameraStatus")
+    work_state: WorkState | None = Field(None, alias="workState")
 
 
 class WaterFountain(BaseModel):
