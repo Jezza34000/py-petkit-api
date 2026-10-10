@@ -23,8 +23,9 @@ class TestBluetoothManager(unittest.IsolatedAsyncioTestCase):
         expected_ble_data = [0xAA, 0xBB, 1, 2, 5, 3, 4, 0xCC, 0xDD]  # Example values
         expected_encoded_data = "encoded_data"
 
-        with patch("pypetkitapi.bluetooth.BLE_START_TRAME", [0xAA, 0xBB]), patch(
-            "pypetkitapi.bluetooth.BLE_END_TRAME", [0xCC, 0xDD]
+        with (
+            patch("pypetkitapi.bluetooth.BLE_START_TRAME", [0xAA, 0xBB]),
+            patch("pypetkitapi.bluetooth.BLE_END_TRAME", [0xCC, 0xDD]),
         ):
             cmd_code, encoded_data = await self.bluetooth_manager.get_ble_cmd_data(
                 fountain_command, counter
