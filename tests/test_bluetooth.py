@@ -35,8 +35,11 @@ class TestBluetoothManager(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(encoded_data, expected_encoded_data)
         mock_encode_ble_data.assert_called_once_with(expected_ble_data)
 
-    async def _sent_command(self, action, mode):
-        fountain = type("F", (), {"mode": mode, "ble_counter": 0})()
+    async def _sent_command(self, action, mode, device_type="w5"):
+        device_nfo = type("D", (), {"device_type": device_type})()
+        fountain = type(
+            "F", (), {"mode": mode, "ble_counter": 0, "device_nfo": device_nfo}
+        )()
         bm = self.bluetooth_manager
         with patch.object(
             bm, "_get_fountain_instance", AsyncMock(return_value=fountain)
@@ -78,6 +81,21 @@ class TestBluetoothManager(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             await self._sent_command(FountainAction.MODE_NORMAL, 2),
             [220, 1, 2, 0, 1, 1],
+        )
+
+    async def test_ctw3_keeps_three_byte_payload(self):
+        # CTW3 uses [power, suspend, mode]; only the W5 gets the short payload
+        self.assertEqual(
+            await self._sent_command(FountainAction.PAUSE, 1, "ctw3"),
+            [220, 1, 3, 0, 1, 0, 2],
+        )
+        self.assertEqual(
+            await self._sent_command(FountainAction.CONTINUE, 1, "ctw3"),
+            [220, 1, 3, 0, 1, 1, 2],
+        )
+        self.assertEqual(
+            await self._sent_command(FountainAction.POWER_OFF, 2, "ctw3"),
+            [220, 1, 3, 0, 0, 1, 1],
         )
 
 

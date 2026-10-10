@@ -156,13 +156,25 @@ class FountainActionWIFI(IntEnum):
     DEEP_CLEAN = 4
 
 
-# CMD 220 carries [power, mode] (mode 1 = normal, 2 = smart). The mode byte
-# below is a default: pause/resume and power on/off resend the fountain's
-# current mode (see FOUNTAIN_KEEP_MODE) so they don't change it.
 FOUNTAIN_COMMAND = {
+    FountainAction.PAUSE: [220, 1, 3, 0, 1, 0, 2],
+    FountainAction.CONTINUE: [220, 1, 3, 0, 1, 1, 2],
+    FountainAction.RESET_FILTER: [222, 1, 0, 0],
+    FountainAction.POWER_OFF: [220, 1, 3, 0, 0, 1, 1],
+    FountainAction.POWER_ON: [220, 1, 3, 0, 1, 1, 1],
+    FountainAction.MODE_NORMAL: [220, 1, 3, 0, 1, 1, 1],
+    FountainAction.MODE_SMART: [220, 1, 3, 0, 1, 2, 1],
+    FountainAction.MODE_STANDARD: [220, 1, 3, 0, 1, 1, 1],
+    FountainAction.MODE_INTERMITTENT: [220, 1, 3, 0, 1, 2, 1],
+}
+
+# On the W5, CMD 220 carries [power, mode] (mode 1 = normal, 2 = smart). The
+# mode byte below is a default: pause/resume and power on/off resend the
+# fountain's current mode (see FOUNTAIN_KEEP_MODE) so they don't change it.
+FOUNTAIN_COMMAND_W5 = {
+    **FOUNTAIN_COMMAND,
     FountainAction.PAUSE: [220, 1, 2, 0, 0, 1],
     FountainAction.CONTINUE: [220, 1, 2, 0, 1, 1],
-    FountainAction.RESET_FILTER: [222, 1, 0, 0],
     FountainAction.POWER_OFF: [220, 1, 2, 0, 0, 1],
     FountainAction.POWER_ON: [220, 1, 2, 0, 1, 1],
     FountainAction.MODE_NORMAL: [220, 1, 2, 0, 1, 1],
