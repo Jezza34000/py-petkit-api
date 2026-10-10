@@ -57,6 +57,12 @@ Install the library using pip:
 pip install pypetkitapi
 ```
 
+Or using [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv add pypetkitapi
+```
+
 ## 💡 Usage :
 
 Here is a simple example of how to use the library to interact with the PetKit API \
@@ -365,6 +371,22 @@ Developers? Want to help? Join us on our Discord channel dedicated to developers
 
 Contributions are welcome!\
 Please open an issue or submit a pull request.
+
+### Development Setup
+
+This project uses [uv](https://docs.astral.sh/uv/) for fast Python package and environment management (replacing `venv`/`poetry`).
+
+To set up the development environment:
+
+1. Install `uv`.
+2. Sync the dependencies and create the environment:
+   ```bash
+   uv sync
+   ```
+3. Run tests using `tox` (accelerated with `tox-uv`):
+   ```bash
+   uvx tox -e py
+   ```
 
 ## License
 
