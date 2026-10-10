@@ -199,7 +199,7 @@ property-decorators = [
 ]
 
 [tool.bumpver]
-current_version = "1.29.0"
+current_version = "1.30.0"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump version {old_version} -> {new_version}"
 tag_message = "{new_version}"
@@ -273,7 +273,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pypetkitapi"
-version = "1.29.0"
+version = "1.30.0"
 description = "Python client for PetKit API"
 authors = [
     { name = "Jezza34000", email = "info@mail.com" },
