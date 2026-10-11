@@ -10,7 +10,9 @@ from pypetkitapi.const import (
     D4,
     D4S,
     DEVICE_DATA,
+    DEVICE_FEED_PLAN,
     DEVICE_RECORDS,
+    FEEDER,
     FEEDER_MINI,
     PetkitEndpoint,
 )
@@ -84,6 +86,41 @@ class MultiFeedItem(BaseModel):
     feed_daily_list: list[FeedDailyList] | None = Field(None, alias="feedDailyList")
     is_executed: int | None = Field(None, alias="isExecuted")
     user_id: str | None = Field(None, alias="userId")
+
+
+class FeedPlan(BaseModel):
+    """POST ``{prefix}/feed`` result: the recurring feeding plan.
+
+    Feeder and Feeder Mini return one weekly plan: ``items`` plus a shared
+    ``repeats`` mask and a ``suspended`` flag. D3 and later return seven
+    per-day ``FeedDailyList`` entries in ``feedDailyList``. The Mini has no
+    nested ``feed`` on ``device_detail``, so this is the only place to read it.
+    """
+
+    data_type: ClassVar[str] = DEVICE_FEED_PLAN
+
+    items: list[FeedItem] | None = None
+    repeats: int | str | None = None
+    suspended: int | None = None
+    count: int | None = None
+    total_amount: int | None = Field(None, alias="totalAmount")
+    is_executed: int | None = Field(None, alias="isExecuted")
+    feed_daily_list: list[FeedDailyList] | None = Field(None, alias="feedDailyList")
+    user_id: str | None = Field(None, alias="userId")
+
+    @classmethod
+    def get_endpoint(cls, device_type: str) -> str:
+        """Get the endpoint URL for the given device type."""
+        return PetkitEndpoint.FEED
+
+    @classmethod
+    def query_param(
+        cls,
+        device: Device,
+        device_data: Any | None = None,
+    ) -> dict:
+        """Generate query parameters."""
+        return {"deviceId": int(device.device_id)}
 
 
 class CameraMultiNew(BaseModel):
@@ -333,10 +370,12 @@ class FeederRecord(BaseModel):
         # carries totals, none of which this model holds.
         if device_type == D4:
             return PetkitEndpoint.DAILY_FEED
-        if device_type in D4S:
+        if device_type == D4S:
             return PetkitEndpoint.DAILY_FEED
-        if device_type in FEEDER_MINI:
-            return PetkitEndpoint.DAILY_FEED.lower()  # Workaround for Feeder Mini
+        if device_type in (FEEDER, FEEDER_MINI):
+            # feeder/ and feedermini/ expose dailyfeeds; neither has a
+            # getDeviceRecord route (only d4h, d4sh and the litter families do).
+            return PetkitEndpoint.DAILY_FEED.lower()
         return PetkitEndpoint.GET_DEVICE_RECORD
 
     @classmethod
@@ -388,6 +427,7 @@ class Feeder(BaseModel):
     device_nfo: Device | None = None
     medias: list | None = None
     sound_list: list[SoundList] | None = None
+    feed_plan: FeedPlan | None = None
 
     @classmethod
     def get_endpoint(cls, device_type: str) -> str:
