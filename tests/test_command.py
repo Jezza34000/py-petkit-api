@@ -548,9 +548,7 @@ class TestCommandModule(unittest.TestCase):
                 command, {"feed_id": "s75600", "day": 20261231}
             )
             self.assertEqual(params["day"], "20261231")
-        setting = type(
-            "Setting", (object,), {"feed_id": "s21600", "day": "20260101"}
-        )()
+        setting = type("Setting", (object,), {"feed_id": "s21600", "day": "20260101"})()
         params = self._daily_feed_params(FeederCommand.RESTORE_DAILY_FEED, setting)
         self.assertEqual(params["day"], "20260101")
 
