@@ -269,24 +269,30 @@ def _as_item_dict(item: Any) -> dict:
     return out
 
 
-def _normalize_plan_item(item: Any, dev_id: int, family_type_id: int) -> dict:
-    """One plan item shaped the way the app's editors write it.
+def _normalize_plan_item(
+    item: Any, dev_id: int, family_type_id: int, *, id_from_time: bool = True
+) -> dict:
+    """One plan item shaped the way the app writes it.
 
-    ``deviceId`` is the real device id and ``deviceType`` the family type_id;
-    both editors (the shared-plan one for types 4/6/9/11 and the per-day one
-    for 9/11/20/25/26) set them before saving. A new item carries id 0 until
-    the per-day editor rewrites it from ``time``. ``petAmount`` is echoed back
-    untouched — the app never clears it.
+    ``deviceId`` is the real device id and ``deviceType`` the family type id;
+    the app sets both before saving. On the per-day families (D3 and later) a
+    new item carries id 0 and the app rewrites it from ``time``; the Feeder and
+    Mini plans keep whatever id the caller allocated, so ``id_from_time`` is
+    off for them. ``petAmount`` is echoed back untouched; the app never
+    clears it.
     """
     item = _as_item_dict(item)
     time_sec = _coerce_int(item.get("time"))
+    item_id = _coerce_int(item.get("id"))
+    if id_from_time and not item_id:
+        item_id = time_sec
     return {
         "amount": _coerce_int(item.get("amount")),
         "amount1": _coerce_int(item.get("amount1")),
         "amount2": _coerce_int(item.get("amount2")),
         "deviceId": dev_id,
         "deviceType": family_type_id,
-        "id": _coerce_int(item.get("id")) or time_sec,
+        "id": item_id,
         "name": item.get("name") or "",
         "petAmount": item.get("petAmount") or [],
         "time": time_sec,
@@ -336,7 +342,8 @@ def build_save_feed_params(device, feed_daily_list: list[dict]) -> dict:
 
     repeats_str = ",".join(str(w) for w in sorted(mask)) if mask else "1,2,3,4,5,6,7"
     items_out = [
-        _normalize_plan_item(it, dev_id, family_type_id) for it in items_raw or []
+        _normalize_plan_item(it, dev_id, family_type_id, id_from_time=False)
+        for it in items_raw or []
     ]
 
     return {
@@ -352,8 +359,8 @@ def build_set_plan_repeats_params(device, setting: dict | str) -> dict:
 
     The one plan-level ``repeats`` is what the app's Repeat row edits, and
     it saves the whole plan through ``save_feed`` afterwards. The API also
-    exposes ``{prefix}/save_repeats``, but the app (13.9.2) never calls it,
-    so this goes through ``save_feed`` the way the app does.
+    exposes ``{prefix}/save_repeats``, but the app does not use it, so this
+    goes through ``save_feed`` the way the app does.
 
     ``setting`` is ``{"repeats": "2,4,6"}`` or the csv itself, in **cloud**
     weekday numbering (1=Sunday). Callers holding ISO weekdays convert first.
@@ -377,7 +384,10 @@ def build_set_plan_repeats_params(device, setting: dict | str) -> dict:
 
     dev_id = int(device.id)
     family_type_id = _feeder_family_type_id(device)
-    items_out = [_normalize_plan_item(it, dev_id, family_type_id) for it in items]
+    items_out = [
+        _normalize_plan_item(it, dev_id, family_type_id, id_from_time=False)
+        for it in items
+    ]
     return {
         "deviceId": str(dev_id),
         "items": json.dumps(items_out),
@@ -430,6 +440,23 @@ def get_daily_feed_id(setting):
     if isinstance(setting, dict):
         return setting["feed_id"]
     return setting.feed_id
+
+
+def get_daily_feed_day(setting) -> str:
+    """Get the ``day`` (yyyyMMdd) for remove/restore daily feed.
+
+    The daily record carries the day it belongs to, in the device's timezone.
+    Callers pass it as ``day`` (dict key or attribute, int or string); without
+    one the local date is used, which can be off by one around midnight when
+    the device sits in another timezone.
+    """
+    if isinstance(setting, dict):
+        day = setting.get("day")
+    else:
+        day = getattr(setting, "day", None)
+    if day is None:
+        return datetime.datetime.now().strftime("%Y%m%d")
+    return str(day)
 
 
 def get_endpoint_save_repeats(device):
@@ -546,7 +573,7 @@ ACTIONS_MAP = {
         endpoint=get_endpoint_remove_daily_feed,
         params=lambda device, setting: {
             "deviceId": device.id,
-            "day": datetime.datetime.now().strftime("%Y%m%d"),
+            "day": get_daily_feed_day(setting),
             "id": get_daily_feed_id(setting),
         },
         supported_device=DEVICES_FEEDER,
@@ -555,7 +582,7 @@ ACTIONS_MAP = {
         endpoint=get_endpoint_restore_daily_feed,
         params=lambda device, setting: {
             "deviceId": device.id,
-            "day": datetime.datetime.now().strftime("%Y%m%d"),
+            "day": get_daily_feed_day(setting),
             "id": get_daily_feed_id(setting),
         },
         supported_device=DEVICES_FEEDER,

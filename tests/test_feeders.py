@@ -447,7 +447,7 @@ class TestFeederModel(unittest.TestCase):
 
 
 class TestFeedPlanModel(unittest.TestCase):
-    """Tests for GET {prefix}/feed Shape A / Shape B."""
+    """Tests for the {prefix}/feed plan: weekly on Feeder/Mini, per day on D3+."""
 
     def test_shape_a_weekly_plan(self):
         """Mini / D1 FeederPlan: items + repeats + suspended."""

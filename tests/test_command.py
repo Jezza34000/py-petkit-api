@@ -312,6 +312,12 @@ class TestCommandModule(unittest.TestCase):
         self.assertEqual(params["suspended"], "1")
         self.assertEqual(params["repeats"], "2,4,6")
 
+    def test_build_save_feed_legacy_keeps_the_callers_id(self):
+        """Feeder/Mini meal ids are caller-allocated; a zero id is not rewritten."""
+        item = {"time": 28800, "name": "A", "amount": 10, "id": 0}
+        params = build_save_feed_params(self._mini(), self._shape_a_week([item], {2}))
+        self.assertEqual(json.loads(params["items"])[0]["id"], 0)
+
     def test_build_save_feed_coerces_unset_amounts(self):
         """Cloud models leave the unused hopper fields None."""
         item = {
@@ -532,6 +538,22 @@ class TestCommandModule(unittest.TestCase):
         params = self._daily_feed_params(FeederCommand.REMOVE_DAILY_FEED, setting)
         self.assertEqual(params["id"], "s21600")
 
+    def test_daily_feed_uses_the_record_day_when_given(self):
+        """The record's own day wins over the local date, as a dict or attribute."""
+        for command in (
+            FeederCommand.REMOVE_DAILY_FEED,
+            FeederCommand.RESTORE_DAILY_FEED,
+        ):
+            params = self._daily_feed_params(
+                command, {"feed_id": "s75600", "day": 20261231}
+            )
+            self.assertEqual(params["day"], "20261231")
+        setting = type(
+            "Setting", (object,), {"feed_id": "s21600", "day": "20260101"}
+        )()
+        params = self._daily_feed_params(FeederCommand.RESTORE_DAILY_FEED, setting)
+        self.assertEqual(params["day"], "20260101")
+
     def test_remove_daily_feed_endpoint_old_feeder(self):
         """D1/D2 skip-today uses snake_case remove_dailyfeed."""
         mini = type(
@@ -617,7 +639,7 @@ class TestSetPlanRepeats(unittest.TestCase):
         )()
 
     def test_saves_through_save_feed_not_save_repeats(self):
-        """The app (13.9.2) never calls save_repeats, so neither do we."""
+        """The app saves the mask through save_feed, so this does too."""
         params = build_set_plan_repeats_params(self._device(), {"repeats": "2,3,4,5,6"})
         self.assertEqual(params["repeats"], "2,3,4,5,6")
         self.assertEqual(params["deviceId"], "999")

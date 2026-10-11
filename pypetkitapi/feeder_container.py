@@ -89,11 +89,12 @@ class MultiFeedItem(BaseModel):
 
 
 class FeedPlan(BaseModel):
-    """GET/POST ``{prefix}/feed`` result.
+    """POST ``{prefix}/feed`` result: the recurring feeding plan.
 
-    Shape A (feeder / feedermini): ``items`` + ``repeats`` + ``suspended``.
-    Shape B (D3+): ``feedDailyList`` of per-day ``FeedDailyList``.
-    Mini has no nested ``feed`` on ``device_detail``.
+    Feeder and Feeder Mini return one weekly plan: ``items`` plus a shared
+    ``repeats`` mask and a ``suspended`` flag. D3 and later return seven
+    per-day ``FeedDailyList`` entries in ``feedDailyList``. The Mini has no
+    nested ``feed`` on ``device_detail``, so this is the only place to read it.
     """
 
     data_type: ClassVar[str] = DEVICE_FEED_PLAN

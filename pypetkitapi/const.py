@@ -256,7 +256,7 @@ class PetkitEndpoint(StrEnum):
     DAILY_FEED_AND_EAT = "dailyFeedAndEat"  # D3
     FEED_STATISTIC = "feedStatistic"  # D4
     DAILY_FEED = "dailyFeeds"  # D4S
-    FEED = "feed"  # GET/POST {prefix}/feed — recurring plan (wiki Shape A / B)
+    FEED = "feed"  # POST {prefix}/feed — the recurring feeding plan
     REMOVE_DAILY_FEED_OLD = "remove_dailyfeed"  # feeder/, feedermini/
     REMOVE_DAILY_FEED = "removeDailyFeed"
     RESTORE_DAILY_FEED_OLD = "restore_dailyfeed"  # feeder/, feedermini/
@@ -307,7 +307,7 @@ DUAL_HOPPER_DEVICES: list[str] = [D4S, D4SH]
 # Single hopper device types (use amount)
 SINGLE_HOPPER_DEVICES: list[str] = [FEEDER, FEEDER_MINI, D3, D4, D4H]
 
-# Cloud type_id written on each plan item's ``deviceType`` (wiki family map).
+# Cloud type id written on each plan item's ``deviceType``.
 FEEDER_TYPE_IDS: dict[str, int] = {
     FEEDER: 4,
     FEEDER_MINI: 6,
