@@ -42,15 +42,16 @@ class TestBluetoothManager(unittest.IsolatedAsyncioTestCase):
             "F", (), {"mode": mode, "ble_counter": 0, "device_nfo": device_nfo}
         )()
         bm = self.bluetooth_manager
-        with patch.object(
-            bm, "_get_fountain_instance", AsyncMock(return_value=fountain)
-        ), patch.object(
-            bm, "open_ble_connection", AsyncMock(return_value=True)
-        ), patch.object(
-            bm, "_request_ble_api", AsyncMock(return_value=1)
-        ), patch.object(
-            bm, "get_ble_cmd_data", AsyncMock(return_value=(220, "x"))
-        ) as cmd_data:
+        with (
+            patch.object(
+                bm, "_get_fountain_instance", AsyncMock(return_value=fountain)
+            ),
+            patch.object(bm, "open_ble_connection", AsyncMock(return_value=True)),
+            patch.object(bm, "_request_ble_api", AsyncMock(return_value=1)),
+            patch.object(
+                bm, "get_ble_cmd_data", AsyncMock(return_value=(220, "x"))
+            ) as cmd_data,
+        ):
             self.assertTrue(await bm.send_ble_command(1, action))
         return cmd_data.call_args.args[0]
 
