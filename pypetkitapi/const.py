@@ -19,6 +19,8 @@ LIVE_DATA = "liveData"
 PACKAGE_INFO = "packageInfo"
 PACKAGE_LIST = "packageList"
 
+REQUEST_TIMEOUT = 30
+
 # Bluetooth
 BLE_CONNECT_ATTEMPT = 32
 BLE_POLL_INTERVAL_SECS = 4

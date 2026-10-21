@@ -47,6 +47,7 @@ from pypetkitapi.const import (
     PET,
     PTK_DBG,
     REGION_SERVER_LABELS,
+    REQUEST_TIMEOUT,
     RES_KEY,
     T3,
     T4,
@@ -813,7 +814,13 @@ class PetKitClient:
         """
         _LOGGER.debug("Fetching media data for device: %s", device.device_id)
 
-        device_entity = self.petkit_entities[device.device_id]
+        device_entity = self.petkit_entities.get(device.device_id)
+        if device_entity is None:
+            _LOGGER.warning(
+                "Cannot fetch media for device %s: device entity not initialized",
+                device.device_id,
+            )
+            return
         device_entity.medias = await self.media_manager.gather_all_media_from_cloud(
             [device_entity]
         )
@@ -1510,6 +1517,7 @@ class PrepReq:
             params=params,
             data=data,
             headers=_headers,
+            timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT),
         ) as resp:
             return await self._handle_response(resp, _url)
 

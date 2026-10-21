@@ -23,6 +23,7 @@ from pypetkitapi.const import (
     FOUNTAIN_WITH_CAMERA,
     LITTER_WITH_CAMERA,
     PTK_DBG,
+    REQUEST_TIMEOUT,
     MediaType,
     PetkitEndpoint,
     RecordTypeLST,
@@ -768,7 +769,12 @@ class DownloadDecryptMedia:
             return False
 
         # Download the file
-        async with aiohttp.ClientSession() as session, session.get(url) as response:
+        async with (
+            aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT)
+            ) as session,
+            session.get(url) as response,
+        ):
             if response.status != 200:
                 _LOGGER.error(
                     "Failed to download %s, status code: %s", url, response.status
