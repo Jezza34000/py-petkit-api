@@ -49,9 +49,6 @@ from pypetkitapi.const import (
     REGION_SERVER_LABELS,
     REQUEST_TIMEOUT,
     RES_KEY,
-    T3,
-    T4,
-    T5,
     T6,
     Header,
     PetkitDomain,
@@ -1027,10 +1024,10 @@ class PetKitClient:
 
         pets_list = await self.get_pets_list()
         for pet in pets_list:
-            if litter_data.device_nfo.device_type in [T3, T4]:
+            if litter_data.device_nfo.device_type in LITTER_NO_CAMERA:
                 await self.init_pet_stats(pet, litter_data)
                 await self._process_litter_no_camera(pet, litter_data)
-            elif litter_data.device_nfo.device_type in [T5, T6]:
+            elif litter_data.device_nfo.device_type in LITTER_WITH_CAMERA:
                 await self.init_pet_stats(pet, litter_data)
                 await self._process_litter_camera(pet, litter_data)
 
@@ -1228,10 +1225,10 @@ class PetKitClient:
         for value in device_pet_graph:
             if value.pet_id == pet.pet_id and (
                 pet.last_litter_usage is None
-                or getattr(value, "time", 0) > pet.last_litter_usage
+                or (value.time or 0) > pet.last_litter_usage
             ):
                 self.set_if_not_none(
-                    pet, "last_litter_usage", getattr(value.content, "time", None)
+                    pet, "last_litter_usage", getattr(value, "time", None)
                 )
                 self.set_if_not_none(
                     pet,
