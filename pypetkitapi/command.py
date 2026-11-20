@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-import datetime
+import datetime as dt
 from enum import IntEnum, StrEnum
 import json
 from typing import Any
@@ -477,7 +477,7 @@ def get_daily_feed_day(setting) -> str:
     else:
         day = getattr(setting, "day", None)
     if day is None:
-        return datetime.datetime.now().strftime("%Y%m%d")
+        return dt.datetime.now().strftime("%Y%m%d")
     return str(day)
 
 
@@ -538,7 +538,7 @@ def build_manual_feed_params(
     """Build and validate the manual feed params for the given device type."""
     validate_manual_feed_amount(device, setting)
     return {
-        "day": datetime.datetime.now().strftime("%Y%m%d"),
+        "day": dt.datetime.now().strftime("%Y%m%d"),
         "deviceId": device.id,
         "name": "",
         "time": "-1",
@@ -553,7 +553,7 @@ def build_cancel_manual_feed_params(device) -> dict[str, str]:
     on Feeder.manual_feed, which is None whenever no manual feed is pending.
     """
     params = {
-        "day": datetime.datetime.now().strftime("%Y%m%d"),
+        "day": dt.datetime.now().strftime("%Y%m%d"),
         "deviceId": device.id,
     }
     manual_feed = device.manual_feed
