@@ -50,6 +50,9 @@ K2 = "k2"
 K3 = "k3"
 PET = "pet"
 
+# oldPetId the PetKit app sends when re-assigning a litter record that has no pet
+NO_PET_ID = -3
+
 # Litter
 DEVICES_LITTER_BOX = [T3, T4, T5, T6, T7]
 LITTER_WITH_CAMERA = [T5, T6, T7]
@@ -211,6 +214,7 @@ class PetkitEndpoint(StrEnum):
     GET_DEVICE_RECORD_RELEASE = "getDeviceRecordRelease"
     UPDATE_SETTING = "updateSettings"
     UPDATE_SETTING_OLD = "update"
+    MATCH_PET = "matchPet"  # Assign a pet to an eating / drinking session
 
     # Bluetooth
     BLE_AS_RELAY = "ble/ownSupportBleDevices"
@@ -237,6 +241,7 @@ class PetkitEndpoint(StrEnum):
     T6_PACKAGE_INFO = "packageInfo"  # Last pack time + last replacement time
     T6_PACKAGE_LIST = "packageList"  # Full packing/replacement history
     UPDATE_RECORD = "data_update_record"
+    UPDATE_DETECT_RECORD = "data_update_detect_record"
 
     # Video features
     LIVE = "start/live"
