@@ -566,7 +566,7 @@ class Litter(BaseModel):
     device_records: list[LitterRecord] | None = None
     device_stats: LitterStats | None = None
     firmware: float | str | None = None
-    firmware_details: list[FirmwareDetail] = Field(alias="firmwareDetails")
+    firmware_details: list[FirmwareDetail] | None = Field(None, alias="firmwareDetails")
     hardware: int
     id: int
     in_times: int | None = Field(None, alias="inTimes")

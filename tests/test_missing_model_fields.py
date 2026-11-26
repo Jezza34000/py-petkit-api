@@ -7,7 +7,7 @@ must populate the matching snake_case attribute.
 import unittest
 
 from pypetkitapi.feeder_container import SettingsFeeder, StateFeeder
-from pypetkitapi.litter_container import SettingsLitter
+from pypetkitapi.litter_container import Litter, SettingsLitter
 from pypetkitapi.water_fountain_container import WaterFountain
 
 
@@ -33,6 +33,11 @@ class TestLitterFields(unittest.TestCase):
         # T3/T4 auto deodorising
         settings = SettingsLitter(**{"autoRefresh": 1})
         self.assertEqual(settings.auto_refresh, 1)
+
+    def test_litter_without_firmware_details(self):
+        # Purobot Max 3 (fw 2.133) device_detail omits firmwareDetails
+        litter = Litter(**{"id": 1, "sn": "SN1", "hardware": 1, "firmware": "2.133"})
+        self.assertIsNone(litter.firmware_details)
 
 
 class TestW7hFields(unittest.TestCase):
