@@ -1,5 +1,7 @@
 import json
+from types import SimpleNamespace
 import unittest
+from unittest.mock import AsyncMock, MagicMock
 from pypetkitapi.command import (
     DeviceCommand,
     FountainCommand,
@@ -34,8 +36,11 @@ from pypetkitapi.const import (
     D4H,
     D4S,
     D4SH,
+    NO_PET_ID,
+    PET,
     W7H,
 )
+from pypetkitapi.client import PetKitClient
 from pypetkitapi.feeder_container import ManualFeed
 
 
@@ -45,6 +50,7 @@ class TestCommandModule(unittest.TestCase):
         self.assertEqual(DeviceCommand.POWER, "power_device")
         self.assertEqual(DeviceCommand.CONTROL_DEVICE, "control_device")
         self.assertEqual(DeviceCommand.UPDATE_SETTING, "update_setting")
+        self.assertEqual(DeviceCommand.MATCH_PET, "match_pet")
 
     def test_fountain_command(self):
         self.assertEqual(FountainCommand.CONTROL_DEVICE, "control_device")
@@ -59,6 +65,7 @@ class TestCommandModule(unittest.TestCase):
 
     def test_pet_command(self):
         self.assertEqual(PetCommand.UPDATE_USAGE_RECORD, "update_usage_record")
+        self.assertEqual(PetCommand.UPDATE_DETECT_RECORD, "update_detect_record")
         self.assertEqual(PetCommand.PET_UPDATE_SETTING, "pet_update_setting")
 
     def test_lb_command(self):
@@ -686,3 +693,159 @@ class TestSetPlanRepeats(unittest.TestCase):
         )()
         with self.assertRaises(ValueError):
             build_set_plan_repeats_params(device, {"repeats": "2"})
+
+
+class TestRecordUpdateCommands(unittest.TestCase):
+    """Request bodies as the PetKit app sends them (captured 2026-11-15)."""
+
+    pet = type("Pet", (object,), {"pet_id": 222})()
+
+    def test_update_usage_record_body(self):
+        cmd = ACTIONS_MAP[PetCommand.UPDATE_USAGE_RECORD]
+        self.assertEqual(cmd.endpoint, PetkitEndpoint.UPDATE_RECORD)
+        setting = {
+            "old_pet_id": 111,
+            "device_id": 333,
+            "time_out": 1700000000,
+            "type": 21,
+        }
+        self.assertEqual(
+            cmd.params(self.pet, setting),
+            {
+                "petId": 222,
+                "batch": 0,
+                "type": 21,
+                "oldPetId": 111,
+                "deviceId": 333,
+                "timeOut": 1700000000,
+            },
+        )
+
+    def test_update_usage_record_no_pet_sends_minus_three(self):
+        cmd = ACTIONS_MAP[PetCommand.UPDATE_USAGE_RECORD]
+        for old_pet_id in ({"old_pet_id": None}, {}):
+            with self.subTest(old_pet_id=old_pet_id):
+                setting = {"device_id": 333, "time_out": 1700000000, **old_pet_id}
+                self.assertEqual(cmd.params(self.pet, setting)["oldPetId"], NO_PET_ID)
+        self.assertEqual(NO_PET_ID, -3)
+
+    def test_update_usage_record_defaults_to_t4_type(self):
+        cmd = ACTIONS_MAP[PetCommand.UPDATE_USAGE_RECORD]
+        setting = {"old_pet_id": -3, "device_id": 333, "time_out": 1700000000}
+        body = cmd.params(self.pet, setting)
+        self.assertEqual(body["type"], 15)
+        self.assertEqual(body["oldPetId"], -3)
+
+    def test_update_detect_record_body(self):
+        cmd = ACTIONS_MAP[PetCommand.UPDATE_DETECT_RECORD]
+        self.assertEqual(cmd.endpoint, PetkitEndpoint.UPDATE_DETECT_RECORD)
+        self.assertEqual(cmd.supported_device, [PET])
+        setting = {"device_id": 333, "event_id": "6_333_1700000000", "type": 21}
+        self.assertEqual(
+            cmd.params(self.pet, setting),
+            {"deviceId": 333, "eventId": "6_333_1700000000", "petId": 222, "type": 21},
+        )
+
+    def test_match_pet_body(self):
+        cmd = ACTIONS_MAP[DeviceCommand.MATCH_PET]
+        self.assertEqual(cmd.endpoint, PetkitEndpoint.MATCH_PET)
+        self.assertEqual(cmd.supported_device, [D4H, W7H])
+        device = type("Device", (object,), {"id": 444})()
+        self.assertEqual(
+            cmd.params(device, {"event_id": "444_1700000000", "pet_id": 222}),
+            {
+                "deviceId": 444,
+                "eventId": "444_1700000000",
+                "eventType": 6,
+                "petId": 222,
+            },
+        )
+
+    def test_update_usage_record_accepts_an_object(self):
+        cmd = ACTIONS_MAP[PetCommand.UPDATE_USAGE_RECORD]
+        setting = type(
+            "Setting",
+            (object,),
+            {"old_pet_id": 111, "device_id": 333, "time_out": 1700000000, "type": 21},
+        )()
+        body = cmd.params(self.pet, setting)
+        self.assertEqual((body["oldPetId"], body["type"]), (111, 21))
+
+    def test_missing_key_names_it(self):
+        cmd = ACTIONS_MAP[PetCommand.UPDATE_DETECT_RECORD]
+        with self.assertRaisesRegex(ValueError, "'type'"):
+            cmd.params(self.pet, {"device_id": 333, "event_id": "e"})
+
+    def test_match_pet_explicit_event_type(self):
+        cmd = ACTIONS_MAP[DeviceCommand.MATCH_PET]
+        device = type("Device", (object,), {"id": 444})()
+        body = cmd.params(device, {"event_id": "e", "pet_id": 222, "event_type": 7})
+        self.assertEqual(body["eventType"], 7)
+
+
+class TestRecordUpdateRequests(unittest.IsolatedAsyncioTestCase):
+    """The same commands through send_api_request: URL and form body."""
+
+    def _client(self, entities):
+        client = PetKitClient.__new__(PetKitClient)
+        client.petkit_entities = entities
+        client.req = MagicMock()
+        client.req.request = AsyncMock(return_value={})
+        client.get_session_id = AsyncMock(return_value={})
+        return client
+
+    @staticmethod
+    def _entity(device_type, **attrs):
+        return SimpleNamespace(
+            device_nfo=SimpleNamespace(device_type=device_type), **attrs
+        )
+
+    async def test_usage_record_posts_to_pet_endpoint(self):
+        client = self._client({222: self._entity("pet", pet_id=222)})
+        setting = {
+            "old_pet_id": -3,
+            "device_id": 333,
+            "time_out": 1700000000,
+            "type": 21,
+        }
+        self.assertTrue(
+            await client.send_api_request(222, PetCommand.UPDATE_USAGE_RECORD, setting)
+        )
+        kwargs = client.req.request.await_args.kwargs
+        self.assertEqual(kwargs["method"], "POST")
+        self.assertEqual(kwargs["url"], "pet/data_update_record")
+        self.assertEqual(kwargs["data"]["oldPetId"], -3)
+
+    async def test_detect_record_posts_to_pet_endpoint(self):
+        client = self._client({222: self._entity("pet", pet_id=222)})
+        setting = {"device_id": 333, "event_id": "6_333_1700000000", "type": 21}
+        await client.send_api_request(222, PetCommand.UPDATE_DETECT_RECORD, setting)
+        kwargs = client.req.request.await_args.kwargs
+        self.assertEqual(kwargs["url"], "pet/data_update_detect_record")
+        self.assertEqual(kwargs["data"]["petId"], 222)
+
+    async def test_match_pet_posts_to_the_device_type(self):
+        for device_type in (D4H, W7H):
+            with self.subTest(device_type=device_type):
+                client = self._client({444: self._entity(device_type, id=444)})
+                setting = {"event_id": "444_1700000000", "pet_id": 222}
+                await client.send_api_request(444, DeviceCommand.MATCH_PET, setting)
+                kwargs = client.req.request.await_args.kwargs
+                self.assertEqual(kwargs["url"], f"{device_type}/matchPet")
+                self.assertEqual(
+                    kwargs["data"],
+                    {
+                        "deviceId": 444,
+                        "eventId": "444_1700000000",
+                        "eventType": 6,
+                        "petId": 222,
+                    },
+                )
+
+    async def test_match_pet_refused_on_other_devices(self):
+        client = self._client({555: self._entity("t5", id=555)})
+        setting = {"event_id": "e", "pet_id": 222}
+        self.assertFalse(
+            await client.send_api_request(555, DeviceCommand.MATCH_PET, setting)
+        )
+        client.req.request.assert_not_awaited()

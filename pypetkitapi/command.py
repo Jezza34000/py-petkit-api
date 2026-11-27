@@ -23,6 +23,7 @@ from pypetkitapi.const import (
     K3,
     MANUAL_FEED_DEFAULT_VALID_VALUES,
     MANUAL_FEED_VALID_VALUES,
+    NO_PET_ID,
     PET,
     T3,
     T4,
@@ -42,6 +43,7 @@ class DeviceCommand(StrEnum):
     CONTROL_DEVICE = "control_device"
     UPDATE_SETTING = "update_setting"
     OPEN_CAMERA = "open_camera"
+    MATCH_PET = "match_pet"
 
 
 class FountainCommand(StrEnum):
@@ -82,6 +84,7 @@ class PetCommand(StrEnum):
     """Specific PetCommand"""
 
     UPDATE_USAGE_RECORD = "update_usage_record"
+    UPDATE_DETECT_RECORD = "update_detect_record"
     PET_UPDATE_SETTING = "pet_update_setting"
 
 
@@ -481,6 +484,37 @@ def get_daily_feed_day(setting) -> str:
     return str(day)
 
 
+_REQUIRED = object()
+
+
+def get_setting_value(setting, key: str, default: Any = _REQUIRED) -> Any:
+    """Get ``key`` from a command setting.
+
+    Accepts a dict, which is what send_api_request is typed to pass, or any
+    object exposing the key as an attribute.
+
+    Raises:
+        ValueError: If the key is missing and has no default.
+    """
+    if isinstance(setting, dict):
+        value = setting.get(key, default)
+    else:
+        value = getattr(setting, key, default)
+    if value is _REQUIRED:
+        raise ValueError(f"setting is missing '{key}'")
+    return value
+
+
+def get_old_pet_id(setting) -> int:
+    """Get ``oldPetId`` for UPDATE_USAGE_RECORD.
+
+    A missing or None ``old_pet_id`` (a record with no pet) is sent as
+    NO_PET_ID (-3), which is what the PetKit app sends for such a record.
+    """
+    old_pet_id = get_setting_value(setting, "old_pet_id", None)
+    return NO_PET_ID if old_pet_id is None else old_pet_id
+
+
 def get_endpoint_save_repeats(device):
     """Get the save repeats endpoint for the device."""
     if device.device_nfo.device_type in [FEEDER_MINI, FEEDER]:
@@ -705,10 +739,21 @@ ACTIONS_MAP = {
         params=lambda pet, setting: {
             "petId": pet.pet_id,
             "batch": 0,
-            "type": 15,
-            "old_pet_id": setting.old_pet_id,
-            "device_id": setting.device_id,
-            "time_out": setting.time_out,
+            # The litter box's cloud type id (device_nfo.type); 15 is the T4's
+            "type": get_setting_value(setting, "type", 15),
+            "oldPetId": get_old_pet_id(setting),
+            "deviceId": get_setting_value(setting, "device_id"),
+            "timeOut": get_setting_value(setting, "time_out"),
+        },
+        supported_device=[PET],
+    ),
+    PetCommand.UPDATE_DETECT_RECORD: CmdData(
+        endpoint=PetkitEndpoint.UPDATE_DETECT_RECORD,
+        params=lambda pet, setting: {
+            "deviceId": get_setting_value(setting, "device_id"),
+            "eventId": get_setting_value(setting, "event_id"),
+            "petId": pet.pet_id,
+            "type": get_setting_value(setting, "type"),
         },
         supported_device=[PET],
     ),
@@ -719,6 +764,16 @@ ACTIONS_MAP = {
             "kv": json.dumps(setting),
         },
         supported_device=[PET],
+    ),
+    DeviceCommand.MATCH_PET: CmdData(
+        endpoint=PetkitEndpoint.MATCH_PET,
+        params=lambda device, setting: {
+            "deviceId": device.id,
+            "eventId": get_setting_value(setting, "event_id"),
+            "eventType": get_setting_value(setting, "event_type", 6),
+            "petId": get_setting_value(setting, "pet_id"),
+        },
+        supported_device=[D4H, W7H],
     ),
     FountainCommand.RESET_FILTER: CmdData(
         endpoint=PetkitEndpoint.RESET_FILTER_FOUNTAIN,

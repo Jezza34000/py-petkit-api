@@ -212,6 +212,27 @@ await client.send_api_request(device_id, DeviceCommand.CONTROL_DEVICE, {DeviceAc
 
 ---
 
+### `DeviceCommand.MATCH_PET`
+
+Assigns a pet to an eating session (feeder with camera) or a drinking session (fountain with camera), as the PetKit app does when you pick the pet on a session.
+
+```python
+await client.send_api_request(device_id, DeviceCommand.MATCH_PET, {
+    "event_id": event_id,
+    "pet_id": pet_id,
+})
+```
+
+| Payload key  | Values        | Description                                                  |
+| ------------ | ------------- | ------------------------------------------------------------ |
+| `event_id`   | `ID` (string) | The session's `eventId`                                      |
+| `pet_id`     | `ID` (int)    | The pet to assign                                            |
+| `event_type` | `6` (default) | The session's event type: 6 for eating and drinking sessions |
+
+> D4H: the `event_id` of an eating session in the feeder's records. W7H: the `eventId` of a drinking session as `w7h/getPetDrinkGraph` lists it (not fetched by this library yet); the fountain's records showed a `drink_over` event with the same `event_id` for each session seen.
+
+---
+
 ### `FeederCommand.MANUAL_FEED`
 
 Triggers an immediate manual food dispensing from the feeder with the specified amount.
@@ -335,21 +356,45 @@ await client.send_api_request(pet_id, PetCommand.PET_UPDATE_SETTING, {"weight": 
 
 ### `PetCommand.UPDATE_USAGE_RECORD`
 
-Updates a litter box usage record with the correct pet ID.
+Updates a litter box usage record with the correct pet ID. The first argument (`pet_id`) is the pet to assign.
 
 ```python
 await client.send_api_request(pet_id, PetCommand.UPDATE_USAGE_RECORD, {
-    "old_pet_id": "ID_OLD",
+    "old_pet_id": old_pet_id,
     "device_id": device_id,
-    "time_out": time,
+    "time_out": time_out,
+    "type": litter_box.device_nfo.type,
 })
 ```
 
-| Payload key  | Values                   | Description                       |
-| ------------ | ------------------------ | --------------------------------- |
-| `old_pet_id` | `ID_OLD` (string)        | The pet ID to replace             |
-| `device_id`  | `device_id` (string)     | The litter box device ID          |
-| `time_out`   | `TIME` (epoch timestamp) | Out timestamp of the usage record |
+| Payload key  | Values                   | Description                                                                            |
+| ------------ | ------------------------ | -------------------------------------------------------------------------------------- |
+| `old_pet_id` | `ID` (int)               | The pet ID on the record now; missing or `None` sends `-3` (no pet)                    |
+| `device_id`  | `ID` (int)               | The litter box device ID                                                               |
+| `time_out`   | `TIME` (epoch timestamp) | Out timestamp of the usage record (`content.time_out`)                                 |
+| `type`       | `N` (int, default `15`)  | The litter box's type id (`device_nfo.type`): pass it for any box other than a T4 (15) |
+
+---
+
+### `PetCommand.UPDATE_DETECT_RECORD`
+
+Updates a litter box "pet detected" event (camera models) with the correct pet ID. The first argument (`pet_id`) is the pet to assign.
+
+```python
+await client.send_api_request(pet_id, PetCommand.UPDATE_DETECT_RECORD, {
+    "device_id": device_id,
+    "event_id": event_id,
+    "type": litter_box.device_nfo.type,
+})
+```
+
+| Payload key | Values        | Description                                  |
+| ----------- | ------------- | -------------------------------------------- |
+| `device_id` | `ID` (int)    | The litter box device ID                     |
+| `event_id`  | `ID` (string) | The event's `eventId`                        |
+| `type`      | `N` (int)     | The litter box's type id (`device_nfo.type`) |
+
+> For `UPDATE_USAGE_RECORD`, `UPDATE_DETECT_RECORD` and `DeviceCommand.MATCH_PET`, `True` only means the request did not raise. The request layer retries on timeouts and other network errors, so read the record back to confirm the change, and treat an error after a timeout as "unknown", not "failed".
 
 ---
 
